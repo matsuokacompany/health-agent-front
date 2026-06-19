@@ -1,1 +1,1 @@
-export default function Forbidden(){return <main><h1 className="danger">Acesso negado</h1><p>Você não tem permissão para acessar este recurso.</p></main>}
+export default function Forbidden(){return <main><h1 className="danger">Acesso negado</h1><p>Você não tem permissão para acessar este recurso ou vínculo clínico.</p><a href="/login">Voltar ao login</a></main>}

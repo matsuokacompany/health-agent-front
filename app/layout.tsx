@@ -1,4 +1,4 @@
 import type { Metadata } from 'next';
 import './globals.css';
-export const metadata: Metadata = { title:'Health Agent', description:'LGPD-ready health monitoring MVP' };
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="pt-BR"><body>{children}</body></html>}
+export const metadata: Metadata = { title: 'Julha Saúde', description: 'Plataforma clínica com autenticação Logto e dados mockados seguros' };
+export default function RootLayout({ children }: { children: React.ReactNode }) { return <html lang="pt-BR"><body>{children}</body></html>; }
