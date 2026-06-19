@@ -1,3 +1,3 @@
 import type { NextConfig } from 'next';
-const nextConfig: NextConfig = { poweredByHeader: false, experimental: { typedRoutes: true } };
+const nextConfig: NextConfig = { poweredByHeader: false, typedRoutes: true };
 export default nextConfig;
