@@ -1,0 +1,1 @@
+export default function Login(){return <main><h1>Entrar</h1><div className="card"><p>Autenticação via Logto OIDC com Google ou Microsoft. Em mock, defina cookie <code>role</code>.</p><a href="/patient/dashboard">Continuar como paciente mock</a></div></main>}

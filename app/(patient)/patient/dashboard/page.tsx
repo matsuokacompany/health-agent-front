@@ -1,0 +1,2 @@
+import { getCurrentUser } from '@/services/auth';import { getReports } from '@/services/symptoms';
+export default async function PatientDashboard(){const user=await getCurrentUser('patient'); const reports=user?await getReports(user,user.id):[]; return <main><h1>Dashboard do paciente</h1><p className="muted">Coletamos apenas sintomas necessários para monitoramento diário.</p>{reports.map(r=><div className="card" key={r.id}><strong>{r.report_date}</strong><p>{r.had_symptoms?'Sintomas registrados':'Sem sintomas'}</p></div>)}<a href="/patient/calendar">Calendário</a></main>}

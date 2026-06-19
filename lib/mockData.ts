@@ -1,0 +1,4 @@
+import type { User, DailyReport, Anamnese } from './types';
+export const mockUsers:User[]=[{id:'p1',role:'patient',email:'ana@example.com',name:'Ana Paciente',consent:{user_id:'p1',accepted_at:'2026-06-01T10:00:00Z',version:'2026-01'}},{id:'pro1',role:'professional',email:'dr@example.com',name:'Dra. Silva',linkedPatientIds:['p1'],consent:{user_id:'pro1',accepted_at:'2026-06-01T10:00:00Z',version:'2026-01'}},{id:'admin1',role:'admin',email:'admin@example.com',name:'Admin',consent:{user_id:'admin1',accepted_at:'2026-06-01T10:00:00Z',version:'2026-01'}}];
+export const mockReports:DailyReport[]=[{id:'r1',user_id:'p1',report_date:'2026-06-19',check_type:'daily',symptom_description:'Dor de cabeça leve',had_symptoms:true,completed:true}];
+export const mockAnamnese:Anamnese[]=[{id:'a1',user_id:'p1',info:'Histórico resumido minimizado para UI.'}];

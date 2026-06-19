@@ -1,0 +1,5 @@
+import { describe, expect, it } from 'vitest';
+import { canAccessPatient, canAccessRoute, sanitizeClinicalText } from '@/lib/rbac';
+import { mockUsers } from '@/lib/mockData';
+const patient=mockUsers[0], pro=mockUsers[1], admin=mockUsers[2];
+describe('rbac',()=>{it('isolates patients by owner id',()=>{expect(canAccessPatient(patient,'p1')).toBe(true);expect(canAccessPatient(patient,'p2')).toBe(false)});it('limits professional to linked patients',()=>{expect(canAccessPatient(pro,'p1')).toBe(true);expect(canAccessPatient(pro,'p2')).toBe(false)});it('allows admin controlled global access',()=>{expect(canAccessPatient(admin,'p2')).toBe(true)});it('protects role routes and consent',()=>{expect(canAccessRoute(patient,'/patient/dashboard')).toBe(true);expect(canAccessRoute(patient,'/professional/patients')).toBe(false);expect(canAccessRoute({...patient,consent:{...patient.consent!,revoked_at:'2026-06-19T00:00:00Z'}},'/patient/dashboard')).toBe(false)});it('redacts direct identifiers from clinical text',()=>{expect(sanitizeClinicalText('cpf 123.456.789-10 tel +55 11 99999-9999 a@b.com')).not.toMatch(/123|99999|a@b/)});});
