@@ -1,2 +1,12 @@
-import type { User } from '@/lib/types';import { canAccessPatient, sanitizeClinicalText } from '@/lib/rbac';import { USE_MOCK, api } from './api';import { audit } from './audit';
-export async function generateAiReport(user:User,patientId:string,clinicalSummary:string){if(!canAccessPatient(user,patientId))throw new Error('forbidden'); const prompt=sanitizeClinicalText(clinicalSummary); audit(user.id,'ai.report.generate',`patient:${patientId}`); if(USE_MOCK)return {risk:'baixo',summary:`Resumo anonimizado: ${prompt}`}; return api('/ai/report/'+patientId,{method:'POST',body:JSON.stringify({prompt})})}
+import type { AiReport, User } from '@/lib/types';
+import { canAccessPatient, sanitizeClinicalText } from '@/lib/rbac';
+import { USE_MOCK, api } from './api';
+import { audit } from './audit';
+
+export async function generateAiReport(user: User, patientId: string, clinicalSummary: string): Promise<AiReport> {
+  if (!canAccessPatient(user, patientId)) throw new Error('forbidden');
+  const prompt = sanitizeClinicalText(clinicalSummary);
+  audit(user.id, 'ai.report.generate', `patient:${patientId}`);
+  if (USE_MOCK) return { risk: prompt.includes('Falta de ar') ? 'alto' : 'moderado', summary: `Resumo clínico anonimizado: ${prompt}`, recommendations: ['Revisar sinais de alerta', 'Manter acompanhamento conforme plano terapêutico'] };
+  return api<AiReport>(`/ai/report/${patientId}`, { method: 'POST', body: JSON.stringify({ prompt }) });
+}
