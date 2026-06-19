@@ -1,0 +1,2 @@
+import { getCurrentUser } from '@/services/auth';import { listPatients } from '@/services/patients';
+export default async function Patients(){const user=await getCurrentUser('professional'); const patients=user?await listPatients(user):[]; return <main><h1>Pacientes vinculados</h1>{patients.map(p=><div className="card" key={p.id}><a href={`/professional/patients/${p.id}`}>{p.name}</a></div>)}</main>}

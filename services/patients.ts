@@ -1,0 +1,3 @@
+import { mockUsers } from '@/lib/mockData';import type { User } from '@/lib/types';import { canAccessPatient } from '@/lib/rbac';import { USE_MOCK, api } from './api';import { audit } from './audit';
+export async function listPatients(requester:User){if(!['professional','admin'].includes(requester.role))return []; if(USE_MOCK)return mockUsers.filter(u=>u.role==='patient'&&canAccessPatient(requester,u.id)); return api<User[]>('/patients')}
+export async function getPatient(requester:User,patientId:string){if(!canAccessPatient(requester,patientId))throw new Error('forbidden'); audit(requester.id,'patient.read',`patient:${patientId}`); if(USE_MOCK)return mockUsers.find(u=>u.id===patientId&&u.role==='patient')??null; return api<User>(`/patients/${patientId}`)}
