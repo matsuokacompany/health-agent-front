@@ -1,6 +1,6 @@
 import type { AiReport, User } from '@/lib/types';
 import { canAccessPatient, sanitizeClinicalText } from '@/lib/rbac';
-import { USE_MOCK, api } from './api';
+import { USE_MOCK, apiClient } from './api';
 import { audit } from './audit';
 
 export async function generateAiReport(user: User, patientId: string, clinicalSummary: string): Promise<AiReport> {
@@ -8,5 +8,5 @@ export async function generateAiReport(user: User, patientId: string, clinicalSu
   const prompt = sanitizeClinicalText(clinicalSummary);
   audit(user.id, 'ai.report.generate', `patient:${patientId}`);
   if (USE_MOCK) return { risk: prompt.includes('Falta de ar') ? 'alto' : 'moderado', summary: `Resumo clínico anonimizado: ${prompt}`, recommendations: ['Revisar sinais de alerta', 'Manter acompanhamento conforme plano terapêutico'] };
-  return api<AiReport>(`/ai/report/${patientId}`, { method: 'POST', body: JSON.stringify({ prompt }) });
+  return apiClient.request<AiReport>(`/ai/report/${patientId}`, { method: 'POST', body: JSON.stringify({ prompt }) });
 }

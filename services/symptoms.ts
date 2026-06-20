@@ -1,7 +1,7 @@
 import { mockReports } from '@/lib/mockData';
 import type { DailyReport, User } from '@/lib/types';
 import { canAccessPatient, sanitizeClinicalText } from '@/lib/rbac';
-import { USE_MOCK, api } from './api';
+import { USE_MOCK, apiClient } from './api';
 import { audit } from './audit';
-export async function getReports(user: User, patientId: string) { if (!canAccessPatient(user, patientId)) throw new Error('forbidden'); audit(user.id, 'symptoms.read', `patient:${patientId}`); if (USE_MOCK) return mockReports.filter((report) => report.user_id === patientId); return api<DailyReport[]>(`/patients/${patientId}/symptoms`); }
-export async function createReport(user: User, report: DailyReport) { if (!canAccessPatient(user, report.user_id)) throw new Error('forbidden'); const safe = { ...report, symptom_description: sanitizeClinicalText(report.symptom_description) }; audit(user.id, 'symptoms.write', `report:${report.id}`); if (USE_MOCK) { mockReports.push(safe); return safe; } return api<DailyReport>('/symptoms', { method: 'POST', body: JSON.stringify(safe) }); }
+export async function getReports(user: User, patientId: string) { if (!canAccessPatient(user, patientId)) throw new Error('forbidden'); audit(user.id, 'symptoms.read', `patient:${patientId}`); if (USE_MOCK) return mockReports.filter((report) => report.user_id === patientId); return apiClient.request<DailyReport[]>(`/patients/${patientId}/symptoms`); }
+export async function createReport(user: User, report: DailyReport) { if (!canAccessPatient(user, report.user_id)) throw new Error('forbidden'); const safe = { ...report, symptom_description: sanitizeClinicalText(report.symptom_description) }; audit(user.id, 'symptoms.write', `report:${report.id}`); if (USE_MOCK) { mockReports.push(safe); return safe; } return apiClient.request<DailyReport>('/symptoms', { method: 'POST', body: JSON.stringify(safe) }); }

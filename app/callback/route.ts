@@ -1,11 +1,8 @@
-import { handleSignIn } from '@logto/next/server-actions';
 import { NextRequest, NextResponse } from 'next/server';
-import { logtoConfig } from '@/app/logto';
+import { handleAuthCallback } from '@/services/auth';
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-
-  await handleSignIn(logtoConfig, searchParams);
+  await handleAuthCallback(request.nextUrl.searchParams);
 
   return NextResponse.redirect(new URL('/', request.url));
 }

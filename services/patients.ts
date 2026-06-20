@@ -1,14 +1,14 @@
 import { mockPatients, mockUsers } from '@/lib/mockData';
 import type { PatientProfile, User } from '@/lib/types';
 import { canAccessPatient } from '@/lib/rbac';
-import { USE_MOCK, api } from './api';
+import { USE_MOCK, apiClient } from './api';
 import { audit } from './audit';
 
 export async function listPatients(requester: User) {
   if (!['professional', 'admin'].includes(requester.role)) return [];
   audit(requester.id, 'patients.list', 'patients');
   if (USE_MOCK) return mockPatients.filter((patient) => canAccessPatient(requester, patient.id));
-  return api<PatientProfile[]>('/patients');
+  return apiClient.request<PatientProfile[]>('/patients');
 }
 
 export async function getPatient(requester: User, patientId: string) {
@@ -37,5 +37,5 @@ export async function getPatient(requester: User, patientId: string) {
     return null;
   }
 
-  return api<PatientProfile>(`/patients/${patientId}`);
+  return apiClient.request<PatientProfile>(`/patients/${patientId}`);
 }
