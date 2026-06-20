@@ -10,9 +10,13 @@ export default async function PatientDetail({
 }) {
   const { patientId } = await params;
   const user = await getCurrentUser("professional");
-  if (!user) notFound();
+  if (!user) {
+    notFound();
+  }
   const patient = await getPatient(user, patientId);
-  if (!patient) notFound();
+  if (!patient) {
+    notFound();
+  }
   const reports = await getReports(user, patientId);
   const ai = await generateAiReport(
     user,
