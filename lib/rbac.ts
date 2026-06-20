@@ -3,7 +3,7 @@ import type { Role, User } from './types';
 export const roleHome: Record<Role, string> = { patient: '/patient/dashboard', professional: '/professional/patients', admin: '/professional/patients' };
 export function hasActiveConsent(user?: User | null) { return Boolean(user?.consent?.accepted_at && !user.consent.revoked_at); }
 export function canAccessRoute(user: User | null | undefined, path: string) {
-  if (!user) return path.startsWith('/login') || path.startsWith('/callback');
+  if (!user) return path.startsWith('/login');
   if (!hasActiveConsent(user)) return path === '/login' || path === '/consent';
   if (user.role === 'admin') return true;
   if (path.startsWith('/patient')) return user.role === 'patient';

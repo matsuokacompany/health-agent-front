@@ -1,2 +1,23 @@
-import { getLogtoAuthorizationUrl } from '@/services/auth';
-export default function Login() { const loginUrl = getLogtoAuthorizationUrl(); return <main className="hero"><section><span className="badge">Julha Saúde</span><h1>Entrar na plataforma clínica</h1><p className="muted">Autenticação OpenID Connect via Logto Cloud, pronta para Google e Microsoft. Em modo mock, escolha um perfil para navegar sem backend.</p><a className="button" href={loginUrl || '/callback'}>Entrar com Logto</a><a className="button" href="/patient/dashboard">Paciente mock</a><a className="button" href="/professional/patients">Profissional mock</a></section><aside className="panel"><h2>Segurança</h2><p>Rotas protegidas por role, acesso por vínculo profissional-paciente e nenhum token sensível em localStorage.</p></aside></main>; }
+export default function Login() {
+  return (
+    <main className="hero">
+      <section>
+        <span className="badge">Julha Saúde</span>
+        <h1>Entrar na plataforma clínica</h1>
+        <p className="muted">
+          Autenticação mock temporária com usuário fixo para manter o fluxo local sem provedor externo.
+        </p>
+        <a className="button" href="/mock-login?role=patient">
+          Paciente mock
+        </a>
+        <a className="button" href="/mock-login?role=professional">
+          Profissional mock
+        </a>
+      </section>
+      <aside className="panel">
+        <h2>Segurança</h2>
+        <p>Rotas protegidas por role, acesso por vínculo profissional-paciente e nenhum token sensível em localStorage.</p>
+      </aside>
+    </main>
+  );
+}
