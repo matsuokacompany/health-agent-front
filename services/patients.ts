@@ -13,7 +13,29 @@ export async function listPatients(requester: User) {
 
 export async function getPatient(requester: User, patientId: string) {
   if (!canAccessPatient(requester, patientId)) throw new Error('forbidden');
+
   audit(requester.id, 'patient.read', `patient:${patientId}`);
-  if (USE_MOCK) return mockPatients.find((patient) => patient.id === patientId) ?? mockUsers.find((user) => user.id === patientId && user.role === 'patient') ?? null;
+
+  if (USE_MOCK) {
+    const patient = mockPatients.find((p) => p.id === patientId);
+
+    if (patient) return patient;
+
+    // fallback opcional (MAS convertido para PatientProfile)
+    const user = mockUsers.find(
+      (u) => u.id === patientId && u.role === 'patient'
+    );
+
+    if (user) {
+      return {
+        id: user.id,
+        name: user.name,
+        age: undefined,
+      };
+    }
+
+    return null;
+  }
+
   return api<PatientProfile>(`/patients/${patientId}`);
 }
