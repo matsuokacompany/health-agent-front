@@ -1,4 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { getPatient } from '@/services/patients';import { createReport } from '@/services/symptoms';import { mockUsers } from '@/lib/mockData';
-const [patient,pro]=mockUsers;
-describe('security access controls',()=>{it('patient cannot read another patient via service',async()=>{await expect(getPatient(patient,'p2')).rejects.toThrow('forbidden')});it('professional cannot access unlinked patient',async()=>{await expect(getPatient(pro,'p2')).rejects.toThrow('forbidden')});it('sanitizes sensitive identifiers before storing symptom reports',async()=>{const r=await createReport(patient,{id:'x',user_id:'p1',report_date:'2026-06-19',check_type:'daily',symptom_description:'Meu CPF 12345678910 e telefone 11999999999',had_symptoms:true,completed:true});expect(r.symptom_description).not.toContain('12345678910')});});
+import { getPatient } from '@/services/patients';
+import { createReport } from '@/services/symptoms';
+import { patientUser, professionalUser } from '../fixtures/users';
+
+describe('security access controls', () => {
+  it('patient cannot read another patient via service before any API request', async () => {
+    await expect(getPatient(patientUser, 4)).rejects.toThrow('forbidden');
+  });
+
+  it('professional cannot access unlinked patient before any API request', async () => {
+    await expect(getPatient(professionalUser, 4)).rejects.toThrow('forbidden');
+  });
+
+  it('blocks report creation for another local user before any API request', async () => {
+    await expect(createReport(patientUser, { id: 'x', user_id: 4, report_date: '2026-06-19', check_type: 'daily', symptom_description: 'Dor', had_symptoms: true, completed: true })).rejects.toThrow('forbidden');
+  });
+});

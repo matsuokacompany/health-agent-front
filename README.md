@@ -1,14 +1,68 @@
-# Health Agent Frontend MVP
+# Health Agent Frontend
 
-Next.js App Router MVP for daily symptom monitoring with LGPD-by-design controls.
+Frontend Next.js integrado à API FastAPI em `https://api.julha.com.br`, com Supabase Auth no cliente e autorização por roles locais retornadas pelo backend.
 
-## Security baseline
-- Secure central API client uses `credentials: 'include'` so production auth can rely on secure HttpOnly cookies instead of localStorage tokens.
-- RBAC helpers enforce patient ownership, professional linked-patient access, admin global access, and active consent checks.
-- Service layer audits login, patient reads, symptom writes, anamnese access, and AI report generation.
-- Mock mode is enabled by default with `NEXT_PUBLIC_USE_MOCK !== 'false'`.
+## Variáveis de ambiente
 
-## Routes
-- `/patient/dashboard`, `/patient/calendar`
-- `/professional/patients`, `/professional/patients/[patientId]`
-- `/login`, `/forbidden`
+Crie `.env.local` apontando para sua API em produção/EC2:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
+NEXT_PUBLIC_API_URL=https://api.julha.com.br
+```
+
+Se `NEXT_PUBLIC_API_URL` não for definido, o front-end usa `https://api.julha.com.br` como padrão.
+
+## Fluxo de login
+
+1. A tela `/login` chama `supabase.auth.signInWithPassword({ email, password })`.
+2. A senha nunca é enviada ao FastAPI.
+3. O `ApiClient` busca a sessão atual do Supabase antes de cada request.
+4. Se existir `access_token`, o header `Authorization: Bearer <supabase_access_token>` é enviado.
+5. Após login, restore de sessão ou refresh de token, o frontend chama `GET /api/auth/me`.
+6. O FastAPI valida o JWT Supabase, resolve/cria o usuário local e devolve `UserRead` com `roles`.
+
+## Roles
+
+As roles aceitas são:
+
+- `super_admin`
+- `admin`
+- `professional`
+- `patient`
+
+Um usuário pode ter múltiplas roles. A UI calcula:
+
+- `isSuperAdmin`: contém `super_admin`
+- `isAdmin`: contém `admin` ou `super_admin`
+- `isProfessional`: contém `professional`
+- `isPatient`: contém `patient`
+
+Menus e guards devem usar roles retornadas em `/api/auth/me`, nunca e-mail nem UUID Supabase. Dados de domínio devem usar sempre `users.id` local do backend; `supabase_user_id` é apenas diagnóstico.
+
+## Guards disponíveis
+
+- `RequireAuth`
+- `RequireRole`
+- `RequireAdmin`
+- `RequireSuperAdmin`
+
+Hooks disponíveis:
+
+- `useAuth`
+- `useRequireAuth`
+- `useHasRole`
+
+## Testando com super_admin
+
+1. Crie o usuário no Supabase Auth.
+2. Garanta no backend que o usuário local retornado por `GET /api/auth/me` possua `roles: ["super_admin", "admin"]`.
+3. Faça login em `/login`.
+4. Acesse `/admin` e `/admin/users/:id/roles`.
+
+## Erros HTTP tratados
+
+- `401`: limpa sessão Supabase/local e redireciona para `/login`.
+- `403`: exibe mensagem de permissão insuficiente.
+- `409`: exibe mensagem amigável para conflito, incluindo e-mail Supabase já vinculado a outro usuário local.
