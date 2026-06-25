@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/services/auth";
 import { getPatient } from "@/services/patients";
-import { getReports } from "@/services/symptoms";
+import { getReports } from "@/services/reports";
 import { generateAiReport } from "@/services/reports";
 export default async function PatientDetail({
   params,
