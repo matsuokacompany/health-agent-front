@@ -1,17 +1,11 @@
-import { cookies } from 'next/headers';
-import { mockUsers } from '@/lib/mockData';
 import type { Role, User } from '@/lib/types';
+import { authProvider } from '@/infrastructure/auth';
 import { audit } from './audit';
 
-const isRole = (value: string | undefined): value is Role =>
-  value === 'patient' || value === 'professional' || value === 'admin';
+export async function getCurrentUser(defaultRole: Role = 'patient'): Promise<User | null> {
+  const user = await authProvider.getCurrentUser(defaultRole);
 
-export async function getCurrentUser(defaultRole: Role = 'patient'): Promise<User> {
-  const cookieRole = (await cookies()).get('role')?.value;
-  const role = isRole(cookieRole) ? cookieRole : defaultRole;
-  const user = mockUsers.find((candidate) => candidate.role === role) ?? mockUsers[0];
-
-  audit(user.id, 'session.mock', 'cookie');
+  if (user) audit(user.id, 'session.read', process.env.AUTH_PROVIDER ?? 'mock');
 
   return user;
 }
