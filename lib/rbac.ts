@@ -1,20 +1,51 @@
-import type { Role, User } from './types';
+import type { RoleName, User } from './types';
 
-export const roleHome: Record<Role, string> = { patient: '/patient/dashboard', professional: '/professional/patients', admin: '/professional/patients' };
-export function hasActiveConsent(user?: User | null) { return Boolean(user?.consent?.accepted_at && !user.consent.revoked_at); }
+export const roleHome: Record<RoleName, string> = {
+  patient: '/patient/dashboard',
+  professional: '/professional/patients',
+  admin: '/admin',
+  super_admin: '/admin',
+};
+
+export function hasRole(user: User | null | undefined, role: RoleName) {
+  return user?.roles.includes(role) === true;
+}
+
+export function isSuperAdmin(user: User | null | undefined) {
+  return hasRole(user, 'super_admin');
+}
+
+export function isAdmin(user: User | null | undefined) {
+  return hasRole(user, 'admin') || isSuperAdmin(user);
+}
+
+export function isProfessional(user: User | null | undefined) {
+  return hasRole(user, 'professional');
+}
+
+export function isPatient(user: User | null | undefined) {
+  return hasRole(user, 'patient');
+}
+
+export function hasActiveConsent(user?: User | null) {
+  return Boolean(user?.consent?.accepted_at && !user.consent.revoked_at);
+}
+
 export function canAccessRoute(user: User | null | undefined, path: string) {
   if (!user) return path.startsWith('/login');
-  if (!hasActiveConsent(user)) return path === '/login' || path === '/consent';
-  if (user.role === 'admin') return true;
-  if (path.startsWith('/patient')) return user.role === 'patient';
-  if (path.startsWith('/professional')) return user.role === 'professional';
+  if (path.startsWith('/admin/users') && path.includes('/roles')) return isSuperAdmin(user);
+  if (path.startsWith('/admin')) return isAdmin(user);
+  if (path.startsWith('/patient')) return isPatient(user);
+  if (path.startsWith('/professional')) return isProfessional(user);
   return true;
 }
-export function canAccessPatient(requester: User, patientId: string) {
-  if (requester.role === 'admin') return true;
-  if (requester.role === 'patient') return requester.id === patientId;
-  return requester.linkedPatientIds?.includes(patientId) === true;
+
+export function canAccessPatient(requester: User, patientId: number | string) {
+  if (isAdmin(requester)) return true;
+  if (isPatient(requester) && String(requester.id) === String(patientId)) return true;
+  return requester.linkedPatientIds?.map(String).includes(String(patientId)) === true;
 }
+
 export function sanitizeClinicalText(input: string) {
   return input.replace(/[\w.-]+@[\w.-]+/g, '[email]').replace(/\+?\d[\d\s().-]{7,}\d/g, '[phone]').replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[cpf]').slice(0, 2000).trim();
 }
