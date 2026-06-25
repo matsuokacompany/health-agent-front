@@ -1,21 +1,14 @@
-import type { RoleName, User, UserRead } from '@/lib/types';
+import type { Role, User } from '@/lib/types';
 import { api } from './api';
-import { audit } from './audit';
-
-export async function listUsers(requester: User): Promise<UserRead[]> {
-  if (!requester.roles.some((role) => role === 'admin' || role === 'super_admin')) throw new Error('forbidden');
-  audit(requester.id, 'users.list', 'users');
-  return api<UserRead[]>('/api/users/');
-}
-
-export async function getUser(requester: User, userId: number): Promise<UserRead | null> {
-  if (!requester.roles.some((role) => role === 'admin' || role === 'super_admin') && requester.id !== userId) throw new Error('forbidden');
-  audit(requester.id, 'user.read', `user:${userId}`);
-  return api<UserRead>(`/api/users/${userId}`);
-}
-
-export async function updateUserRoles(requester: User, userId: number, roles: RoleName[]): Promise<UserRead> {
-  if (!requester.roles.includes('super_admin')) throw new Error('forbidden');
-  audit(requester.id, 'user.roles.update', `user:${userId}`);
-  return api<UserRead>(`/api/users/${userId}/roles`, { method: 'PUT', body: JSON.stringify({ roles }) });
-}
+export type UserPayload = Partial<Omit<User, 'id' | 'created_at' | 'updated_at' | 'roles'>> & { roles?: Role[] };
+export const usersApi = {
+  list: () => api<User[]>('/api/users/'),
+  get: (id: number) => api<User>(`/api/users/${id}`),
+  create: (payload: UserPayload) => api<User>('/api/users/', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id: number, payload: UserPayload) => api<User>(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  remove: (id: number) => api<void>(`/api/users/${id}`, { method: 'DELETE' }),
+  updateRoles: (id: number, roles: Role[]) => api<User>(`/api/users/${id}/roles`, { method: 'PUT', body: JSON.stringify({ roles }) }),
+};
+export const listUsers = usersApi.list;
+export const getUser = (_requester: User, userId: number) => usersApi.get(userId);
+export const updateUserRoles = (_requester: User, userId: number, roles: Role[]) => usersApi.updateRoles(userId, roles);

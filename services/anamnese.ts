@@ -1,17 +1,11 @@
-import type { Anamnese, User } from '@/lib/types';
-import { canAccessPatient, sanitizeClinicalText } from '@/lib/rbac';
+import type { Anamnese } from '@/lib/types';
 import { api } from './api';
-import { audit } from './audit';
-
-export async function saveAnamnese(user: User, data: Anamnese) {
-  if (!canAccessPatient(user, data.user_id)) throw new Error('forbidden');
-  const safe = { ...data, info: sanitizeClinicalText(data.info) };
-  audit(user.id, 'anamnese.write', `anamnese:${data.id}`);
-  return api<Anamnese>('/api/anamneses/me', { method: 'PUT', body: JSON.stringify(safe) });
-}
-
-export async function getAnamnese(user: User, patientId: number) {
-  if (!canAccessPatient(user, patientId)) throw new Error('forbidden');
-  audit(user.id, 'anamnese.read', `patient:${patientId}`);
-  return api<Anamnese>('/api/anamneses/me');
-}
+export const anamnesesApi = {
+  me: () => api<Anamnese>('/api/anamneses/me'),
+  create: (payload: Anamnese) => api<Anamnese>('/api/anamneses/', { method: 'POST', body: JSON.stringify(payload) }),
+  updateMe: (payload: Anamnese) => api<Anamnese>('/api/anamneses/me', { method: 'PUT', body: JSON.stringify(payload) }),
+  byUser: (userId: number) => api<Anamnese>(`/api/anamneses/user/${userId}`),
+  remove: (id: number) => api<void>(`/api/anamneses/${id}`, { method: 'DELETE' }),
+};
+export const getAnamnese = (_user: unknown, patientId: number) => anamnesesApi.byUser(patientId);
+export const saveAnamnese = (_user: unknown, data: Anamnese) => data.id ? anamnesesApi.updateMe(data) : anamnesesApi.create(data);
