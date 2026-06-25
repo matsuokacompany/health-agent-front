@@ -1,0 +1,3 @@
+export function LoadingState({ message = 'Carregando...' }: { message?: string }) { return <section className="panel"><span className="badge">Aguarde</span><p className="muted">{message}</p></section>; }
+export function ErrorState({ message }: { message: string }) { return <section className="panel"><span className="badge risk-alto">Erro</span><p className="danger">{message}</p></section>; }
+export function EmptyState({ title = 'Nada encontrado', description }: { title?: string; description?: string }) { return <section className="card"><h3>{title}</h3>{description ? <p className="muted">{description}</p> : null}</section>; }

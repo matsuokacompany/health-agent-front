@@ -52,3 +52,6 @@ export function RequireSuperAdmin({ children }: { children: React.ReactNode }) {
   if (!auth.isSuperAdmin) return <Forbidden />;
   return <>{children}</>;
 }
+
+export const ProtectedRoute = RequireAuth;
+export const AdminRoute = RequireAdmin;

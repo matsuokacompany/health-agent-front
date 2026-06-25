@@ -18,8 +18,9 @@ export default function Login() {
     setFormError(null);
 
     try {
-      await signIn(email, password);
-      router.replace('/app');
+      const me = await signIn(email, password);
+      const isAdmin = me.roles.includes('admin') || me.roles.includes('super_admin');
+      router.replace(isAdmin ? '/admin' : '/app');
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Não foi possível entrar.');
     } finally {

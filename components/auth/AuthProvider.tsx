@@ -17,9 +17,9 @@ export type AuthContextValue = {
   isAdmin: boolean;
   isProfessional: boolean;
   isPatient: boolean;
-  signIn(email: string, password: string): Promise<void>;
+  signIn(email: string, password: string): Promise<UserRead>;
   signOut(): Promise<void>;
-  refreshMe(): Promise<void>;
+  refreshMe(): Promise<UserRead>;
   clearAuthState(): void;
 };
 
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await api<UserRead>('/api/auth/me');
       setUser(me);
       setError(null);
+      return me;
     } catch (err) {
       setUser(null);
       setError(err instanceof Error ? err.message : 'Não foi possível carregar o usuário local.');
@@ -88,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error: signInError } = await signInWithPassword(email, password);
       if (signInError) throw new Error(signInError.message);
       setSession(data.session);
-      await refreshMe();
+      return await refreshMe();
     } finally {
       setLoading(false);
     }
