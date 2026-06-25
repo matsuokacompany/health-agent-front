@@ -1,5 +1,7 @@
 import type { Anamnese, DailyReport, PatientProfile, User } from './types';
 
+const now = '2026-06-01T10:00:00Z';
+
 export const mockUsers: User[] = [
   { id: 'p1', role: 'patient', email: 'ana@example.com', name: 'Ana Paciente', consent: { user_id: 'p1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
   { id: 'pro1', role: 'professional', email: 'dr@example.com', name: 'Dra. Silva', linkedPatientIds: ['p1'], consent: { user_id: 'pro1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
@@ -15,13 +17,13 @@ export const mockPatients: PatientProfile[] = [
 ];
 
 export const mockReports: DailyReport[] = [
-  { id: 'r1', user_id: 'p1', report_date: '2026-06-16', check_type: 'daily', symptom_description: 'Sem sintomas relevantes', had_symptoms: false, completed: true, painLevel: 0, riskFlags: [] },
-  { id: 'r2', user_id: 'p1', report_date: '2026-06-17', check_type: 'daily', symptom_description: 'Dor de cabeça leve', had_symptoms: true, completed: true, painLevel: 2, riskFlags: [] },
-  { id: 'r3', user_id: 'p1', report_date: '2026-06-18', check_type: 'risk', symptom_description: 'Febre baixa e fadiga', had_symptoms: true, completed: true, painLevel: 4, riskFlags: ['febre'] },
-  { id: 'r4', user_id: 'p2', report_date: '2026-06-18', check_type: 'risk', symptom_description: 'Falta de ar ao esforço', had_symptoms: true, completed: true, painLevel: 6, riskFlags: ['dispneia', 'risco cardiovascular'] },
+  { id: 'r1', user_id: 1, report_date: '2026-06-16', check_type: 'daily', symptom_description: 'Sem sintomas relevantes', had_symptoms: false, completed: true, painLevel: 0, riskFlags: [] },
+  { id: 'r2', user_id: 1, report_date: '2026-06-17', check_type: 'daily', symptom_description: 'Dor de cabeça leve', had_symptoms: true, completed: true, painLevel: 2, riskFlags: [] },
+  { id: 'r3', user_id: 1, report_date: '2026-06-18', check_type: 'risk', symptom_description: 'Febre baixa e fadiga', had_symptoms: true, completed: true, painLevel: 4, riskFlags: ['febre'] },
+  { id: 'r4', user_id: 4, report_date: '2026-06-18', check_type: 'risk', symptom_description: 'Falta de ar ao esforço', had_symptoms: true, completed: true, painLevel: 6, riskFlags: ['dispneia', 'risco cardiovascular'] },
 ];
 
 export const mockAnamnese: Anamnese[] = [
-  { id: 'a1', user_id: 'p1', info: 'Histórico resumido e minimizado para interface clínica.' },
-  { id: 'a2', user_id: 'p2', info: 'Paciente em acompanhamento de rotina com fatores de risco controlados.' },
+  { id: 'a1', user_id: 1, info: 'Histórico resumido e minimizado para interface clínica.' },
+  { id: 'a2', user_id: 4, info: 'Paciente em acompanhamento de rotina com fatores de risco controlados.' },
 ];
