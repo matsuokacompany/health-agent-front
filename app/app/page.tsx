@@ -8,7 +8,7 @@ function Home() {
 
   return (
     <main>
-      <div className="topbar"><span className="badge">Autenticado</span><a href="/logout">Sair</a></div>
+      <div className="topbar"><span className="badge">Autenticado</span><span><a href="/change-password">Alterar senha</a> · <a href="/logout">Sair</a></span></div>
       <h1>Dashboard</h1>
       <p className="muted">Usuário local #{user?.id}: {user?.name}</p>
       <nav className="menu">

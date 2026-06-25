@@ -44,6 +44,7 @@ export default function Login() {
           </label>
           {(formError || error) ? <p className="danger">{formError ?? error}</p> : null}
           <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
+          <a href="/forgot-password">Esqueci minha senha</a>
         </form>
       </section>
       <aside className="panel">
