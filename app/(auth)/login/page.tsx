@@ -30,26 +30,31 @@ export default function Login() {
   return (
     <main className="hero">
       <section>
-        <span className="badge">Julha Saúde</span>
-        <h1>Entrar com Supabase Auth</h1>
-        <p className="muted">A senha é enviada apenas ao Supabase. O FastAPI recebe somente o JWT Supabase no header Authorization.</p>
-        <form className="card" onSubmit={onSubmit}>
+        <span className="eyebrow">Julha Saúde</span>
+        <h1>Operação clínica segura, clara e conectada.</h1>
+        <p className="muted">Entre no workspace médico para acompanhar pacientes, check-ins e permissões com uma experiência premium inspirada em sistemas hospitalares modernos.</p>
+        <div className="grid">
+          <article className="card"><span className="badge">JWT Supabase</span><h3>Autenticação protegida</h3><p className="muted">A senha é enviada apenas ao Supabase; o FastAPI recebe o token no Authorization.</p></article>
+          <article className="card"><span className="badge">RBAC</span><h3>Perfis clínicos</h3><p className="muted">Paciente, profissional, admin e super admin mantêm jornadas separadas.</p></article>
+        </div>
+      </section>
+      <aside className="panel">
+        <span className="badge">Acesso ao produto</span>
+        <h2>Entrar</h2>
+        <p className="muted">Use suas credenciais para acessar o ambiente clínico.</p>
+        <form onSubmit={onSubmit}>
           <label>
             E-mail
-            <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+            <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="profissional@clinica.com" required type="email" value={email} />
           </label>
           <label>
             Senha
-            <input autoComplete="current-password" name="password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+            <input autoComplete="current-password" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required type="password" value={password} />
           </label>
-          {(formError || error) ? <p className="danger">{formError ?? error}</p> : null}
-          <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
-          <a href="/forgot-password">Esqueci minha senha</a>
+          {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
+          <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar no workspace'}</button>
+          <p><a href="/forgot-password">Esqueci minha senha</a></p>
         </form>
-      </section>
-      <aside className="panel">
-        <h2>Fluxo seguro</h2>
-        <p>Após o login, o frontend chama GET /api/auth/me para carregar o usuário local e suas roles.</p>
       </aside>
     </main>
   );

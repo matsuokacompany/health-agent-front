@@ -48,8 +48,8 @@ function ChangePasswordForm() {
           Confirmar nova senha
           <input autoComplete="new-password" minLength={6} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
         </label>
-        {message ? <p className="success">{message}</p> : null}
-        {error ? <p className="danger">{error}</p> : null}
+        {message ? <p className="notice success">{message}</p> : null}
+        {error ? <p className="notice danger">{error}</p> : null}
         <button className="button" disabled={submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
       </form>
     </main>
