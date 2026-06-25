@@ -2,7 +2,7 @@ export type RoleName = 'super_admin' | 'admin' | 'professional' | 'patient';
 export type Role = RoleName;
 
 export type UserRead = {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
   phone?: string | null;
@@ -41,7 +41,7 @@ export type PatientProfile = User & {
 
 export type DailyReport = {
   id: string | number;
-  user_id: number;
+  user_id: string | number;
   report_date: string;
   check_type: 'daily' | 'risk';
   symptom_description: string;
