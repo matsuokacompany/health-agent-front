@@ -8,5 +8,5 @@ export default defineConfig({
     exclude: ['node_modules/**', 'e2e/**'],
     coverage: { provider: 'v8', include: ['lib/**', 'services/**', 'infrastructure/**'], thresholds: { lines: 50, branches: 50, functions: 50, statements: 50 } },
   },
-  resolve: { alias: { '@': '/workspace/health-agent-front' } },
+  resolve: { alias: { '@': '/workspace/health-agent-front', '@supabase/supabase-js': '/workspace/health-agent-front/tests/stubs/supabase-js.ts' } },
 });
