@@ -44,7 +44,7 @@ function getStoredSession(): Session | null {
   }
 }
 
-function storeSession(session: Session | null) {
+export function storeSession(session: Session | null) {
   if (typeof window === 'undefined') return;
   if (session) window.localStorage.setItem(storageKey, JSON.stringify(session));
   else window.localStorage.removeItem(storageKey);
@@ -82,6 +82,33 @@ export const supabase = {
       storeSession(session);
       notify('SIGNED_IN', session);
       return { data: { session }, error: null };
+    },
+
+    async resetPasswordForEmail(email: string, redirectTo?: string): Promise<{ error: AuthError }> {
+      const response = await fetch(authEndpoint('/recover'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ email, ...(redirectTo ? { redirect_to: redirectTo } : {}) }),
+      });
+
+      return { error: response.ok ? null : await readAuthError(response) };
+    },
+
+    async updateUser(attributes: { password: string }): Promise<{ data: { user: unknown | null }; error: AuthError }> {
+      const session = getStoredSession();
+      if (!session?.access_token) return { data: { user: null }, error: { message: 'Sessão não encontrada. Faça login novamente.' } };
+
+      const response = await fetch(authEndpoint('/user'), {
+        method: 'PUT',
+        headers: authHeaders(session.access_token),
+        body: JSON.stringify(attributes),
+      });
+
+      if (!response.ok) return { data: { user: null }, error: await readAuthError(response) };
+
+      const user = await response.json() as unknown;
+      notify('USER_UPDATED', session);
+      return { data: { user }, error: null };
     },
 
     async signOut(): Promise<{ error: AuthError }> {
@@ -131,4 +158,42 @@ export function signOut() {
 
 export function onAuthStateChange(callback: AuthListener) {
   return supabase.auth.onAuthStateChange(callback);
+}
+
+export async function resetPasswordForEmail(email: string) {
+  const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, redirectTo);
+  if (error) throw new Error(error.message);
+}
+
+export async function updatePassword(password: string) {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+}
+
+export function recoverSessionFromUrl(): Session | null {
+  if (typeof window === 'undefined') return null;
+
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, '') || window.location.search.replace(/^\?/, ''));
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token') ?? undefined;
+
+  if (!accessToken) {
+    const session = getStoredSession();
+    if (session?.access_token) return session;
+    throw new Error('Link de redefinição inválido ou expirado. Solicite um novo link.');
+  }
+
+  const session: Session = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: Number(params.get('expires_in') ?? 0) || undefined,
+    expires_at: Number(params.get('expires_at') ?? 0) || undefined,
+    token_type: params.get('token_type') ?? 'bearer',
+  };
+
+  storeSession(session);
+  notify('PASSWORD_RECOVERY', session);
+  window.history.replaceState(null, document.title, window.location.pathname);
+  return session;
 }
