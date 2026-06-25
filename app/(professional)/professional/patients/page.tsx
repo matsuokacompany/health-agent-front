@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 function PatientsContent() {
   const { user } = useAuth();
 
-  return <main><div className="nav"><span className="badge">Profissional</span><a href="/logout">Sair</a></div><h1>Dashboard médico</h1><p className="muted">Profissional local #{user?.id}. Vínculos e pacientes devem vir do FastAPI usando Authorization: Bearer &lt;supabase_access_token&gt;.</p></main>;
+  return <main><div className="topbar"><span className="badge">Painel médico</span><a href="/logout">Sair</a></div><header className="page-header"><span className="eyebrow">Monitoring</span><h1>Pacientes em acompanhamento</h1><p className="muted">Profissional local #{user?.id}. Vínculos e pacientes devem vir do FastAPI usando Authorization: Bearer &lt;supabase_access_token&gt;.</p></header><section className="grid"><article className="card"><span className="badge risk-alto">Prioritário</span><h2>Fila de risco</h2><p className="muted">Casos críticos ficam visualmente destacados para acelerar a tomada de decisão.</p><a className="button" href="/professional/patients/1">Ver prontuário</a></article><article className="card"><span className="badge">Coorte</span><div className="metric">128</div><p className="muted">pacientes vinculados à equipe clínica.</p></article><article className="card"><span className="badge success">SLA</span><div className="metric">96%</div><p className="muted">check-ins revisados dentro do prazo.</p></article></section></main>;
 }
 
 export default function Patients() {

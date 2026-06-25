@@ -6,11 +6,11 @@ import type { RoleName } from '@/lib/types';
 import { useAuth } from './AuthProvider';
 
 function Loading() {
-  return <main><p className="muted">Carregando sessão...</p></main>;
+  return <main><section className="panel"><span className="badge">Sessão</span><h1>Carregando...</h1><p className="muted">Validando sua sessão clínica com segurança.</p></section></main>;
 }
 
 function Forbidden() {
-  return <main><h1 className="danger">Acesso negado</h1><p>Permissão insuficiente para acessar este recurso.</p></main>;
+  return <main><section className="panel"><span className="badge risk-alto">Acesso negado</span><h1 className="danger">Acesso negado</h1><p className="muted">Permissão insuficiente para acessar este recurso.</p></section></main>;
 }
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {

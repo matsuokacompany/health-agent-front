@@ -36,8 +36,8 @@ export default function ForgotPasswordPage() {
             E-mail
             <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
           </label>
-          {message ? <p className="success">{message}</p> : null}
-          {error ? <p className="danger">{error}</p> : null}
+          {message ? <p className="notice success">{message}</p> : null}
+          {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={submitting} type="submit">{submitting ? 'Enviando...' : 'Enviar link de redefinição'}</button>
           <a href="/login">Voltar ao login</a>
         </form>

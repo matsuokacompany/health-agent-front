@@ -59,8 +59,8 @@ export default function ResetPasswordPage() {
             Confirmar nova senha
             <input autoComplete="new-password" disabled={!ready || submitting} minLength={6} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
           </label>
-          {message ? <p className="success">{message}</p> : null}
-          {error ? <p className="danger">{error}</p> : null}
+          {message ? <p className="notice success">{message}</p> : null}
+          {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
           <a href="/login">Voltar ao login</a>
         </form>
