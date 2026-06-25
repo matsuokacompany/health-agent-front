@@ -3,10 +3,10 @@ import type { Anamnese, DailyReport, PatientProfile, User } from './types';
 const now = '2026-06-01T10:00:00Z';
 
 export const mockUsers: User[] = [
-  { id: 'p1', role: 'patient', email: 'ana@example.com', name: 'Ana Paciente', consent: { user_id: 'p1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
-  { id: 'pro1', role: 'professional', email: 'dr@example.com', name: 'Dra. Silva', linkedPatientIds: ['p1'], consent: { user_id: 'pro1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
-  { id: 'admin1', role: 'admin', email: 'admin@example.com', name: 'Admin', consent: { user_id: 'admin1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
-  { id: 'p2', role: 'patient', email: 'carlos@example.com', name: 'Carlos Lima', consent: { user_id: 'p2', accepted_at: '2026-06-03T10:00:00Z', version: '2026-01' } },
+  { id: 'p1', role: 'patient', roles: ['patient'], email: 'ana@example.com', name: 'Ana Paciente', created_at: now, updated_at: now, consent: { user_id: 'p1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
+  { id: 'pro1', role: 'professional', roles: ['professional'], email: 'dr@example.com', name: 'Dra. Silva', created_at: now, updated_at: now, linkedPatientIds: ['p1'], consent: { user_id: 'pro1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
+  { id: 'admin1', role: 'admin', roles: ['admin'], email: 'admin@example.com', name: 'Admin', created_at: now, updated_at: now, consent: { user_id: 'admin1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
+  { id: 'p2', role: 'patient', roles: ['patient'], email: 'carlos@example.com', name: 'Carlos Lima', created_at: now, updated_at: now, consent: { user_id: 'p2', accepted_at: '2026-06-03T10:00:00Z', version: '2026-01' } },
 ];
 
 const patientById = (id: string) => mockUsers.find((user) => user.id === id && user.role === 'patient') as User;
