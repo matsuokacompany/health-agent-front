@@ -3,17 +3,17 @@ import type { Anamnese, DailyReport, PatientProfile, User } from './types';
 const now = '2026-06-01T10:00:00Z';
 
 export const mockUsers: User[] = [
-  { id: 1, role: 'patient', roles: ['patient'], email: 'ana@example.com', name: 'Ana Paciente', supabase_user_id: '00000000-0000-0000-0000-000000000001', created_at: now, updated_at: now, consent: { user_id: '1', accepted_at: now, version: '2026-01' } },
-  { id: 2, role: 'professional', roles: ['professional'], email: 'dr@example.com', name: 'Dra. Silva', supabase_user_id: '00000000-0000-0000-0000-000000000002', linkedPatientIds: [1], created_at: now, updated_at: now, consent: { user_id: '2', accepted_at: now, version: '2026-01' } },
-  { id: 3, role: 'super_admin', roles: ['super_admin', 'admin'], email: 'admin@example.com', name: 'Admin', supabase_user_id: '00000000-0000-0000-0000-000000000003', created_at: now, updated_at: now, consent: { user_id: '3', accepted_at: now, version: '2026-01' } },
-  { id: 4, role: 'patient', roles: ['patient'], email: 'carlos@example.com', name: 'Carlos Lima', supabase_user_id: '00000000-0000-0000-0000-000000000004', created_at: now, updated_at: now, consent: { user_id: '4', accepted_at: now, version: '2026-01' } },
+  { id: 'p1', role: 'patient', email: 'ana@example.com', name: 'Ana Paciente', consent: { user_id: 'p1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
+  { id: 'pro1', role: 'professional', email: 'dr@example.com', name: 'Dra. Silva', linkedPatientIds: ['p1'], consent: { user_id: 'pro1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
+  { id: 'admin1', role: 'admin', email: 'admin@example.com', name: 'Admin', consent: { user_id: 'admin1', accepted_at: '2026-06-01T10:00:00Z', version: '2026-01' } },
+  { id: 'p2', role: 'patient', email: 'carlos@example.com', name: 'Carlos Lima', consent: { user_id: 'p2', accepted_at: '2026-06-03T10:00:00Z', version: '2026-01' } },
 ];
 
-const patientById = (id: number) => mockUsers.find((user) => user.id === id && user.roles.includes('patient')) as User;
+const patientById = (id: string) => mockUsers.find((user) => user.id === id && user.role === 'patient') as User;
 
 export const mockPatients: PatientProfile[] = [
-  { ...patientById(1), age: 34, diagnosis: 'Monitoramento pós-operatório', lastCheckIn: '2026-06-19', riskLevel: 'moderado' },
-  { ...patientById(4), age: 58, diagnosis: 'Controle cardiometabólico', lastCheckIn: '2026-06-18', riskLevel: 'alto' },
+  { ...patientById('p1'), age: 34, diagnosis: 'Monitoramento pós-operatório', lastCheckIn: '2026-06-19', riskLevel: 'moderado' },
+  { ...patientById('p2'), age: 58, diagnosis: 'Controle cardiometabólico', lastCheckIn: '2026-06-18', riskLevel: 'alto' },
 ];
 
 export const mockReports: DailyReport[] = [

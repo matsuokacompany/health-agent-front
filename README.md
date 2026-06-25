@@ -1,19 +1,18 @@
 # Health Agent Frontend
 
-Frontend Next.js para FastAPI com Supabase Auth no cliente e autorização por roles locais retornadas pelo backend.
+Frontend Next.js integrado à API FastAPI em `https://api.julha.com.br`, com Supabase Auth no cliente e autorização por roles locais retornadas pelo backend.
 
 ## Variáveis de ambiente
 
-Crie `.env.local`:
+Crie `.env.local` apontando para sua API em produção/EC2:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_USE_MOCK=false
+NEXT_PUBLIC_API_URL=https://api.julha.com.br
 ```
 
-`NEXT_PUBLIC_USE_MOCK=true` mantém os mocks locais para desenvolvimento isolado. Em integração real, use `false` para chamar o FastAPI.
+Se `NEXT_PUBLIC_API_URL` não for definido, o front-end usa `https://api.julha.com.br` como padrão.
 
 ## Fluxo de login
 

@@ -48,7 +48,7 @@ export class ApiClient {
   private readonly getAccessToken: () => Promise<string | null>;
   private readonly onUnauthorized?: () => void;
 
-  constructor({ baseUrl = process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL ?? 'http://localhost:8000', getAccessToken = defaultAccessToken, onUnauthorized }: ApiClientOptions = {}) {
+  constructor({ baseUrl = process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL ?? 'https://api.julha.com.br', getAccessToken = defaultAccessToken, onUnauthorized }: ApiClientOptions = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.getAccessToken = getAccessToken;
     this.onUnauthorized = onUnauthorized;
