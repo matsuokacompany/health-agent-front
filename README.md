@@ -23,6 +23,22 @@ Se `NEXT_PUBLIC_API_URL` não for definido, o front-end usa `https://api.julha.c
 5. Após login, restore de sessão ou refresh de token, o frontend chama `GET /api/auth/me`.
 6. O FastAPI valida o JWT Supabase, resolve/cria o usuário local e devolve `UserRead` com `roles`.
 
+
+## Recuperação e alteração de senha
+
+As telas de senha usam apenas o Supabase Auth no navegador:
+
+- `/forgot-password`: solicita o e-mail de recuperação ao Supabase.
+- `/reset-password`: recebe o link de recuperação, salva temporariamente a sessão enviada no link e permite cadastrar a nova senha.
+- `/change-password`: permite alterar a senha quando o usuário já está autenticado.
+
+Para que o e-mail de recuperação funcione em produção/Vercel, configure no Supabase:
+
+1. Em **Authentication > URL Configuration**, adicione a URL pública do frontend em **Site URL**.
+2. Em **Redirect URLs**, permita a URL exata de redefinição, por exemplo `https://seu-dominio.com/reset-password`.
+3. Em **Authentication > SMTP Settings**, configure um SMTP próprio se os e-mails do provedor padrão não chegarem, forem limitados por rate limit ou caírem em spam.
+4. Opcionalmente defina `NEXT_PUBLIC_PASSWORD_RESET_REDIRECT_URL=https://seu-dominio.com/reset-password` na Vercel para fixar a URL enviada ao Supabase e evitar links de preview/domínios não autorizados.
+
 ## Roles
 
 As roles aceitas são:

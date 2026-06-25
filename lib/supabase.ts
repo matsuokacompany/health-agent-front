@@ -14,12 +14,19 @@ type AuthListener = (event: AuthChangeEvent, session: Session | null) => void;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '';
+const passwordResetRedirectUrl = process.env.NEXT_PUBLIC_PASSWORD_RESET_REDIRECT_URL;
 const storageKey = 'health-agent.supabase.session';
 const listeners = new Set<AuthListener>();
 
-function authEndpoint(path: string) {
+function authEndpoint(path: string, params?: Record<string, string | undefined>) {
   if (!supabaseUrl) throw new Error('Supabase URL não configurada. Defina NEXT_PUBLIC_SUPABASE_URL.');
-  return `${supabaseUrl.replace(/\/$/, '')}/auth/v1${path}`;
+
+  const url = new URL(`${supabaseUrl.replace(/\/$/, '')}/auth/v1${path}`);
+  Object.entries(params ?? {}).forEach(([key, value]) => {
+    if (value) url.searchParams.set(key, value);
+  });
+
+  return url.toString();
 }
 
 function authHeaders(token?: string) {
@@ -85,10 +92,10 @@ export const supabase = {
     },
 
     async resetPasswordForEmail(email: string, redirectTo?: string): Promise<{ error: AuthError }> {
-      const response = await fetch(authEndpoint('/recover'), {
+      const response = await fetch(authEndpoint('/recover', { redirect_to: redirectTo }), {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ email, ...(redirectTo ? { redirect_to: redirectTo } : {}) }),
+        body: JSON.stringify({ email }),
       });
 
       return { error: response.ok ? null : await readAuthError(response) };
@@ -161,7 +168,7 @@ export function onAuthStateChange(callback: AuthListener) {
 }
 
 export async function resetPasswordForEmail(email: string) {
-  const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+  const redirectTo = passwordResetRedirectUrl ?? (typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined);
   const { error } = await supabase.auth.resetPasswordForEmail(email, redirectTo);
   if (error) throw new Error(error.message);
 }
