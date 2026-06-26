@@ -53,20 +53,12 @@ export default function Login() {
   }
 
   return (
-    <main className="hero login-hero">
-      <section className="login-copy">
-        <span className="eyebrow">Julha Saúde</span>
-        <h1>Operação clínica segura, clara e conectada.</h1>
-        <p className="muted">Entre no workspace médico para acompanhar pacientes, check-ins e permissões com uma experiência premium inspirada em sistemas hospitalares modernos.</p>
-        <div className="grid">
-          <article className="card"><span className="badge">JWT Supabase</span><h3>Autenticação protegida</h3><p className="muted">A senha é enviada apenas ao Supabase; o FastAPI recebe o token no Authorization.</p></article>
-          <article className="card"><span className="badge">RBAC</span><h3>Perfis clínicos</h3><p className="muted">Paciente, profissional, admin e super admin mantêm jornadas separadas.</p></article>
+    <main className="login-hero">
+      <aside className="panel login-panel" aria-labelledby="login-title">
+        <div className="login-heading">
+          <h1 id="login-title">Entrar</h1>
+          <p className="muted">Escolha seu tipo de acesso e use suas credenciais para acessar o ambiente clínico.</p>
         </div>
-      </section>
-      <aside className="panel login-panel">
-        <span className="badge">Acesso ao produto</span>
-        <h2>Entrar</h2>
-        <p className="muted">Escolha seu tipo de acesso e use suas credenciais para acessar o ambiente clínico.</p>
         <div className="login-switch" role="tablist" aria-label="Tipo de acesso">
           {Object.entries(loginOptions).map(([key, option]) => (
             <button key={key} className={mode === key ? 'is-active' : ''} type="button" role="tab" aria-selected={mode === key} onClick={() => setMode(key as LoginMode)}>
@@ -75,18 +67,22 @@ export default function Login() {
             </button>
           ))}
         </div>
-        <form onSubmit={onSubmit}>
-          <label>
-            E-mail
-            <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder={loginOptions[mode].placeholder} required type="email" value={email} />
-          </label>
-          <label>
-            Senha
-            <input autoComplete="current-password" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required type="password" value={password} />
-          </label>
+        <form className="login-form" onSubmit={onSubmit}>
+          <div className="login-fields">
+            <label>
+              E-mail
+              <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder={loginOptions[mode].placeholder} required type="email" value={email} />
+            </label>
+            <label>
+              Senha
+              <input autoComplete="current-password" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required type="password" value={password} />
+            </label>
+          </div>
           {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
-          <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : `Entrar como ${loginOptions[mode].label.toLowerCase()}`}</button>
-          <p><a href="/forgot-password">Esqueci minha senha</a></p>
+          <div className="login-actions">
+            <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : `Entrar como ${loginOptions[mode].label.toLowerCase()}`}</button>
+            <a href="/forgot-password">Esqueci minha senha</a>
+          </div>
         </form>
       </aside>
     </main>
