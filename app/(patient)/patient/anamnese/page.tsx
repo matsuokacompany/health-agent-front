@@ -1,20 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, PageHeader } from '@/components/ui/design';
-import { EmptyState } from '@/components/ui/states';
+import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
+import { ProfessionalObservations } from '@/components/patient/ProfessionalObservations';
+import { PageHeader } from '@/components/ui/design';
 import { anamnesesApi } from '@/services/anamnese';
-
-const professionalNotes = [
-  { professional: 'Dr. João Silva', date: '12/06/2026', note: 'Paciente apresentou melhora.' },
-];
+import { getMockProfessionalObservations } from '@/services/patientAnamnese';
 
 export default function PatientAnamnese() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(true);
+  const observations = getMockProfessionalObservations();
+
   useEffect(() => { anamnesesApi.me().then((a) => setInfo(String(a.info ?? ''))).catch(() => setInfo('')).finally(() => setLoading(false)); }, []);
-  return <><PageHeader eyebrow="Anamnese" title="Anamnese original" description="A anamnese feita pelo primeiro profissional é somente leitura para preservar o histórico clínico." />
-    <Card><h2>Informações clínicas</h2>{loading ? <p className="muted">Carregando...</p> : info ? <pre>{info}</pre> : <EmptyState description="Nenhuma anamnese encontrada." />}</Card>
-    <Card><h2>Observações dos profissionais</h2>{professionalNotes.map((item) => <div className="note-card" key={`${item.professional}-${item.date}`}><strong>{item.professional}</strong><span className="muted">{item.date}</span><p>{item.note}</p></div>)}</Card>
+
+  return <><PageHeader eyebrow="Anamnese" title="Histórico clínico" description="A anamnese original é imutável para o paciente. Use esta tela apenas para consulta." />
+    <section className="stack"><ReadOnlyAnamnese info={info} loading={loading} /><ProfessionalObservations observations={observations} /></section>
   </>;
 }
