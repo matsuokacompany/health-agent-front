@@ -4,9 +4,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RoleName } from '@/lib/types';
 import { useAuth } from './AuthProvider';
+import { ShellSkeleton } from '@/components/ui/Skeleton';
 
 function Loading() {
-  return <main><section className="panel"><span className="badge">Sessão</span><h1>Carregando...</h1><p className="muted">Validando sua sessão clínica com segurança.</p></section></main>;
+  return <ShellSkeleton />;
 }
 
 function Forbidden() {
@@ -21,7 +22,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     if (!auth.loading && !auth.isAuthenticated) router.replace('/login');
   }, [auth.isAuthenticated, auth.loading, router]);
 
-  if (auth.loading) return <Loading />;
+  if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
   return <>{children}</>;
 }
@@ -29,7 +30,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 export function RequireRole({ role, children }: { role: RoleName; children: React.ReactNode }) {
   const auth = useAuth();
 
-  if (auth.loading) return <Loading />;
+  if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
   if (!auth.roles.includes(role)) return <Forbidden />;
   return <>{children}</>;
@@ -38,7 +39,7 @@ export function RequireRole({ role, children }: { role: RoleName; children: Reac
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
 
-  if (auth.loading) return <Loading />;
+  if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
   if (!auth.isAdmin) return <Forbidden />;
   return <>{children}</>;
@@ -47,7 +48,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
 export function RequireSuperAdmin({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
 
-  if (auth.loading) return <Loading />;
+  if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
   if (!auth.isSuperAdmin) return <Forbidden />;
   return <>{children}</>;
