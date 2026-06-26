@@ -4,9 +4,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RoleName } from '@/lib/types';
 import { useAuth } from './AuthProvider';
+import { ShellSkeleton } from '@/components/ui/Skeleton';
 
 function Loading() {
-  return <div className="loading-overlay" role="status" aria-live="polite"><section className="panel"><span className="badge">🔐 Sessão</span><h1>Carregando...</h1><p className="muted">Validando sua sessão clínica com segurança.</p></section></div>;
+  return <ShellSkeleton />;
 }
 
 function Forbidden() {
