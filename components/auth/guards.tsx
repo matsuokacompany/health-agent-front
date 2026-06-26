@@ -24,7 +24,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
-  return <>{children}</>;
+  return <>{children}{auth.loading ? <Loading /> : null}</>;
 }
 
 export function RequireRole({ role, children }: { role: RoleName; children: React.ReactNode }) {
