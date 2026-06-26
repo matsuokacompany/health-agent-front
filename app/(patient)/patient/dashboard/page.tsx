@@ -1,14 +1,29 @@
 'use client';
 
-import { RequireRole } from '@/components/auth/guards';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-
-function PatientDashboardContent() {
-  const { user } = useAuth();
-
-  return <main><div className="topbar"><span className="badge">Portal do paciente</span><span><a href="/patient/calendar">Calendário</a> · <a href="/logout">Sair</a></span></div><header className="page-header"><span className="eyebrow">Acompanhamento diário</span><h1>Dashboard do paciente</h1><p className="muted">Dados de domínio usam o ID local do FastAPI: #{user?.id}. Daily reports são carregados pela API com Bearer Supabase.</p></header><section className="grid"><article className="card"><span className="badge success">Em dia</span><h2>Check-in de hoje</h2><p className="muted">Registre sintomas, dor e observações importantes para sua equipe de cuidado.</p><a className="button" href="/patient/calendar">Abrir calendário</a></article><article className="card"><span className="badge">Plano de cuidado</span><h2>Próximas etapas</h2><p className="muted">Acompanhe sua evolução com orientações claras e linguagem simples.</p></article><article className="card"><span className="badge risk-moderado">Monitoramento</span><h2>Sinais de alerta</h2><p className="muted">Sintomas relevantes são destacados para revisão profissional.</p></article></section></main>;
-}
+import { PatientLayout } from '@/components/layout/PatientLayout';
+import { Button, Card, MetricCard, PageHeader } from '@/components/ui/design';
+import { EmptyState } from '@/components/ui/states';
+import { StatusBadge } from '@/components/ui/badges';
+import type { DailyReport } from '@/lib/types';
+import { dailyReportsApi } from '@/services/dailyReports';
 
 export default function PatientDashboard() {
-  return <RequireRole role="patient"><PatientDashboardContent /></RequireRole>;
+  const { user } = useAuth();
+  const [reports, setReports] = useState<DailyReport[]>([]);
+
+  useEffect(() => { dailyReportsApi.list().then(setReports).catch(() => setReports([])); }, []);
+
+  const stats = useMemo(() => {
+    const received = reports.length;
+    const answered = reports.filter((report) => report.status === 'COMPLETED' || report.completed).length;
+    const adherence = received ? Math.round((answered / received) * 100) : 0;
+    return { received, answered, adherence };
+  }, [reports]);
+
+  return <PatientLayout><PageHeader eyebrow="Portal do paciente" title={`Olá, ${user?.name ?? 'paciente'}`} description="Acompanhe seus check-ins em um só lugar. O calendário é a principal área para revisar dias respondidos, pendentes e incompletos." action={<Button href="/patient/calendar">Abrir calendário</Button>} />
+    <section className="grid priority-grid"><MetricCard label="Check-ins respondidos" value={stats.answered} description="Registros enviados para a equipe." /><MetricCard label="Check-ins recebidos" value={stats.received} description="Solicitações disponíveis no período." /><MetricCard label="Adesão" value={`${stats.adherence}%`} description="Quanto mais constante, melhor o acompanhamento." /></section>
+    <section className="split"><Card><h2>Próxima ação</h2><p className="muted">Use o calendário para encontrar o dia desejado, consultar a resposta e editar quando o check-in ainda permitir alterações.</p><Button href="/patient/calendar" variant="secondary">Ver calendário</Button></Card><Card><h2>Últimos check-ins</h2>{reports.length ? reports.slice(0, 4).map((report) => <div className="list-row" key={report.id}><span>{report.report_date ?? `Registro #${report.id}`}</span><StatusBadge status={report.status} /></div>) : <EmptyState description="Nenhum check-in recebido até o momento." />}</Card></section>
+  </PatientLayout>;
 }
