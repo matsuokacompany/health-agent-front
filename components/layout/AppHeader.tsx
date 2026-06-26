@@ -26,16 +26,16 @@ export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
     <header className="app-header">
       <div>
         <span className="eyebrow">Workspace</span>
-        <strong>{title}</strong>
+        <strong>🔎 {title}</strong>
       </div>
       <form className="platform-search" role="search" onSubmit={(event) => event.preventDefault()}>
         <label className="sr-only" htmlFor="platform-search">Buscar na plataforma</label>
-        <input id="platform-search" name="search" type="search" placeholder="Buscar pacientes, relatórios, planos..." />
+        <input id="platform-search" name="search" type="search" placeholder="🔎 Buscar pacientes, relatórios, planos..." />
       </form>
       <div className="header-actions">
         <span className="user-chip">{user?.name ?? 'Usuário'}</span>
         <button className="button secondary theme-toggle" type="button" onClick={toggleTheme} aria-pressed={isDark}>
-          {isDark ? 'Tema light' : 'Tema dark'}
+          {isDark ? '☀️ Tema light' : '🌙 Tema dark'}
         </button>
       </div>
     </header>
