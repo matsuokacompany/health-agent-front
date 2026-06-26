@@ -1,7 +1,6 @@
 'use client';
 import { FormEvent, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button, PageHeader } from '@/components/ui/design';
 import { usersApi } from '@/services/users';
 
@@ -18,5 +17,5 @@ export default function Page() {
     setMsg('Perfil atualizado.');
   }
 
-  return <AppLayout><PageHeader title="Perfil" description="Mantenha dados simples e atualizados para facilitar o contato da equipe de cuidado." /><form className="card form-card" onSubmit={submit}><label>Nome<input name="name" defaultValue={user?.name} /></label><label>Telefone<input name="phone" defaultValue={user?.phone ?? ''} /></label><div className="form-grid"><label>Cidade<input name="city" defaultValue={user?.city ?? ''} /></label><label>Estado<input name="state" defaultValue={user?.state ?? ''} /></label></div><Button type="submit">Salvar alterações</Button>{msg && <p className="notice success">{msg}</p>}</form></AppLayout>;
+  return <><PageHeader title="Perfil" description="Mantenha dados simples e atualizados para facilitar o contato da equipe de cuidado." /><form className="card form-card" onSubmit={submit}><label>Nome<input name="name" defaultValue={user?.name} /></label><label>Telefone<input name="phone" defaultValue={user?.phone ?? ''} /></label><div className="form-grid"><label>Cidade<input name="city" defaultValue={user?.city ?? ''} /></label><label>Estado<input name="state" defaultValue={user?.state ?? ''} /></label></div><Button type="submit">Salvar alterações</Button>{msg && <p className="notice success">{msg}</p>}</form></>;
 }

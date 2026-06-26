@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { AdminLayout } from "@/components/layout/AdminLayout";
 import type { MonitoringPlan } from "@/lib/types";
 import { monitoringApi } from "@/services/monitoring";
 
@@ -51,14 +50,14 @@ export default function Page() {
 
   if (!id || Number.isNaN(id)) {
     return (
-      <AdminLayout>
+      <>
         <h1>ID inválido</h1>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <h1>Monitoramento #{id}</h1>
 
       <form className="card" onSubmit={submit}>
@@ -79,6 +78,6 @@ export default function Page() {
           </article>
         ))
       )}
-    </AdminLayout>
+    </>
   );
 }
