@@ -6,10 +6,28 @@ import type { RoleName, UserRead } from '@/lib/types';
 import { getSession, onAuthStateChange, signInWithPassword, signOut as supabaseSignOut } from '@/lib/supabase';
 import { api } from '@/services/api';
 
+export type AccessContext = 'admin' | 'professional' | 'patient';
+
+const ACCESS_CONTEXT_KEY = 'julha.activeAccessContext';
+
+export const accessContextLabels: Record<AccessContext, string> = {
+  admin: 'Administração',
+  professional: 'Profissional',
+  patient: 'Paciente',
+};
+
+function readStoredAccessContext(): AccessContext | null {
+  if (typeof window === 'undefined') return null;
+  const stored = window.localStorage.getItem(ACCESS_CONTEXT_KEY);
+  return stored === 'admin' || stored === 'professional' || stored === 'patient' ? stored : null;
+}
+
 export type AuthContextValue = {
   session: Session | null;
   user: UserRead | null;
   roles: RoleName[];
+  activeAccessContext: AccessContext | null;
+  setActiveAccessContext(context: AccessContext | null): void;
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
@@ -28,14 +46,27 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<UserRead | null>(null);
+  const [activeAccessContextState, setActiveAccessContextState] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActiveAccessContextState(readStoredAccessContext());
+  }, []);
+
+  const setActiveAccessContext = useCallback((context: AccessContext | null) => {
+    setActiveAccessContextState(context);
+    if (typeof window === 'undefined') return;
+    if (context) window.localStorage.setItem(ACCESS_CONTEXT_KEY, context);
+    else window.localStorage.removeItem(ACCESS_CONTEXT_KEY);
+  }, []);
 
   const clearAuthState = useCallback(() => {
     setSession(null);
     setUser(null);
     setError(null);
-  }, []);
+    setActiveAccessContext(null);
+  }, [setActiveAccessContext]);
 
   const refreshMe = useCallback(async () => {
     try {
@@ -85,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
+    setActiveAccessContext(null);
     try {
       const { data, error: signInError } = await signInWithPassword(email, password);
       if (signInError) throw new Error(signInError.message);
@@ -93,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [refreshMe]);
+  }, [refreshMe, setActiveAccessContext]);
 
   const signOut = useCallback(async () => {
     await supabaseSignOut();
@@ -105,6 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user,
     roles,
+    activeAccessContext: activeAccessContextState,
+    setActiveAccessContext,
     loading,
     error,
     isAuthenticated: Boolean(session && user),
@@ -116,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshMe,
     clearAuthState,
-  }), [clearAuthState, error, loading, refreshMe, roles, session, signIn, signOut, user]);
+  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, session, setActiveAccessContext, signIn, signOut, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

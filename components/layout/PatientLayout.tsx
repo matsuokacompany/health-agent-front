@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { RequireRole } from '@/components/auth/guards';
+import { RequireAccessContext } from '@/components/auth/guards';
 import { PatientDataProvider } from '@/components/patient/PatientDataProvider';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './Sidebar';
@@ -12,7 +12,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(true);
 
   return (
-    <RequireRole role="patient">
+    <RequireAccessContext context="patient">
       <PatientDataProvider>
         <main className="app-shell patient-shell">
           <AppSidebar title="Julha" marker="+" links={links} profileHref="/patient/profile" footerHref="/logout" footerLabel="Sair" />
@@ -24,6 +24,6 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
           </section>
         </main>
       </PatientDataProvider>
-    </RequireRole>
+    </RequireAccessContext>
   );
 }

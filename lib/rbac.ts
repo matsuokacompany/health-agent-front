@@ -1,10 +1,10 @@
 import type { RoleName, User } from './types';
 
 export const roleHome: Record<RoleName, string> = {
-  patient: '/patient/dashboard',
-  professional: '/professional/patients',
-  admin: '/admin',
-  super_admin: '/admin',
+  patient: '/patient',
+  professional: '/professional',
+  admin: '/login',
+  super_admin: '/choose-context',
 };
 
 export function hasRole(user: User | null | undefined, role: RoleName) {
@@ -16,7 +16,7 @@ export function isSuperAdmin(user: User | null | undefined) {
 }
 
 export function isAdmin(user: User | null | undefined) {
-  return hasRole(user, 'admin') || isSuperAdmin(user);
+  return isSuperAdmin(user);
 }
 
 export function isProfessional(user: User | null | undefined) {
@@ -33,15 +33,16 @@ export function hasActiveConsent(user?: User | null) {
 
 export function canAccessRoute(user: User | null | undefined, path: string) {
   if (!user) return path.startsWith('/login');
-  if (path.startsWith('/admin/users') && path.includes('/roles')) return isSuperAdmin(user);
-  if (path.startsWith('/admin')) return isAdmin(user);
-  if (path.startsWith('/patient')) return isPatient(user);
-  if (path.startsWith('/professional')) return isProfessional(user);
+  if (path.startsWith('/choose-context')) return isSuperAdmin(user);
+  if (path.startsWith('/admin')) return isSuperAdmin(user);
+  if (path.startsWith('/patient')) return isSuperAdmin(user) || isPatient(user);
+  if (path.startsWith('/professional')) return isSuperAdmin(user) || isProfessional(user);
+  if (path.startsWith('/app')) return false;
   return true;
 }
 
 export function canAccessPatient(requester: User, patientId: number | string) {
-  if (isAdmin(requester)) return true;
+  if (isSuperAdmin(requester)) return true;
   if (isPatient(requester) && String(requester.id) === String(patientId)) return true;
   return requester.linkedPatientIds?.map(String).includes(String(patientId)) === true;
 }

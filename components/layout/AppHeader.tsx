@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { accessContextLabels, useAuth } from '@/components/auth/AuthProvider';
 
 export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
-  const { user } = useAuth();
+  const { activeAccessContext, isSuperAdmin, user } = useAuth();
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
         <input id="platform-search" name="search" type="search" placeholder="🔎 Buscar pacientes, relatórios, planos..." />
       </form>
       <div className="header-actions">
+        {isSuperAdmin && activeAccessContext ? <span className="user-chip">Modo atual: {accessContextLabels[activeAccessContext]}</span> : null}
         <span className="user-chip">{user?.name ?? 'Usuário'}</span>
         <button className="button secondary theme-toggle" type="button" onClick={toggleTheme} aria-pressed={isDark}>
           {isDark ? '☀️ Tema light' : '🌙 Tema dark'}
