@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { RoleName } from '@/lib/types';
+import type { AccessContext } from './AuthProvider';
 import { useAuth } from './AuthProvider';
 import { ShellSkeleton } from '@/components/ui/Skeleton';
 
@@ -27,26 +27,30 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}{auth.loading ? <Loading /> : null}</>;
 }
 
-export function RequireRole({ role, children }: { role: RoleName; children: React.ReactNode }) {
+export function RequireAccessContext({ context, children }: { context: AccessContext; children: React.ReactNode }) {
   const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!auth.loading && !auth.isAuthenticated) router.replace('/login');
+  }, [auth.isAuthenticated, auth.loading, router]);
 
   if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
-  if (!auth.roles.includes(role)) return <Forbidden />;
-  return <>{children}</>;
-}
-
-export function RequireAdmin({ children }: { children: React.ReactNode }) {
-  const auth = useAuth();
-
-  if (auth.loading && !auth.isAuthenticated) return <Loading />;
-  if (!auth.isAuthenticated) return null;
-  if (!auth.isAdmin) return <Forbidden />;
+  if (auth.isSuperAdmin) return <>{children}</>;
+  if (context === 'admin') return <Forbidden />;
+  if (context === 'professional' && !auth.isProfessional) return <Forbidden />;
+  if (context === 'patient' && !auth.isPatient) return <Forbidden />;
   return <>{children}</>;
 }
 
 export function RequireSuperAdmin({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!auth.loading && !auth.isAuthenticated) router.replace('/login');
+  }, [auth.isAuthenticated, auth.loading, router]);
 
   if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
@@ -55,4 +59,4 @@ export function RequireSuperAdmin({ children }: { children: React.ReactNode }) {
 }
 
 export const ProtectedRoute = RequireAuth;
-export const AdminRoute = RequireAdmin;
+export const AdminRoute = RequireSuperAdmin;

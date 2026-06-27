@@ -29,7 +29,10 @@ describe('rbac', () => {
   it('protects role routes', () => {
     expect(canAccessRoute(patientUser, '/patient/dashboard')).toBe(true);
     expect(canAccessRoute(patientUser, '/admin')).toBe(false);
+    expect(canAccessRoute(professionalUser, '/patient/dashboard')).toBe(false);
     expect(canAccessRoute(superAdminUser, '/admin/users/1/roles')).toBe(true);
+    expect(canAccessRoute(superAdminUser, '/professional/patients')).toBe(true);
+    expect(canAccessRoute(superAdminUser, '/patient/dashboard')).toBe(true);
   });
 
   it('redacts direct identifiers from clinical text', () => {
