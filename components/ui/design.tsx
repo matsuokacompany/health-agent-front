@@ -1,10 +1,11 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 type ButtonProps = { children: ReactNode; href?: string; variant?: 'primary' | 'secondary' | 'ghost'; type?: 'button' | 'submit'; disabled?: boolean };
 
 export function Button({ children, href, variant = 'primary', type = 'button', disabled }: ButtonProps) {
   const className = `button ${variant === 'primary' ? '' : variant}`.trim();
-  if (href) return <a className={className} href={href}>{children}</a>;
+  if (href) return <Link className={className} href={href as never}>{children}</Link>;
   return <button className={className} type={type} disabled={disabled}>{children}</button>;
 }
 

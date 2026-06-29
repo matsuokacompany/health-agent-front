@@ -3,9 +3,14 @@
 import { useEffect, useState } from 'react';
 import { accessContextLabels, useAuth } from '@/components/auth/AuthProvider';
 
+function getInitialIsDark() {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.dataset.theme === 'dark';
+}
+
 export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
   const { activeAccessContext, isSuperAdmin, user } = useAuth();
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(getInitialIsDark);
 
   useEffect(() => {
     const stored = window.localStorage.getItem('theme');
