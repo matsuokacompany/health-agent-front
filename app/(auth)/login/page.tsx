@@ -1,4 +1,5 @@
 'use client';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
@@ -25,7 +26,7 @@ export default function Login() {
       else if (me.roles.includes('patient')) router.replace('/patient');
       else setFormError('Usuário autenticado, mas sem contexto de acesso configurado.');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Não foi possível entrar.');
+      setFormError(toFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

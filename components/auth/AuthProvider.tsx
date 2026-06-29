@@ -5,6 +5,7 @@ import type { Session } from '@/lib/supabase';
 import type { RoleName, UserRead } from '@/lib/types';
 import { getSession, onAuthStateChange, signInWithPassword, signOut as supabaseSignOut } from '@/lib/supabase';
 import { api } from '@/services/api';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
 export type AccessContext = 'admin' | 'professional' | 'patient';
 
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return me;
     } catch (err) {
       setUser(null);
-      setError(err instanceof Error ? err.message : 'Não foi possível carregar o usuário local.');
+      setError(toFriendlyErrorMessage(err));
       throw err;
     }
   }, []);

@@ -33,7 +33,7 @@ export class ForbiddenError extends ApiError {
 
 export class ConflictError extends ApiError {
   constructor(payload?: unknown) {
-    super('Conflito de dados. Se o e-mail do Supabase já estiver vinculado a outro usuário local, contate suporte/admin.', 409, payload);
+    super('Não foi possível salvar porque já existe um cadastro com estes dados.', 409, payload);
     this.name = 'ConflictError';
   }
 }
@@ -80,7 +80,7 @@ export class ApiClient {
     if (response.status === 403) throw new ForbiddenError(payload);
     if (response.status === 409) throw new ConflictError(payload);
 
-    throw new ApiError(`FastAPI request failed with status ${response.status}`, response.status, payload);
+    throw new ApiError('Ocorreu um erro inesperado.', response.status, payload);
   }
 }
 

@@ -12,7 +12,7 @@ export default function RolesPage({ params }: { params: Promise<{ userId: string
       <main>
         <div className="topbar"><span className="badge">Super Admin</span><Link href="/admin">Admin</Link></div>
         <h1>Gerenciar roles</h1>
-        <p className="muted">Somente super_admin pode alterar roles do usuário local #{userId}.</p>
+        <p className="muted">Somente usuários autorizados podem alterar permissões.</p>
       </main>
     </RequireSuperAdmin>
   );

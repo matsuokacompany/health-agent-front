@@ -1,4 +1,5 @@
 'use client';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
@@ -29,7 +30,7 @@ function ChangePasswordForm() {
       setConfirmPassword('');
       setMessage('Senha alterada com sucesso.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível alterar a senha.');
+      setError(toFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -39,7 +40,7 @@ function ChangePasswordForm() {
     <main>
       <div className="topbar"><span className="badge">Segurança</span><Link href="/app">Voltar</Link></div>
       <h1>Alterar senha</h1>
-      <p className="muted">Cadastre uma nova senha para sua conta autenticada no Supabase.</p>
+      <p className="muted">Cadastre uma nova senha para manter sua conta segura.</p>
       <form className="card" onSubmit={onSubmit}>
         <label>
           Nova senha

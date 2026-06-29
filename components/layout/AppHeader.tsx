@@ -30,7 +30,6 @@ export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
   return (
     <header className="app-header">
       <div>
-        <span className="eyebrow">Workspace</span>
         <strong>🔎 {title}</strong>
       </div>
       <form className="platform-search" role="search" onSubmit={(event) => event.preventDefault()}>
