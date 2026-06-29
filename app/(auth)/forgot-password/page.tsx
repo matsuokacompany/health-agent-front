@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
 import { resetPasswordForEmail } from '@/lib/supabase';
@@ -39,7 +40,7 @@ export default function ForgotPasswordPage() {
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={submitting} type="submit">{submitting ? 'Enviando...' : 'Enviar link de redefinição'}</button>
-          <a href="/login">Voltar ao login</a>
+          <Link href="/login">Voltar ao login</Link>
         </form>
       </section>
       <aside className="panel">

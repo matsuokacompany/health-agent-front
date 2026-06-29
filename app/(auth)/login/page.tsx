@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,7 +52,7 @@ export default function Login() {
           {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
           <div className="login-actions">
             <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
-            <a href="/forgot-password">Esqueci minha senha</a>
+            <Link href="/forgot-password">Esqueci minha senha</Link>
           </div>
         </form>
       </aside>

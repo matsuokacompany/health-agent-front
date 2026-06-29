@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
 import { RequireAuth } from '@/components/auth/guards';
@@ -36,7 +37,7 @@ function ChangePasswordForm() {
 
   return (
     <main>
-      <div className="topbar"><span className="badge">Segurança</span><a href="/app">Voltar</a></div>
+      <div className="topbar"><span className="badge">Segurança</span><Link href="/app">Voltar</Link></div>
       <h1>Alterar senha</h1>
       <p className="muted">Cadastre uma nova senha para sua conta autenticada no Supabase.</p>
       <form className="card" onSubmit={onSubmit}>

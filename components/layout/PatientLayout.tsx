@@ -6,7 +6,7 @@ import { PatientDataProvider } from '@/components/patient/PatientDataProvider';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './Sidebar';
 
-const links = [['/patient/dashboard','Dashboard'],['/patient/calendar','Calendário'],['/patient/monitoring','Monitoramento'],['/patient/anamnese','Anamnese']];
+const links = [['/patient/dashboard','Dashboard'],['/patient/monitoring','Monitoramento'],['/patient/anamnese','Anamnese']];
 
 export function PatientLayout({ children }: { children: React.ReactNode }) {
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(true);
