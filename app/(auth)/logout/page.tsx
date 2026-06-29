@@ -12,5 +12,5 @@ export default function Logout() {
     void signOut().finally(() => router.replace('/login'));
   }, [router, signOut]);
 
-  return <main><p className="muted">Saindo com Supabase Auth...</p></main>;
+  return <main><p className="muted">Encerrando sua sessão...</p></main>;
 }

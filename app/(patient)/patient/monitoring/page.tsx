@@ -1,4 +1,5 @@
 'use client';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
 import { FormEvent, useMemo, useState } from 'react';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
@@ -38,7 +39,7 @@ export default function PatientMonitoring() {
       setEditing(false);
       setFeedback('Resposta atualizada.');
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Não foi possível atualizar a resposta.');
+      setFeedback(toFriendlyErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -54,14 +55,14 @@ export default function PatientMonitoring() {
       setDeleting(false);
       setFeedback('Resposta excluída do monitoramento.');
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Não foi possível excluir a resposta.');
+      setFeedback(toFriendlyErrorMessage(error));
     } finally {
       setSaving(false);
     }
   }
 
   return <><PageHeader eyebrow="Monitoramento" title="Período de acompanhamento" description="Veja o status do plano e acompanhe cada envio do WhatsApp no calendário mensal." />
-    {active ? <section className="dashboard-grid"><Card className="overview-card"><span className="badge">📡 Plano ativo</span><h2>{active.name ?? `Plano #${active.id}`}</h2><p className="muted">Status: {summary.status}</p></Card><MetricCard label="Data de início" value={summary.startsAt ?? '—'} /><MetricCard label="Data de término" value={summary.endsAt ?? '—'} /><MetricCard label="Status" value={summary.status} /><MetricCard label="Respondidos" value={answered} /></section> : <EmptyState title="Monitoramento ainda não iniciado" />}
+    {active ? <section className="dashboard-grid"><Card className="overview-card"><span className="badge">📡 Plano ativo</span><h2>{active.name ?? 'Plano de acompanhamento'}</h2><p className="muted">Status: {summary.status}</p></Card><MetricCard label="Data de início" value={summary.startsAt ?? '—'} /><MetricCard label="Data de término" value={summary.endsAt ?? '—'} /><MetricCard label="Status" value={summary.status} /><MetricCard label="Respondidos" value={answered} /></section> : <EmptyState title="Monitoramento ainda não iniciado" />}
     {feedback ? <p className={feedback.includes('não') || feedback.includes('Não') ? 'notice danger' : 'notice success'}>{feedback}</p> : null}
     <section className="calendar-layout"><Card className="calendar-card"><h2>Calendário mensal</h2><div className="calendar">{days.map((day) => <button className={`day ${day.className} ${selected?.date === day.date ? 'is-active' : ''}`} key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><strong>{new Date(`${day.date}T00:00:00`).getDate()}</strong><span>{day.status}</span></button>)}</div></Card><Card className="detail-card"><h2>Ações do dia</h2>{selected ? <div className="stack"><span className="badge">{selected.status}</span><p><strong>Data:</strong> {selected.date}</p>{selected.report ? <><StatusBadge status={selected.report.status} /><p><strong>Sintomas:</strong> {selected.report.had_symptoms ? 'Sim' : 'Não'}</p><p className="muted">{selected.report.symptom_description ?? 'Sem descrição enviada.'}</p>{selected.report.cause ? <p><strong>Causa:</strong> {selected.report.cause}</p> : null}<div className="page-actions"><button className="button secondary" type="button" onClick={() => setEditing(true)}>✏️ Editar resposta</button><button className="button danger-button" type="button" onClick={() => setDeleting(true)}>🗑️ Excluir resposta</button></div></> : <p className="muted">Este dia está como “{selected.status}” e não possui resposta para visualizar, editar ou excluir.</p>}</div> : <p className="muted">Selecione um dia do calendário para visualizar respostas e ações disponíveis.</p>}</Card></section>
     <Modal open={editing} title="Editar resposta do monitoramento" onClose={() => setEditing(false)}>{selected?.report ? <form className="stack" onSubmit={submitEdit}><label>Sintomas<select name="had_symptoms" defaultValue={selected.report.had_symptoms ? 'yes' : 'no'}><option value="no">Não</option><option value="yes">Sim</option></select></label><label>Descrição<textarea name="symptom_description" rows={5} defaultValue={selected.report.symptom_description ?? ''} /></label><label>Causa<textarea name="cause" rows={3} defaultValue={selected.report.cause ?? ''} /></label><div className="page-actions"><button className="button secondary" type="button" onClick={() => setEditing(false)}>Cancelar</button><button className="button" disabled={saving} type="submit">{saving ? 'Salvando...' : 'Salvar resposta'}</button></div></form> : null}</Modal>

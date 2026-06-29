@@ -1,4 +1,6 @@
 'use client';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
 import { resetPasswordForEmail } from '@/lib/supabase';
@@ -19,7 +21,7 @@ export default function ForgotPasswordPage() {
       await resetPasswordForEmail(email);
       setMessage('Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível solicitar a redefinição de senha.');
+      setError(toFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -30,7 +32,7 @@ export default function ForgotPasswordPage() {
       <section>
         <span className="badge">Recuperação de acesso</span>
         <h1>Esqueci minha senha</h1>
-        <p className="muted">Informe seu e-mail para receber o link seguro de redefinição de senha pelo Supabase Auth.</p>
+        <p className="muted">Informe seu e-mail para receber o link seguro de redefinição de senha.</p>
         <form className="card" onSubmit={onSubmit}>
           <label>
             E-mail
@@ -39,7 +41,7 @@ export default function ForgotPasswordPage() {
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={submitting} type="submit">{submitting ? 'Enviando...' : 'Enviar link de redefinição'}</button>
-          <a href="/login">Voltar ao login</a>
+          <Link href="/login">Voltar ao login</Link>
         </form>
       </section>
       <aside className="panel">

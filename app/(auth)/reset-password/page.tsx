@@ -1,4 +1,6 @@
 'use client';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import Link from 'next/link';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,7 +20,7 @@ export default function ResetPasswordPage() {
       recoverSessionFromUrl();
       setReady(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Link de redefinição inválido ou expirado.');
+      setError(toFriendlyErrorMessage(err));
     }
   }, []);
 
@@ -38,7 +40,7 @@ export default function ResetPasswordPage() {
       setMessage('Senha alterada com sucesso. Você já pode entrar com a nova senha.');
       window.setTimeout(() => router.replace('/login'), 1800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível alterar a senha.');
+      setError(toFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -62,7 +64,7 @@ export default function ResetPasswordPage() {
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
-          <a href="/login">Voltar ao login</a>
+          <Link href="/login">Voltar ao login</Link>
         </form>
       </section>
     </main>

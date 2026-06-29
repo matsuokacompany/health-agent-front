@@ -1,4 +1,6 @@
 'use client';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,7 +26,7 @@ export default function Login() {
       else if (me.roles.includes('patient')) router.replace('/patient');
       else setFormError('Usuário autenticado, mas sem contexto de acesso configurado.');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Não foi possível entrar.');
+      setFormError(toFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -51,7 +53,7 @@ export default function Login() {
           {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
           <div className="login-actions">
             <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
-            <a href="/forgot-password">Esqueci minha senha</a>
+            <Link href="/forgot-password">Esqueci minha senha</Link>
           </div>
         </form>
       </aside>
