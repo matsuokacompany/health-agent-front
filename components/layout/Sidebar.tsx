@@ -17,7 +17,7 @@ const icons: Record<string, string> = {
   WhatsApp: '💬',
   'Área do paciente': '🏠',
   Resumo: '📌',
-  Calendário: '🗓️',
+  Configurações: '⚙️',
 };
 
 export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel }: { title: string; marker: string; links: string[][]; profileHref: string; footerHref: string; footerLabel: string }) {
