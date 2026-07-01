@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import './globals.css';
+import { I18nProvider } from '@/components/i18n/I18nProvider';
 
 export const metadata: Metadata = { title: 'Julha Saúde', description: 'Plataforma clínica para acompanhamento de saúde' };
 
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body><AuthProvider>{children}</AuthProvider></body>
+      <body><I18nProvider><AuthProvider>{children}</AuthProvider></I18nProvider></body>
     </html>
   );
 }
