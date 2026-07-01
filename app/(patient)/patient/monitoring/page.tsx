@@ -1,71 +1,66 @@
 'use client';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useI18n } from '@/components/i18n/I18nProvider';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { Card, MetricCard, PageHeader } from '@/components/ui/design';
 import { StatusBadge } from '@/components/ui/badges';
 import { EmptyState } from '@/components/ui/states';
 import { Modal } from '@/components/ui/Modal';
+import { CalendarSkeleton } from '@/components/ui/Skeleton';
 import { dailyReportsApi } from '@/services/dailyReports';
-import { createMockMonitoringSummary, createMockMonthlyMonitoringCalendar, type MonitoringCalendarDay } from '@/services/patientMonitoring';
+import { addMonths, compareMonths, createMockMonitoringSummary, createMockMonthlyMonitoringCalendar, getMonitoringMonthRange, monthKey, type MonitoringCalendarDay } from '@/services/patientMonitoring';
 
 export default function PatientMonitoring() {
-  const { plans, reports, updateReport, removeReport } = usePatientData();
+  const { t, raw, locale } = useI18n();
+  const { plans, reports, loading, updateReport, removeReport } = usePatientData();
   const [selectedDate, setSelectedDate] = useState<string>();
+  const [visibleMonth, setVisibleMonth] = useState<Date>();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const active = plans.find((plan) => plan.active || plan.status === 'active') ?? plans[0];
   const summary = createMockMonitoringSummary(active);
-  const days = useMemo(() => createMockMonthlyMonitoringCalendar(reports), [reports]);
+  const monthRange = useMemo(() => getMonitoringMonthRange(active), [active]);
+  const currentMonth = visibleMonth ?? monthRange.start;
+  const monthReports = useMemo(() => reports.filter((report) => report.report_date?.startsWith(monthKey(currentMonth))), [currentMonth, reports]);
+  const days = useMemo(() => createMockMonthlyMonitoringCalendar(monthReports, currentMonth), [currentMonth, monthReports]);
   const selected = useMemo<MonitoringCalendarDay | undefined>(() => days.find((day) => day.date === selectedDate), [days, selectedDate]);
   const answered = reports.filter((report) => report.status === 'COMPLETED' || report.completed).length;
+  const canGoPrevious = compareMonths(currentMonth, monthRange.start) > 0;
+  const canGoNext = compareMonths(currentMonth, monthRange.end) < 0;
+  const weekdays = raw<string[]>('monitoring.weekdays');
+
+  useEffect(() => { setVisibleMonth(monthRange.start); setSelectedDate(undefined); }, [active?.id, monthRange.start.getFullYear(), monthRange.start.getMonth()]);
+  useEffect(() => { setSelectedDate(undefined); }, [currentMonth.getFullYear(), currentMonth.getMonth()]);
 
   async function submitEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected?.report) return;
     const form = new FormData(event.currentTarget);
-    setSaving(true);
-    setFeedback(null);
+    setSaving(true); setFeedback(null);
     try {
-      const updated = await dailyReportsApi.update(selected.report.id, {
-        symptom_description: String(form.get('symptom_description') ?? ''),
-        cause: String(form.get('cause') ?? ''),
-        had_symptoms: form.get('had_symptoms') === 'yes',
-      });
-      updateReport(updated);
-      setEditing(false);
-      setFeedback('Resposta atualizada.');
-    } catch (error) {
-      setFeedback(toFriendlyErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+      const updated = await dailyReportsApi.update(selected.report.id, { symptom_description: String(form.get('symptom_description') ?? ''), cause: String(form.get('cause') ?? ''), had_symptoms: form.get('had_symptoms') === 'yes' });
+      updateReport(updated); setEditing(false); setFeedback(t('monitoring.answerUpdated'));
+    } catch (error) { setFeedback(toFriendlyErrorMessage(error)); } finally { setSaving(false); }
   }
 
   async function deleteReport() {
     if (!selected?.report) return;
-    setSaving(true);
-    setFeedback(null);
-    try {
-      await dailyReportsApi.remove(selected.report.id);
-      removeReport(selected.report.id);
-      setDeleting(false);
-      setFeedback('Resposta excluída do monitoramento.');
-    } catch (error) {
-      setFeedback(toFriendlyErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
+    setSaving(true); setFeedback(null);
+    try { await dailyReportsApi.remove(selected.report.id); removeReport(selected.report.id); setDeleting(false); setFeedback(t('monitoring.answerDeleted')); } catch (error) { setFeedback(toFriendlyErrorMessage(error)); } finally { setSaving(false); }
   }
 
-  return <><PageHeader eyebrow="Monitoramento" title="Período de acompanhamento" description="Veja o status do plano e acompanhe cada envio do WhatsApp no calendário mensal." />
-    {active ? <section className="dashboard-grid"><Card className="overview-card"><span className="badge">📡 Plano ativo</span><h2>{active.name ?? 'Plano de acompanhamento'}</h2><p className="muted">Status: {summary.status}</p></Card><MetricCard label="Data de início" value={summary.startsAt ?? '—'} /><MetricCard label="Data de término" value={summary.endsAt ?? '—'} /><MetricCard label="Status" value={summary.status} /><MetricCard label="Respondidos" value={answered} /></section> : <EmptyState title="Monitoramento ainda não iniciado" />}
-    {feedback ? <p className={feedback.includes('não') || feedback.includes('Não') ? 'notice danger' : 'notice success'}>{feedback}</p> : null}
-    <section className="calendar-layout"><Card className="calendar-card"><h2>Calendário mensal</h2><div className="calendar">{days.map((day) => <button className={`day ${day.className} ${selected?.date === day.date ? 'is-active' : ''}`} key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><strong>{new Date(`${day.date}T00:00:00`).getDate()}</strong><span>{day.status}</span></button>)}</div></Card><Card className="detail-card"><h2>Ações do dia</h2>{selected ? <div className="stack"><span className="badge">{selected.status}</span><p><strong>Data:</strong> {selected.date}</p>{selected.report ? <><StatusBadge status={selected.report.status} /><p><strong>Sintomas:</strong> {selected.report.had_symptoms ? 'Sim' : 'Não'}</p><p className="muted">{selected.report.symptom_description ?? 'Sem descrição enviada.'}</p>{selected.report.cause ? <p><strong>Causa:</strong> {selected.report.cause}</p> : null}<div className="page-actions"><button className="button secondary" type="button" onClick={() => setEditing(true)}>✏️ Editar resposta</button><button className="button danger-button" type="button" onClick={() => setDeleting(true)}>🗑️ Excluir resposta</button></div></> : <p className="muted">Este dia está como “{selected.status}” e não possui resposta para visualizar, editar ou excluir.</p>}</div> : <p className="muted">Selecione um dia do calendário para visualizar respostas e ações disponíveis.</p>}</Card></section>
-    <Modal open={editing} title="Editar resposta do monitoramento" onClose={() => setEditing(false)}>{selected?.report ? <form className="stack" onSubmit={submitEdit}><label>Sintomas<select name="had_symptoms" defaultValue={selected.report.had_symptoms ? 'yes' : 'no'}><option value="no">Não</option><option value="yes">Sim</option></select></label><label>Descrição<textarea name="symptom_description" rows={5} defaultValue={selected.report.symptom_description ?? ''} /></label><label>Causa<textarea name="cause" rows={3} defaultValue={selected.report.cause ?? ''} /></label><div className="page-actions"><button className="button secondary" type="button" onClick={() => setEditing(false)}>Cancelar</button><button className="button" disabled={saving} type="submit">{saving ? 'Salvando...' : 'Salvar resposta'}</button></div></form> : null}</Modal>
-    <Modal open={deleting} title="Excluir resposta" onClose={() => setDeleting(false)}><p className="muted">Confirme para excluir a resposta selecionada do calendário mensal.</p><div className="page-actions"><button className="button secondary" type="button" onClick={() => setDeleting(false)}>Cancelar</button><button className="button danger-button" disabled={saving} type="button" onClick={deleteReport}>{saving ? 'Excluindo...' : 'Excluir resposta'}</button></div></Modal>
+  const monthLabel = currentMonth.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', { month: 'long', year: 'numeric' });
+  const statusLabel = (status: MonitoringCalendarDay['status']) => t(`monitoring.statuses.${status}`);
+
+  return <><PageHeader eyebrow={t('monitoring.eyebrow')} title={t('monitoring.title')} description={t('monitoring.description')} />
+    {active ? <section className="dashboard-grid"><Card className="overview-card"><span className="badge">{t('monitoring.activePlan')}</span><h2>{active.name ?? t('monitoring.defaultPlanName')}</h2><p className="muted">{t('monitoring.status')}: {summary.status}</p></Card><MetricCard label={t('monitoring.startsAt')} value={summary.startsAt ?? '—'} /><MetricCard label={t('monitoring.endsAt')} value={summary.endsAt ?? '—'} /><MetricCard label={t('monitoring.status')} value={summary.status} /><MetricCard label={t('monitoring.answered')} value={answered} /></section> : <EmptyState title={t('monitoring.notStarted')} />}
+    {feedback ? <p className={feedback.toLowerCase().includes('não') || feedback.toLowerCase().includes('no ') ? 'notice danger' : 'notice success'}>{feedback}</p> : null}
+    {loading ? <CalendarSkeleton /> : <section className="calendar-layout"><Card className="calendar-card"><div className="calendar-header"><div><h2>{t('monitoring.monthlyCalendar')}</h2><p className="muted compact">{monthLabel}</p></div><div className="calendar-nav"><button className="button secondary icon-control" type="button" aria-label={t('monitoring.previousMonth')} disabled={!canGoPrevious} onClick={() => setVisibleMonth((month) => addMonths(month ?? currentMonth, -1))}>‹</button><button className="button secondary icon-control" type="button" aria-label={t('monitoring.nextMonth')} disabled={!canGoNext} onClick={() => setVisibleMonth((month) => addMonths(month ?? currentMonth, 1))}>›</button></div></div><div className="calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div><div className="calendar">{days.map((day) => <button className={`day ${day.className} ${selected?.date === day.date ? 'is-active' : ''}`} key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><strong>{new Date(`${day.date}T00:00:00`).getDate()}</strong><span>{statusLabel(day.status)}</span></button>)}</div></Card><Card className="detail-card"><h2>{t('monitoring.dayActions')}</h2>{selected ? <div className="stack"><span className="badge">{statusLabel(selected.status)}</span><p><strong>{t('monitoring.date')}:</strong> {selected.date}</p>{selected.report ? <><StatusBadge status={selected.report.status} /><p><strong>{t('monitoring.symptoms')}:</strong> {selected.report.had_symptoms ? t('monitoring.yes') : t('monitoring.no')}</p><p className="muted">{selected.report.symptom_description ?? t('monitoring.noDescription')}</p>{selected.report.cause ? <p><strong>{t('monitoring.cause')}:</strong> {selected.report.cause}</p> : null}<div className="page-actions"><button className="button secondary" type="button" onClick={() => setEditing(true)}>{t('monitoring.editAnswer')}</button><button className="button danger-button" type="button" onClick={() => setDeleting(true)}>{t('monitoring.deleteAnswer')}</button></div></> : <p className="muted">{t('monitoring.noReportForDay', { status: statusLabel(selected.status) })}</p>}</div> : <p className="muted">{t('monitoring.selectDay')}</p>}</Card></section>}
+    <Modal open={editing} title={t('monitoring.editTitle')} onClose={() => setEditing(false)}>{selected?.report ? <form className="stack" onSubmit={submitEdit}><label>{t('monitoring.symptoms')}<select name="had_symptoms" defaultValue={selected.report.had_symptoms ? 'yes' : 'no'}><option value="no">{t('monitoring.no')}</option><option value="yes">{t('monitoring.yes')}</option></select></label><label>{t('monitoring.descriptionLabel')}<textarea name="symptom_description" rows={5} defaultValue={selected.report.symptom_description ?? ''} /></label><label>{t('monitoring.cause')}<textarea name="cause" rows={3} defaultValue={selected.report.cause ?? ''} /></label><div className="page-actions"><button className="button secondary" type="button" onClick={() => setEditing(false)}>{t('monitoring.cancel')}</button><button className="button" disabled={saving} type="submit">{saving ? t('monitoring.saving') : t('monitoring.saveAnswer')}</button></div></form> : null}</Modal>
+    <Modal open={deleting} title={t('monitoring.deleteTitle')} onClose={() => setDeleting(false)}><p className="muted">{t('monitoring.deleteConfirm')}</p><div className="page-actions"><button className="button secondary" type="button" onClick={() => setDeleting(false)}>{t('monitoring.cancel')}</button><button className="button danger-button" disabled={saving} type="button" onClick={deleteReport}>{saving ? t('monitoring.deleting') : t('monitoring.deleteTitle')}</button></div></Modal>
   </>;
 }
