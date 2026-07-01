@@ -87,6 +87,8 @@ function MobileHeader({ title = 'Julha Saúde', onMenuClick, isDark, toggleTheme
 
 export function AppHeader({ title = 'Julha Saúde', onMenuClick }: HeaderProps) {
   const [isDark, setIsDark] = useState(getInitialIsDark);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem('theme');
@@ -94,6 +96,18 @@ export function AppHeader({ title = 'Julha Saúde', onMenuClick }: HeaderProps) 
     const nextTheme = stored ?? (prefersDark ? 'dark' : 'light');
     document.documentElement.dataset.theme = nextTheme;
     setIsDark(nextTheme === 'dark');
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsSearchOpen(false);
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   function toggleTheme() {
