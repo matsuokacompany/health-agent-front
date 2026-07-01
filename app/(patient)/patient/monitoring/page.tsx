@@ -53,7 +53,8 @@ export default function PatientMonitoring() {
     try { await dailyReportsApi.remove(selected.report.id); removeReport(selected.report.id); setDeleting(false); setFeedback(t('monitoring.answerDeleted')); } catch (error) { setFeedback(toFriendlyErrorMessage(error)); } finally { setSaving(false); }
   }
 
-  const monthLabel = currentMonth.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', { month: 'long', year: 'numeric' });
+  const monthLocale = locale === 'es' ? 'es-ES' : locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const monthLabel = currentMonth.toLocaleDateString(monthLocale, { month: 'long', year: 'numeric' });
   const statusLabel = (status: MonitoringCalendarDay['status']) => t(`monitoring.statuses.${status}`);
 
   return <><PageHeader eyebrow={t('monitoring.eyebrow')} title={t('monitoring.title')} description={t('monitoring.description')} />

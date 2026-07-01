@@ -14,6 +14,7 @@ function readPath(path: string, locale: Locale): unknown { return path.split('.'
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
   useEffect(() => { const stored = window.localStorage.getItem(STORAGE_KEY); if (isLocale(stored)) setLocaleState(stored); }, []);
+  useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   const value = useMemo<I18nContextValue>(() => ({
     locale,
     setLocale(nextLocale) { window.localStorage.setItem(STORAGE_KEY, nextLocale); setLocaleState(nextLocale); },
