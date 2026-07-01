@@ -36,7 +36,23 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
 
   useEffect(() => {
     document.body.classList.toggle('has-open-drawer', isSidebarOpen);
-    return () => document.body.classList.remove('has-open-drawer');
+
+    if (!isSidebarOpen) {
+      return () => document.body.classList.remove('has-open-drawer');
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsSidebarOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.classList.remove('has-open-drawer');
+    };
   }, [isSidebarOpen]);
 
   const toggleSidebarCollapsed = useCallback(() => {
