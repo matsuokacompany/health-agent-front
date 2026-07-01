@@ -8,7 +8,7 @@ function getInitialIsDark() {
   return document.documentElement.dataset.theme === 'dark';
 }
 
-export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
+export function AppHeader({ title = 'Julha Saúde', onMenuClick }: { title?: string; onMenuClick?: () => void }) {
   const { activeAccessContext, isSuperAdmin, user } = useAuth();
   const [isDark, setIsDark] = useState(getInitialIsDark);
 
@@ -28,8 +28,9 @@ export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
   }
 
   return (
-    <header className="app-header">
-      <div>
+    <header className="app-header responsive-app-header">
+      <div className="header-title-group">
+        {onMenuClick ? <button className="mobile-menu-button" type="button" onClick={onMenuClick} aria-label="Abrir menu de navegação"><span aria-hidden="true">☰</span></button> : null}
         <strong>🔎 {title}</strong>
       </div>
       <form className="platform-search" role="search" onSubmit={(event) => event.preventDefault()}>
@@ -37,10 +38,10 @@ export function AppHeader({ title = 'Julha Saúde' }: { title?: string }) {
         <input id="platform-search" name="search" type="search" placeholder="🔎 Buscar pacientes, relatórios, planos..." />
       </form>
       <div className="header-actions">
-        {isSuperAdmin && activeAccessContext ? <span className="user-chip">Modo atual: {accessContextLabels[activeAccessContext]}</span> : null}
-        <span className="user-chip">{user?.name ?? 'Usuário'}</span>
-        <button className="button secondary theme-toggle" type="button" onClick={toggleTheme} aria-pressed={isDark}>
-          {isDark ? '☀️ Tema light' : '🌙 Tema dark'}
+        {isSuperAdmin && activeAccessContext ? <span className="user-chip context-chip">Modo atual: {accessContextLabels[activeAccessContext]}</span> : null}
+        <span className="user-chip user-name-chip">{user?.name ?? 'Usuário'}</span>
+        <button className="button secondary theme-toggle" type="button" onClick={toggleTheme} aria-pressed={isDark} aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}>
+          {isDark ? '☀️ Light' : '🌙 Dark'}
         </button>
       </div>
     </header>

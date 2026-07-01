@@ -1,8 +1,7 @@
 'use client';
 
 import { RequireAuth } from '@/components/auth/guards';
-import { AppHeader } from './AppHeader';
-import { AppSidebar } from './Sidebar';
+import { ResponsiveAppShell } from './ResponsiveAppShell';
 
 const links = [
   ['/dashboard', 'Dashboard'],
@@ -13,13 +12,9 @@ const links = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
-      <main className="app-shell">
-        <AppSidebar title="Julha" marker="+" links={links} profileHref="/settings" footerHref="/logout" footerLabel="Sair" />
-        <section className="content-shell">
-          <AppHeader title="Dashboard" />
-          <div className="page-outlet">{children}</div>
-        </section>
-      </main>
+      <ResponsiveAppShell title="Dashboard" sidebarTitle="Julha" marker="+" links={links} profileHref="/settings" footerHref="/logout" footerLabel="Sair">
+        {children}
+      </ResponsiveAppShell>
     </RequireAuth>
   );
 }

@@ -33,6 +33,8 @@ export type ProfessionalProfile = {
   user_id?: number | null;
   name?: string;
   specialty?: string | null;
+  photo_url?: string | null;
+  avatar_url?: string | null;
   registry?: string | null;
   active?: boolean;
   created_at?: string;
