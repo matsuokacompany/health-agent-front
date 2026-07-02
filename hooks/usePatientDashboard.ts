@@ -4,12 +4,15 @@ import { useMemo } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { patientDashboardApi, type CheckInsParams, type HistoryParams, type StatisticsParams, type PatientDashboardOverview, type PatientDashboardCalendar, type PaginatedResponse, type DashboardCheckIn, type PatientDashboardStatistics, type PatientDashboardAggregate } from '@/services/patientDashboard';
 
+const PATIENT_DASHBOARD_AGGREGATE_QUERY_KEY = ['patient-dashboard', 'aggregate'] as const;
+const PATIENT_DASHBOARD_OVERVIEW_QUERY_KEY = ['patient-dashboard', 'overview'] as const;
+
 export function usePatientDashboard() {
-  return useQuery<PatientDashboardAggregate>({ queryKey: ['patient-dashboard', 'aggregate'], queryFn: patientDashboardApi.getPatientDashboard, staleTime: 120_000 });
+  return useQuery<PatientDashboardAggregate>({ queryKey: PATIENT_DASHBOARD_AGGREGATE_QUERY_KEY, queryFn: patientDashboardApi.getPatientDashboard, staleTime: 120_000 });
 }
 
 export function usePatientDashboardOverview() {
-  return useQuery<PatientDashboardOverview>({ queryKey: ['patient-dashboard', 'overview'], queryFn: patientDashboardApi.getOverview, staleTime: 120_000 });
+  return useQuery<PatientDashboardOverview>({ queryKey: PATIENT_DASHBOARD_OVERVIEW_QUERY_KEY, queryFn: patientDashboardApi.getOverview, staleTime: 120_000 });
 }
 
 export function usePatientDashboardCalendar(year: number, month: number) {

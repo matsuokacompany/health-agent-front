@@ -1,8 +1,10 @@
 'use client';
 
-import { Button, Card, PageHeader } from '@/components/ui/design';
+import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { usePatientDashboard } from '@/hooks/usePatientDashboard';
+import type { DailyReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
 
 function formatDate(value?: string | null) {
@@ -30,6 +32,65 @@ function statusLabel(status?: string | null) {
 function truncate(text?: string | null) {
   if (!text) return 'Nenhum resumo disponível.';
   return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
+}
+
+function dateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function diffDays(start?: string | null, end?: string | null) {
+  if (!start || !end) return 0;
+  const startDate = new Date(`${start.slice(0, 10)}T00:00:00`);
+  const endDate = new Date(`${end.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+  return Math.max(0, Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1);
+}
+
+function completedReport(report: DailyReport) {
+  return report.completed || String(report.status).toUpperCase() === 'COMPLETED';
+}
+
+function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[]): PatientDashboardAggregate {
+  const activePlan = plans.find((plan) => plan.active || String(plan.status ?? '').toLowerCase() === 'active') ?? plans[0];
+  const today = dateKey(new Date());
+  const planReports = activePlan ? reports.filter((report) => !report.monitoring_plan_id || String(report.monitoring_plan_id) === String(activePlan.id)) : reports;
+  const answeredReports = planReports.filter(completedReport);
+  const withSymptoms = answeredReports.filter((report) => report.had_symptoms === true).length;
+  const withoutSymptoms = answeredReports.filter((report) => report.had_symptoms === false).length;
+  const daysTotal = diffDays(activePlan?.starts_at, activePlan?.ends_at);
+  const daysElapsed = activePlan?.starts_at ? Math.min(daysTotal || diffDays(activePlan.starts_at, today), diffDays(activePlan.starts_at, today)) : 0;
+  const expected = Math.max(planReports.length, daysElapsed, answeredReports.length);
+  const progress = daysTotal ? Math.round((daysElapsed / daysTotal) * 100) : 0;
+  const rate = expected ? Math.round((answeredReports.length / expected) * 100) : 0;
+  const sortedAnswers = [...answeredReports].sort((a, b) => String(b.updated_at ?? b.report_date ?? '').localeCompare(String(a.updated_at ?? a.report_date ?? '')));
+  const last = sortedAnswers[0];
+  const reportsByDate = new Map(planReports.map((report) => [String(report.report_date ?? report.created_at ?? '').slice(0, 10), report]));
+  const timeline = Array.from({ length: 30 }, (_, index) => {
+    const day = new Date();
+    day.setDate(day.getDate() - (29 - index));
+    const key = dateKey(day);
+    const report = reportsByDate.get(key);
+    let status: PatientDashboardTimelineDay['status'] = 'no_response';
+    if (report && completedReport(report)) status = report.had_symptoms ? 'with_symptoms' : 'without_symptoms';
+    if (report && !completedReport(report) && report.had_symptoms === true) status = 'mild_symptoms';
+    return { date: key, status };
+  });
+
+  return {
+    hasActiveMonitoring: Boolean(activePlan),
+    goal: activePlan?.name ?? null,
+    status: activePlan?.status ?? (activePlan?.active ? 'active' : null),
+    startDate: activePlan?.starts_at ?? null,
+    endDate: activePlan?.ends_at ?? null,
+    progress: Math.min(100, Math.max(0, progress)),
+    daysElapsed,
+    daysTotal,
+    responses: { answered: answeredReports.length, expected, rate: Math.min(100, Math.max(0, rate)) },
+    symptoms: { withSymptoms, withoutSymptoms, mildSymptoms: 0, total: answeredReports.length },
+    timeline,
+    lastResponse: last ? { date: last.report_date ?? last.updated_at ?? null, time: last.updated_at ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(last.updated_at)) : null, summary: last.symptom_description ?? last.cause ?? (last.had_symptoms ? 'Paciente registrou sintomas.' : 'Paciente respondeu sem sintomas.') } : null,
+    nextPrompt: null,
+  };
 }
 
 function LoadingDashboard() {
@@ -72,18 +133,21 @@ function NextPrompt({ data }: { data: PatientDashboardAggregate }) {
 }
 
 export default function PatientDashboard() {
-  const { data, isLoading } = usePatientDashboard();
-  if (isLoading) return <><PageHeader eyebrow="Portal do paciente" title="Dashboard" description="Resumo do seu acompanhamento." /><LoadingDashboard /></>;
-  if (!data?.hasActiveMonitoring) return <><PageHeader eyebrow="Portal do paciente" title="Dashboard" description="Resumo do seu acompanhamento." /><EmptyDashboard /></>;
-  return <><PageHeader eyebrow="Portal do paciente" title="Dashboard" description="Entenda seu objetivo, sua evolução e o próximo contato em poucos segundos." action={<Button href="/patient/monitoring">Responder mensagem</Button>} />
-    <section className="patient-dashboard-v2">
-      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><h2>{data.goal ?? 'Objetivo não informado'}</h2><dl className="patient-objective-list"><div><dt>Objetivo</dt><dd>{data.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(data.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(data.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(data.status)}</dd></div></dl></Card>
-      <ProgressCard data={data} />
-      <SummaryCards data={data} />
-      <SymptomsChart data={data} />
-      <Timeline days={data.timeline} />
-      <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Sem resposta registrada'}</h2>{data.lastResponse?.time ? <strong>{data.lastResponse.time}</strong> : null}<p>{truncate(data.lastResponse?.summary)}</p></Card>
-      <NextPrompt data={data} />
-    </section>
-  </>;
+  const { reports, plans, loading: patientDataLoading } = usePatientData();
+  const { data, isLoading, error } = usePatientDashboard();
+  const fallbackData = buildFallbackDashboard(plans, reports);
+  const dashboard = data ?? (error || fallbackData.hasActiveMonitoring ? fallbackData : undefined);
+
+  if (!dashboard && (isLoading || patientDataLoading)) return <LoadingDashboard />;
+  if (!dashboard?.hasActiveMonitoring) return <EmptyDashboard />;
+
+  return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
+      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><h2>{dashboard.goal ?? 'Objetivo não informado'}</h2><dl className="patient-objective-list"><div><dt>Objetivo</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
+      <ProgressCard data={dashboard} />
+      <SummaryCards data={dashboard} />
+      <SymptomsChart data={dashboard} />
+      <Timeline days={dashboard.timeline} />
+      <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{dashboard.lastResponse?.date ? formatDate(dashboard.lastResponse.date) : 'Sem resposta registrada'}</h2>{dashboard.lastResponse?.time ? <strong>{dashboard.lastResponse.time}</strong> : null}<p>{truncate(dashboard.lastResponse?.summary)}</p></Card>
+      <NextPrompt data={dashboard} />
+    </section>;
 }
