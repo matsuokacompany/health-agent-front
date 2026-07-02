@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-type ButtonProps = { children: ReactNode; href?: string; variant?: 'primary' | 'secondary' | 'ghost'; type?: 'button' | 'submit'; disabled?: boolean; loading?: boolean; loadingLabel?: string };
+type ButtonProps = { children: ReactNode; href?: string; variant?: 'primary' | 'secondary' | 'ghost'; type?: 'button' | 'submit'; disabled?: boolean; loading?: boolean; loadingLabel?: string; onClick?: () => void };
 
-export function Button({ children, href, variant = 'primary', type = 'button', disabled, loading = false, loadingLabel = 'Carregando...' }: ButtonProps) {
+export function Button({ children, href, variant = 'primary', type = 'button', disabled, loading = false, loadingLabel = 'Carregando...', onClick }: ButtonProps) {
   const className = `button ${variant === 'primary' ? '' : variant}`.trim();
   if (href) return <Link className={className} href={href as never}>{children}</Link>;
-  return <button className={className} type={type} disabled={disabled || loading} aria-busy={loading}>{loading ? <><span className="spinner" aria-hidden="true" />{loadingLabel}</> : children}</button>;
+  return <button className={className} type={type} disabled={disabled || loading} aria-busy={loading} onClick={onClick}>{loading ? <><span className="spinner" aria-hidden="true" />{loadingLabel}</> : children}</button>;
 }
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
