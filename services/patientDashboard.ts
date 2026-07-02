@@ -1,112 +1,47 @@
-import type { DailyReport, MonitoringPlan, ProfessionalProfile } from '@/lib/types';
+import { api } from './api';
 
-export type PatientDashboardSummary = {
-  activePlan?: MonitoringPlan;
-  monitoringStatus: 'active' | 'ended';
-  planName: string;
-  startDateLabel: string;
-  daysInCare: number;
-  lastCheckInLabel: string;
-  nextCheckInLabel: string;
-  hasPendingCheckIn: boolean;
-  answeredCheckIns: number;
-  adherenceRate: number;
-  daysWithoutSymptoms: number;
-  daysWithSymptoms: number;
-  recentCheckIns: PatientDashboardCheckIn[];
-  professional?: ProfessionalProfile;
+export type DashboardPeriod = '7d' | '30d' | '90d' | '1y' | 'custom';
+export type DashboardStatus = 'all' | 'pending' | 'completed' | 'expired' | 'incomplete';
+export type DashboardSymptomFilter = 'all' | 'with' | 'without';
+export type SortDirection = 'asc' | 'desc';
+
+export type DashboardProfessional = { id: number | string; name: string; specialty?: string | null; photo_url?: string | null; avatar_url?: string | null };
+export type DashboardPlan = { id: number | string; name: string; status: string; starts_at?: string | null; ends_at?: string | null; active?: boolean };
+export type DashboardCheckIn = { id: number | string; date: string; status: DashboardStatus | string; title?: string; had_symptoms?: boolean | null; symptom_description?: string | null; completed?: boolean };
+export type DashboardAlert = { id: number | string; title: string; description?: string; severity?: 'info' | 'warning' | 'danger' | 'success' | string };
+export type DashboardStatistic = { label: string; value: number | string; description?: string; trend?: number; tone?: 'neutral' | 'success' | 'warning' | 'danger' };
+
+export type PatientDashboardOverview = {
+  patient?: { id?: number | string; name?: string };
+  activePlan?: DashboardPlan | null;
+  professionals?: DashboardProfessional[];
+  anamnesisSummary?: string | null;
+  todayCheckIn?: DashboardCheckIn | null;
+  nextCheckIn?: DashboardCheckIn | null;
+  statistics?: DashboardStatistic[];
+  alerts?: DashboardAlert[];
 };
 
-export type PatientDashboardCheckIn = {
-  id: number;
-  date: string;
-  dateLabel: string;
-  answered: boolean;
-  symptomStatus: 'none' | 'reported' | 'missing';
+export type PatientDashboardCalendarDay = { date: string; status?: string; has_checkin?: boolean; had_symptoms?: boolean | null };
+export type PatientDashboardCalendar = { year: number; month: number; days: PatientDashboardCalendarDay[]; planStartsAt?: string | null; planEndsAt?: string | null };
+
+export type PaginatedResponse<T> = { items: T[]; total: number; page: number; perPage: number; totalPages?: number };
+export type HistoryParams = { page: number; perPage: number; period: DashboardPeriod; status: DashboardStatus; symptoms: DashboardSymptomFilter; sort: SortDirection; from?: string; to?: string };
+export type CheckInsParams = { page: number; perPage: number; status: DashboardStatus };
+export type StatisticsParams = { period: DashboardPeriod; from?: string; to?: string };
+export type PatientDashboardStatistics = { cards: DashboardStatistic[]; charts: Array<{ id: string; title: string; data: Array<{ label: string; value: number }> }> };
+
+function withQuery(path: string, params: Record<string, string | number | undefined>) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== '') search.set(key, String(value)); });
+  const query = search.toString();
+  return `${path}${query ? `?${query}` : ''}`;
+}
+
+export const patientDashboardApi = {
+  getOverview: () => api<PatientDashboardOverview>('/patient/dashboard'),
+  getCalendar: (year: number, month: number) => api<PatientDashboardCalendar>(withQuery('/patient/dashboard/calendar', { year, month })),
+  getHistory: (params: HistoryParams) => api<PaginatedResponse<DashboardCheckIn>>(withQuery('/patient/dashboard/history', params)),
+  getStatistics: (params: StatisticsParams) => api<PatientDashboardStatistics>(withQuery('/patient/dashboard/statistics', params)),
+  getCheckIns: (params: CheckInsParams) => api<PaginatedResponse<DashboardCheckIn>>(withQuery('/patient/dashboard/checkins', params)),
 };
-
-function parseDate(date?: string | null) {
-  if (!date) return undefined;
-  const parsed = new Date(`${date.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-}
-
-function getDateKey(report: DailyReport) {
-  return report.report_date ?? report.created_at?.slice(0, 10) ?? '';
-}
-
-function isAnswered(report: DailyReport) {
-  return report.status === 'COMPLETED' || Boolean(report.completed);
-}
-
-function isPending(report: DailyReport) {
-  return !isAnswered(report) && report.status !== 'EXPIRED';
-}
-
-function formatDate(date?: string | null) {
-  const parsed = parseDate(date);
-  if (!parsed) return 'Não informado';
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(parsed);
-}
-
-function formatShortDate(date?: string | null) {
-  const parsed = parseDate(date);
-  if (!parsed) return 'Sem data';
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(parsed);
-}
-
-function differenceInDaysFromToday(date?: string | null) {
-  const parsed = parseDate(date);
-  if (!parsed) return 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.floor((today.getTime() - parsed.getTime()) / 86400000) + 1);
-}
-
-function getActivePlan(plans: MonitoringPlan[]) {
-  return plans.find((plan) => plan.active || String(plan.status ?? '').toLowerCase() === 'active') ?? plans.find((plan) => !plan.ends_at) ?? plans[0];
-}
-
-function getNextCheckInLabel(reports: DailyReport[]) {
-  const pending = reports.filter(isPending).sort((left, right) => getDateKey(left).localeCompare(getDateKey(right)))[0];
-  if (pending) return `Hoje ou até ${formatDate(getDateKey(pending))}`;
-  return 'Sua equipe ainda não definiu uma próxima data.';
-}
-
-export function createPatientDashboardSummary(reports: DailyReport[], plans: MonitoringPlan[]): PatientDashboardSummary {
-  const activePlan = getActivePlan(plans);
-  const activePlanId = activePlan?.id;
-  const planReports = activePlanId ? reports.filter((report) => !report.monitoring_plan_id || report.monitoring_plan_id === activePlanId) : reports;
-  const orderedReports = [...planReports].sort((left, right) => getDateKey(right).localeCompare(getDateKey(left)));
-  const answeredReports = orderedReports.filter(isAnswered);
-  const daysWithSymptoms = answeredReports.filter((report) => Boolean(report.had_symptoms)).length;
-  const daysWithoutSymptoms = answeredReports.filter((report) => report.had_symptoms === false).length;
-  const professional = activePlan?.professionals?.[0];
-  const monitoringStatus = activePlan && (activePlan.active || String(activePlan.status ?? '').toLowerCase() === 'active') ? 'active' : 'ended';
-
-  return {
-    activePlan,
-    monitoringStatus,
-    planName: activePlan?.name || 'Plano de acompanhamento',
-    startDateLabel: formatDate(activePlan?.starts_at ?? activePlan?.created_at),
-    daysInCare: differenceInDaysFromToday(activePlan?.starts_at ?? activePlan?.created_at),
-    lastCheckInLabel: answeredReports[0] ? formatDate(getDateKey(answeredReports[0])) : 'Nenhum check-in respondido ainda',
-    nextCheckInLabel: getNextCheckInLabel(orderedReports),
-    hasPendingCheckIn: orderedReports.some(isPending),
-    answeredCheckIns: answeredReports.length,
-    adherenceRate: orderedReports.length ? Math.round((answeredReports.length / orderedReports.length) * 100) : 0,
-    daysWithoutSymptoms,
-    daysWithSymptoms,
-    recentCheckIns: orderedReports.slice(0, 7).map((report) => {
-      const answered = isAnswered(report);
-      return {
-        id: report.id,
-        date: getDateKey(report),
-        dateLabel: formatShortDate(getDateKey(report)),
-        answered,
-        symptomStatus: !answered ? 'missing' : report.had_symptoms ? 'reported' : 'none',
-      };
-    }),
-    professional,
-  };
-}
