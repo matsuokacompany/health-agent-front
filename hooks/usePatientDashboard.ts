@@ -2,7 +2,11 @@
 
 import { useMemo } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { patientDashboardApi, type CheckInsParams, type HistoryParams, type StatisticsParams, type PatientDashboardOverview, type PatientDashboardCalendar, type PaginatedResponse, type DashboardCheckIn, type PatientDashboardStatistics } from '@/services/patientDashboard';
+import { patientDashboardApi, type CheckInsParams, type HistoryParams, type StatisticsParams, type PatientDashboardOverview, type PatientDashboardCalendar, type PaginatedResponse, type DashboardCheckIn, type PatientDashboardStatistics, type PatientDashboardAggregate } from '@/services/patientDashboard';
+
+export function usePatientDashboard() {
+  return useQuery<PatientDashboardAggregate>({ queryKey: ['patient-dashboard', 'aggregate'], queryFn: patientDashboardApi.getPatientDashboard, staleTime: 120_000 });
+}
 
 export function usePatientDashboardOverview() {
   return useQuery<PatientDashboardOverview>({ queryKey: ['patient-dashboard', 'overview'], queryFn: patientDashboardApi.getOverview, staleTime: 120_000 });
