@@ -74,6 +74,25 @@ function normalizeArray<T>(value: unknown): T[] {
   return [];
 }
 
+function normalizeAnamnesisSummary(value: unknown): string | null {
+  if (typeof value === 'string') return value.trim() || null;
+  if (!isRecord(value)) return null;
+
+  const preview = value.preview ?? value.summary ?? value.text ?? value.description;
+  if (typeof preview === 'string' && preview.trim()) return preview.trim();
+
+  const hasAnamnesis = value.has_anamnesis ?? value.hasAnamnesis;
+  if (hasAnamnesis === false) return null;
+
+  const conditionsCount = value.conditions_count ?? value.conditionsCount;
+  if (typeof conditionsCount === 'number') {
+    if (conditionsCount === 0) return null;
+    return `${conditionsCount} condição${conditionsCount === 1 ? '' : 'ões'} registrada${conditionsCount === 1 ? '' : 's'} na anamnese.`;
+  }
+
+  return null;
+}
+
 function normalizePaginated<T>(value: unknown, fallback: { page: number; perPage: number }): PaginatedResponse<T> {
   const source = isRecord(value) ? value : {};
   const items = normalizeArray<T>(value);
@@ -91,7 +110,7 @@ function normalizeOverview(value: unknown): PatientDashboardOverview {
     patient: (source.patient ?? source.user) as PatientDashboardOverview['patient'],
     activePlan,
     professionals: normalizeArray<DashboardProfessional>(source.professionals ?? source.team),
-    anamnesisSummary: (source.anamnesisSummary ?? source.anamnesis_summary ?? source.anamnese_summary ?? null) as string | null,
+    anamnesisSummary: normalizeAnamnesisSummary(source.anamnesisSummary ?? source.anamnesis_summary ?? source.anamnese_summary),
     todayCheckIn: (source.todayCheckIn ?? source.today_checkin ?? source.today_check_in ?? null) as DashboardCheckIn | null,
     nextCheckIn: (source.nextCheckIn ?? source.next_checkin ?? source.next_check_in ?? null) as DashboardCheckIn | null,
     statistics: normalizeStatisticList(source.statistics ?? source.stats ?? source.summary),
