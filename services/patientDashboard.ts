@@ -55,6 +55,8 @@ function isRecord(value: unknown): value is RecordValue { return typeof value ==
 function withQuery(path: string, params: Record<string, string | number | undefined>) { const search = new URLSearchParams(); Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== '') search.set(key, String(value)); }); const query = search.toString(); return `${path}${query ? `?${query}` : ''}`; }
 function labelFromKey(key: string) { return key.replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (letter) => letter.toUpperCase()); }
 function numberFrom(value: unknown, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
+function dateOnly(value: unknown) { return typeof value === 'string' && value.trim() ? value.slice(0, 10) : null; }
+function diffDaysInclusive(start?: string | null, end?: string | null) { if (!start || !end) return 0; const startDate = new Date(`${start.slice(0, 10)}T00:00:00`); const endDate = new Date(`${end.slice(0, 10)}T00:00:00`); if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0; return Math.max(0, Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1); }
 function stringOrNull(value: unknown) { return typeof value === 'string' && value.trim() ? value.trim() : null; }
 
 function normalizeStatistic(item: unknown, fallbackLabel: string): DashboardStatistic | null { if (isRecord(item)) { const label = String(item.label ?? item.title ?? item.name ?? fallbackLabel); const value = item.value ?? item.total ?? item.count ?? item.percentage ?? item.percent; if (value === undefined || value === null) return null; return { label, value: typeof value === 'number' || typeof value === 'string' ? value : String(value), description: typeof item.description === 'string' ? item.description : undefined, trend: typeof item.trend === 'number' ? item.trend : undefined, tone: typeof item.tone === 'string' ? item.tone as DashboardStatistic['tone'] : undefined }; } if (typeof item === 'number' || typeof item === 'string') return { label: fallbackLabel, value: item }; return null; }
@@ -74,19 +76,27 @@ export function normalizePatientDashboard(value: unknown): PatientDashboardAggre
   const last = isRecord(lastSource) ? lastSource : null;
   const nextSource = source.next_prompt ?? source.nextPrompt;
   const next = isRecord(nextSource) ? nextSource : null;
-  const timeline = normalizeArray<RecordValue>(source.timeline).slice(0, 30).map((day) => ({ date: String(day.date ?? ''), status: String(day.status ?? day.state ?? 'no_response') as PatientDashboardTimelineDay['status'], label: stringOrNull(day.label) ?? undefined })).filter((day) => day.date);
+  const timeline = normalizeArray<RecordValue>(source.timeline).slice(-7).map((day) => ({ date: String(day.date ?? ''), status: String(day.status ?? day.state ?? 'no_response') as PatientDashboardTimelineDay['status'], label: stringOrNull(day.label) ?? undefined })).filter((day) => day.date);
   const withSymptoms = numberFrom(symptoms.with_symptoms ?? symptoms.withSymptoms);
   const withoutSymptoms = numberFrom(symptoms.without_symptoms ?? symptoms.withoutSymptoms);
   const mildSymptoms = numberFrom(symptoms.mild_symptoms ?? symptoms.mildSymptoms);
+  const planName = stringOrNull(source.plan_name ?? source.planName ?? source.goal ?? source.objective ?? source.name);
+  const startDate = dateOnly(source.start_date ?? source.startDate ?? source.starts_at);
+  const endDate = dateOnly(source.end_date ?? source.endDate ?? source.ends_at);
+  const totalFromDates = diffDaysInclusive(startDate, endDate);
+  const elapsedFromDates = startDate ? Math.min(totalFromDates || diffDaysInclusive(startDate, new Date().toISOString()), diffDaysInclusive(startDate, new Date().toISOString())) : 0;
+  const daysTotal = numberFrom(source.days_total ?? source.daysTotal, totalFromDates) || totalFromDates;
+  const daysElapsed = numberFrom(source.days_elapsed ?? source.daysElapsed, elapsedFromDates) || elapsedFromDates;
+  const progress = source.progress === undefined || source.progress === null ? (daysTotal ? Math.round((daysElapsed / daysTotal) * 100) : 0) : numberFrom(source.progress);
   return {
-    hasActiveMonitoring: Boolean(source.has_active_monitoring ?? source.hasActiveMonitoring ?? source.active ?? source.goal),
-    goal: stringOrNull(source.goal ?? source.objective ?? source.name),
+    hasActiveMonitoring: Boolean(source.has_active_monitoring ?? source.hasActiveMonitoring ?? source.active ?? planName),
+    goal: planName,
     status: stringOrNull(source.status),
-    startDate: stringOrNull(source.start_date ?? source.startDate ?? source.starts_at),
-    endDate: stringOrNull(source.end_date ?? source.endDate ?? source.ends_at),
-    progress: Math.min(100, Math.max(0, Math.round(numberFrom(source.progress)))),
-    daysElapsed: numberFrom(source.days_elapsed ?? source.daysElapsed),
-    daysTotal: numberFrom(source.days_total ?? source.daysTotal),
+    startDate,
+    endDate,
+    progress: Math.min(100, Math.max(0, Math.round(progress))),
+    daysElapsed,
+    daysTotal,
     responses: { answered: numberFrom(responses.answered), expected: numberFrom(responses.expected), rate: Math.min(100, Math.max(0, Math.round(numberFrom(responses.rate)))) },
     symptoms: { withSymptoms, withoutSymptoms, mildSymptoms, total: numberFrom(symptoms.total, withSymptoms + withoutSymptoms + mildSymptoms) },
     timeline,
