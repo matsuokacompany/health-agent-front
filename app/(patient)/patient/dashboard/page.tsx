@@ -3,7 +3,6 @@
 import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
-import { usePatientDashboard } from '@/hooks/usePatientDashboard';
 import type { DailyReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
 
@@ -50,8 +49,10 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
   const answeredReports = planReports.filter(completedReport);
   const withSymptoms = answeredReports.filter((report) => report.had_symptoms === true).length;
   const withoutSymptoms = answeredReports.filter((report) => report.had_symptoms === false).length;
-  const daysTotal = diffDays(activePlan?.starts_at, activePlan?.ends_at);
-  const daysElapsed = activePlan?.starts_at ? Math.min(daysTotal || diffDays(activePlan.starts_at, today), diffDays(activePlan.starts_at, today)) : 0;
+  const planStart = activePlan?.starts_at ?? activePlan?.start_date ?? null;
+  const planEnd = activePlan?.ends_at ?? activePlan?.end_date ?? null;
+  const daysTotal = diffDays(planStart, planEnd);
+  const daysElapsed = planStart ? Math.min(daysTotal || diffDays(planStart, today), diffDays(planStart, today)) : 0;
   const expected = Math.max(planReports.length, daysElapsed, answeredReports.length);
   const progress = daysTotal ? Math.round((daysElapsed / daysTotal) * 100) : 0;
   const rate = expected ? Math.round((answeredReports.length / expected) * 100) : 0;
@@ -71,10 +72,10 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
 
   return {
     hasActiveMonitoring: Boolean(activePlan),
-    goal: activePlan?.name ?? null,
+    goal: activePlan?.title ?? activePlan?.name ?? null,
     status: activePlan?.status ?? (activePlan?.active ? 'active' : null),
-    startDate: activePlan?.starts_at ?? null,
-    endDate: activePlan?.ends_at ?? null,
+    startDate: planStart,
+    endDate: planEnd,
     progress: Math.min(100, Math.max(0, progress)),
     daysElapsed,
     daysTotal,
@@ -129,30 +130,11 @@ function LastResponseCard({ data }: { data: PatientDashboardAggregate }) {
   return <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Sem resposta registrada'}</h2>{data.lastResponse?.time ? <strong>{data.lastResponse.time}</strong> : null}<p>{truncate(data.lastResponse?.summary)}</p></Card>;
 }
 
-function mergeDashboardData(data: PatientDashboardAggregate | undefined, fallbackData: PatientDashboardAggregate) {
-  if (!data) return fallbackData.hasActiveMonitoring ? fallbackData : undefined;
-  if (!fallbackData.hasActiveMonitoring) return data;
-  return {
-    ...data,
-    goal: data.goal ?? fallbackData.goal,
-    status: data.status ?? fallbackData.status,
-    startDate: data.startDate ?? fallbackData.startDate,
-    endDate: data.endDate ?? fallbackData.endDate,
-    daysElapsed: data.daysElapsed || fallbackData.daysElapsed,
-    daysTotal: data.daysTotal || fallbackData.daysTotal,
-    progress: data.progress || fallbackData.progress,
-    timeline: data.timeline.length ? data.timeline : fallbackData.timeline,
-    lastResponse: data.lastResponse ?? fallbackData.lastResponse,
-  };
-}
-
 export default function PatientDashboard() {
   const { reports, plans, loading: patientDataLoading } = usePatientData();
-  const { data, isLoading, error } = usePatientDashboard();
-  const fallbackData = buildFallbackDashboard(plans, reports);
-  const dashboard = error ? mergeDashboardData(undefined, fallbackData) : mergeDashboardData(data, fallbackData);
+  const dashboard = buildFallbackDashboard(plans, reports);
 
-  if (!dashboard && (isLoading || patientDataLoading)) return <LoadingDashboard />;
+  if (patientDataLoading) return <LoadingDashboard />;
   if (!dashboard?.hasActiveMonitoring) return <EmptyDashboard />;
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
