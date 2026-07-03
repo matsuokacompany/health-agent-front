@@ -1,5 +1,5 @@
-import { ContentLoading } from '@/components/ui/Loading';
+import { RouteSkeleton } from '@/components/ui/Skeleton';
 
 export default function Loading() {
-  return <ContentLoading />;
+  return <RouteSkeleton />;
 }
