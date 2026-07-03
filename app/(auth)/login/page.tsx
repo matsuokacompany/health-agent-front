@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 export default function Login() {
   const router = useRouter();
@@ -45,10 +46,7 @@ export default function Login() {
               E-mail
               <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" required type="email" value={email} />
             </label>
-            <label>
-              Senha
-              <input autoComplete="current-password" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required type="password" value={password} />
-            </label>
+            <PasswordInput autoComplete="current-password" label="Senha" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required value={password} />
           </div>
           {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
           <div className="login-actions">
