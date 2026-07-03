@@ -51,7 +51,7 @@ export function PatientDataProvider({ children }: { children: React.ReactNode })
       if (!request) {
         request = Promise.all([
           dailyReportsApi.list().catch(() => []),
-          monitoringApi.listCurrentPatientPlans().catch(() => []),
+          monitoringApi.listCurrentPatientPlans(user.id).catch(() => []),
         ]).then(([nextReports, nextPlans]) => ({ reports: nextReports, plans: nextPlans }));
         patientDataRequests.set(cacheKey, request);
       }
