@@ -14,13 +14,6 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat('pt-BR').format(date);
 }
 
-function formatDateTime(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
-}
-
 function statusLabel(status?: string | null) {
   const normalized = String(status ?? '').toLowerCase();
   if (['active', 'em_andamento', 'ongoing'].includes(normalized)) return '🟢 Em andamento';
@@ -104,7 +97,7 @@ function EmptyDashboard() {
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
   const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
   return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento">
-    <Card><span className="metric-label">Dias acompanhados</span><div className="metric">{data.daysElapsed}</div><p className="muted compact">de {data.daysTotal || '—'} dias do plano</p></Card>
+    <Card><span className="metric-label">Dias acompanhados</span><div className="metric">{data.daysElapsed}</div><p className="muted compact">{data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'}</p></Card>
     <Card><span className="metric-label">Mensagens respondidas</span><div className="metric">{data.responses.answered}</div><p className="muted compact">de {data.responses.expected} esperadas</p></Card>
     <Card><span className="metric-label">Taxa de resposta</span><div className="metric">{data.responses.rate}%</div></Card>
     <Card><span className="metric-label">Última resposta enviada</span><div className="metric small-metric">{lastDate}</div></Card>
@@ -132,20 +125,41 @@ function Timeline({ days }: { days: PatientDashboardTimelineDay[] }) {
   return <Card className="patient-dashboard-timeline-card"><span className="eyebrow">Últimos 7 dias</span><h2>Linha do tempo</h2><div className="patient-timeline-grid">{visibleDays.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{formatTimelineLabel(day.date)}</small></span>; })}</div><div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div></Card>;
 }
 
+function LastResponseCard({ data }: { data: PatientDashboardAggregate }) {
+  return <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Sem resposta registrada'}</h2>{data.lastResponse?.time ? <strong>{data.lastResponse.time}</strong> : null}<p>{truncate(data.lastResponse?.summary)}</p></Card>;
+}
+
+function mergeDashboardData(data: PatientDashboardAggregate | undefined, fallbackData: PatientDashboardAggregate) {
+  if (!data) return fallbackData.hasActiveMonitoring ? fallbackData : undefined;
+  if (!fallbackData.hasActiveMonitoring) return data;
+  return {
+    ...data,
+    goal: data.goal ?? fallbackData.goal,
+    status: data.status ?? fallbackData.status,
+    startDate: data.startDate ?? fallbackData.startDate,
+    endDate: data.endDate ?? fallbackData.endDate,
+    daysElapsed: data.daysElapsed || fallbackData.daysElapsed,
+    daysTotal: data.daysTotal || fallbackData.daysTotal,
+    progress: data.progress || fallbackData.progress,
+    timeline: data.timeline.length ? data.timeline : fallbackData.timeline,
+    lastResponse: data.lastResponse ?? fallbackData.lastResponse,
+  };
+}
+
 export default function PatientDashboard() {
   const { reports, plans, loading: patientDataLoading } = usePatientData();
   const { data, isLoading, error } = usePatientDashboard();
   const fallbackData = buildFallbackDashboard(plans, reports);
-  const dashboard = data ?? (error || fallbackData.hasActiveMonitoring ? fallbackData : undefined);
+  const dashboard = error ? mergeDashboardData(undefined, fallbackData) : mergeDashboardData(data, fallbackData);
 
   if (!dashboard && (isLoading || patientDataLoading)) return <LoadingDashboard />;
   if (!dashboard?.hasActiveMonitoring) return <EmptyDashboard />;
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
-      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><h2>{dashboard.goal ?? 'Plano não informado'}</h2><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
+      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
+      <LastResponseCard data={dashboard} />
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
       <Timeline days={dashboard.timeline} />
-      <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{dashboard.lastResponse?.date ? formatDate(dashboard.lastResponse.date) : 'Sem resposta registrada'}</h2>{dashboard.lastResponse?.time ? <strong>{dashboard.lastResponse.time}</strong> : null}<p>{truncate(dashboard.lastResponse?.summary)}</p></Card>
     </section>;
 }

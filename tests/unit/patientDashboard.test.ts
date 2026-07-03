@@ -85,4 +85,24 @@ describe('patientDashboardApi', () => {
     expect(dashboard.timeline[0].date).toBe('2026-07-04');
   });
 
+  it('normalizes nested active plan details when aggregate fields are missing', async () => {
+    apiMock.mockResolvedValueOnce({
+      active_plan: {
+        name: 'Plano nutricional',
+        status: 'active',
+        starts_at: '2026-07-01',
+        ends_at: '2026-07-07',
+      },
+    });
+
+    const dashboard = await patientDashboardApi.getPatientDashboard();
+
+    expect(dashboard.hasActiveMonitoring).toBe(true);
+    expect(dashboard.goal).toBe('Plano nutricional');
+    expect(dashboard.status).toBe('active');
+    expect(dashboard.startDate).toBe('2026-07-01');
+    expect(dashboard.endDate).toBe('2026-07-07');
+    expect(dashboard.daysTotal).toBe(7);
+  });
+
 });

@@ -76,22 +76,23 @@ export function normalizePatientDashboard(value: unknown): PatientDashboardAggre
   const last = isRecord(lastSource) ? lastSource : null;
   const nextSource = source.next_prompt ?? source.nextPrompt;
   const next = isRecord(nextSource) ? nextSource : null;
+  const planSource = [source.active_plan, source.activePlan, source.plan, source.monitoring_plan, source.monitoringPlan].find(isRecord) ?? {};
   const timeline = normalizeArray<RecordValue>(source.timeline).slice(-7).map((day) => ({ date: String(day.date ?? ''), status: String(day.status ?? day.state ?? 'no_response') as PatientDashboardTimelineDay['status'], label: stringOrNull(day.label) ?? undefined })).filter((day) => day.date);
   const withSymptoms = numberFrom(symptoms.with_symptoms ?? symptoms.withSymptoms);
   const withoutSymptoms = numberFrom(symptoms.without_symptoms ?? symptoms.withoutSymptoms);
   const mildSymptoms = numberFrom(symptoms.mild_symptoms ?? symptoms.mildSymptoms);
-  const planName = stringOrNull(source.plan_name ?? source.planName ?? source.goal ?? source.objective ?? source.name);
-  const startDate = dateOnly(source.start_date ?? source.startDate ?? source.starts_at);
-  const endDate = dateOnly(source.end_date ?? source.endDate ?? source.ends_at);
+  const planName = stringOrNull(source.plan_name ?? source.planName ?? source.goal ?? source.objective ?? source.name ?? planSource.name ?? planSource.title);
+  const startDate = dateOnly(source.start_date ?? source.startDate ?? source.starts_at ?? planSource.start_date ?? planSource.startDate ?? planSource.starts_at);
+  const endDate = dateOnly(source.end_date ?? source.endDate ?? source.ends_at ?? planSource.end_date ?? planSource.endDate ?? planSource.ends_at);
   const totalFromDates = diffDaysInclusive(startDate, endDate);
   const elapsedFromDates = startDate ? Math.min(totalFromDates || diffDaysInclusive(startDate, new Date().toISOString()), diffDaysInclusive(startDate, new Date().toISOString())) : 0;
   const daysTotal = numberFrom(source.days_total ?? source.daysTotal, totalFromDates) || totalFromDates;
   const daysElapsed = numberFrom(source.days_elapsed ?? source.daysElapsed, elapsedFromDates) || elapsedFromDates;
   const progress = source.progress === undefined || source.progress === null ? (daysTotal ? Math.round((daysElapsed / daysTotal) * 100) : 0) : numberFrom(source.progress);
   return {
-    hasActiveMonitoring: Boolean(source.has_active_monitoring ?? source.hasActiveMonitoring ?? source.active ?? planName),
+    hasActiveMonitoring: Boolean(source.has_active_monitoring ?? source.hasActiveMonitoring ?? source.active ?? planName ?? isRecord(planSource)),
     goal: planName,
-    status: stringOrNull(source.status),
+    status: stringOrNull(source.status ?? planSource.status),
     startDate,
     endDate,
     progress: Math.min(100, Math.max(0, Math.round(progress))),
