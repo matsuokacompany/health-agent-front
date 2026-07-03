@@ -65,9 +65,9 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
   const sortedAnswers = [...answeredReports].sort((a, b) => String(b.updated_at ?? b.report_date ?? '').localeCompare(String(a.updated_at ?? a.report_date ?? '')));
   const last = sortedAnswers[0];
   const reportsByDate = new Map(planReports.map((report) => [String(report.report_date ?? report.created_at ?? '').slice(0, 10), report]));
-  const timeline = Array.from({ length: 30 }, (_, index) => {
+  const timeline = Array.from({ length: 7 }, (_, index) => {
     const day = new Date();
-    day.setDate(day.getDate() - (29 - index));
+    day.setDate(day.getDate() - (6 - index));
     const key = dateKey(day);
     const report = reportsByDate.get(key);
     let status: PatientDashboardTimelineDay['status'] = 'no_response';
@@ -98,17 +98,13 @@ function LoadingDashboard() {
 }
 
 function EmptyDashboard() {
-  return <Card className="patient-dashboard-empty"><span className="patient-empty-icon">🌱</span><h2>Nenhum acompanhamento ativo por enquanto</h2><p className="muted">Assim que um profissional iniciar seu acompanhamento, você verá aqui o objetivo, a evolução, os registros recentes e a próxima mensagem automática.</p><Button href="/patient/monitoring" variant="secondary">Ver área de acompanhamento</Button></Card>;
-}
-
-function ProgressCard({ data }: { data: PatientDashboardAggregate }) {
-  return <Card className="patient-dashboard-progress-card"><div className="patient-card-heading"><span className="eyebrow">Progresso</span><strong>{data.progress}%</strong></div><div className="patient-progress-track" aria-label={`Progresso de ${data.progress}%`}><span style={{ width: `${data.progress}%` }} /></div><p className="muted compact">{data.daysElapsed} de {data.daysTotal} dias de acompanhamento.</p></Card>;
+  return <Card className="patient-dashboard-empty"><span className="patient-empty-icon">🌱</span><h2>Nenhum acompanhamento ativo por enquanto</h2><p className="muted">Assim que um profissional iniciar seu acompanhamento, você verá aqui o plano, a evolução, os registros recentes e a próxima mensagem automática.</p><Button href="/patient/monitoring" variant="secondary">Ver área de acompanhamento</Button></Card>;
 }
 
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
   const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
   return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento">
-    <Card><span className="metric-label">Dias acompanhados</span><div className="metric">{data.daysElapsed}</div></Card>
+    <Card><span className="metric-label">Dias acompanhados</span><div className="metric">{data.daysElapsed}</div><p className="muted compact">de {data.daysTotal || '—'} dias do plano</p></Card>
     <Card><span className="metric-label">Mensagens respondidas</span><div className="metric">{data.responses.answered}</div><p className="muted compact">de {data.responses.expected} esperadas</p></Card>
     <Card><span className="metric-label">Taxa de resposta</span><div className="metric">{data.responses.rate}%</div></Card>
     <Card><span className="metric-label">Última resposta enviada</span><div className="metric small-metric">{lastDate}</div></Card>
@@ -123,13 +119,17 @@ function SymptomsChart({ data }: { data: PatientDashboardAggregate }) {
 }
 
 const timelineMeta: Record<PatientDashboardTimelineDay['status'], { icon: string; label: string; className: string }> = { without_symptoms: { icon: '🟢', label: 'respondeu sem sintomas', className: 'ok' }, mild_symptoms: { icon: '🟡', label: 'respondeu com sintomas leves', className: 'mild' }, with_symptoms: { icon: '🔴', label: 'respondeu com sintomas', className: 'alert' }, no_response: { icon: '⚪', label: 'não respondeu', className: 'empty' } };
-function Timeline({ days }: { days: PatientDashboardTimelineDay[] }) {
-  return <Card className="patient-dashboard-timeline-card"><span className="eyebrow">Últimos 30 dias</span><h2>Linha do tempo</h2><div className="patient-timeline-grid">{days.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{new Date(`${day.date}T00:00:00`).getDate()}</small></span>; })}</div><div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div></Card>;
+function formatTimelineLabel(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '');
+  const month = new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date).replace('.', '');
+  return `${weekday} ${date.getDate()} ${month}`;
 }
 
-function NextPrompt({ data }: { data: PatientDashboardAggregate }) {
-  const scheduled = formatDateTime(data.nextPrompt?.scheduled_at) ?? (data.nextPrompt?.date ? `${formatDate(data.nextPrompt.date)}${data.nextPrompt.time ? ` às ${data.nextPrompt.time}` : ''}` : null);
-  return <Card className="patient-dashboard-next-card"><span className="eyebrow">Próxima mensagem</span><h2>{scheduled ?? 'Nenhuma próxima mensagem agendada'}</h2><p className="muted compact">{scheduled ? 'Envio automático previsto para o próximo contato.' : 'Quando houver um novo envio automático, ele aparecerá aqui.'}</p></Card>;
+function Timeline({ days }: { days: PatientDashboardTimelineDay[] }) {
+  const visibleDays = days.slice(-7);
+  return <Card className="patient-dashboard-timeline-card"><span className="eyebrow">Últimos 7 dias</span><h2>Linha do tempo</h2><div className="patient-timeline-grid">{visibleDays.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{formatTimelineLabel(day.date)}</small></span>; })}</div><div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div></Card>;
 }
 
 export default function PatientDashboard() {
@@ -142,12 +142,10 @@ export default function PatientDashboard() {
   if (!dashboard?.hasActiveMonitoring) return <EmptyDashboard />;
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
-      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><h2>{dashboard.goal ?? 'Objetivo não informado'}</h2><dl className="patient-objective-list"><div><dt>Objetivo</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
-      <ProgressCard data={dashboard} />
+      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><h2>{dashboard.goal ?? 'Plano não informado'}</h2><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
       <Timeline days={dashboard.timeline} />
       <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{dashboard.lastResponse?.date ? formatDate(dashboard.lastResponse.date) : 'Sem resposta registrada'}</h2>{dashboard.lastResponse?.time ? <strong>{dashboard.lastResponse.time}</strong> : null}<p>{truncate(dashboard.lastResponse?.summary)}</p></Card>
-      <NextPrompt data={dashboard} />
     </section>;
 }
