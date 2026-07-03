@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './Sidebar';
@@ -19,16 +19,9 @@ type ResponsiveAppShellProps = {
   footer?: React.ReactNode;
 };
 
-const SIDEBAR_STATE_KEY = 'julha-sidebar-collapsed';
-
 export function ResponsiveAppShell({ children, title, sidebarTitle, marker, links, profileHref, footerHref, footerLabel, className = '', notice, footer }: ResponsiveAppShellProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  useEffect(() => {
-    setIsSidebarCollapsed(window.localStorage.getItem(SIDEBAR_STATE_KEY) === 'true');
-  }, []);
 
   useEffect(() => {
     setIsSidebarOpen(false);
@@ -55,16 +48,8 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
     };
   }, [isSidebarOpen]);
 
-  const toggleSidebarCollapsed = useCallback(() => {
-    setIsSidebarCollapsed((current) => {
-      const nextValue = !current;
-      window.localStorage.setItem(SIDEBAR_STATE_KEY, String(nextValue));
-      return nextValue;
-    });
-  }, []);
-
   return (
-    <main className={`app-shell responsive-app-shell ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${className}`.trim()}>
+    <main className={`app-shell responsive-app-shell ${className}`.trim()}>
       <button className={`drawer-backdrop ${isSidebarOpen ? 'is-visible' : ''}`} type="button" aria-label="Fechar menu de navegação" onClick={() => setIsSidebarOpen(false)} />
       <AppSidebar
         title={sidebarTitle}
@@ -73,9 +58,7 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
         profileHref={profileHref}
         footerHref={footerHref}
         footerLabel={footerLabel}
-        collapsed={isSidebarCollapsed}
         mobileOpen={isSidebarOpen}
-        onToggleCollapsed={toggleSidebarCollapsed}
         onNavigate={() => setIsSidebarOpen(false)}
       />
       <section className="content-shell responsive-content-shell">
