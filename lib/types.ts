@@ -45,10 +45,14 @@ export type MonitoringPlan = {
   id: number;
   patient_id: number;
   name?: string;
+  title?: string;
+  description?: string | null;
   status?: string;
   active?: boolean;
   starts_at?: string | null;
   ends_at?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   created_at?: string;
   updated_at?: string;
   professionals?: ProfessionalProfile[];

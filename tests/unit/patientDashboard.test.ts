@@ -61,4 +61,48 @@ describe('patientDashboardApi', () => {
     expect(dashboard.timeline).toHaveLength(1);
   });
 
+  it('uses plan fields, derives followed days from dates, and limits timeline to 7 days', async () => {
+    apiMock.mockResolvedValueOnce({
+      has_active_monitoring: true,
+      plan_name: 'Plano pós-operatório',
+      status: 'active',
+      starts_at: '2026-06-30',
+      ends_at: '2026-07-10',
+      timeline: Array.from({ length: 10 }, (_, index) => ({
+        date: `2026-07-${String(index + 1).padStart(2, '0')}`,
+        status: 'no_response',
+      })),
+    });
+
+    const dashboard = await patientDashboardApi.getPatientDashboard();
+
+    expect(dashboard.goal).toBe('Plano pós-operatório');
+    expect(dashboard.startDate).toBe('2026-06-30');
+    expect(dashboard.endDate).toBe('2026-07-10');
+    expect(dashboard.daysTotal).toBe(11);
+    expect(dashboard.daysElapsed).toBe(4);
+    expect(dashboard.timeline).toHaveLength(7);
+    expect(dashboard.timeline[0].date).toBe('2026-07-04');
+  });
+
+  it('normalizes nested active plan details when aggregate fields are missing', async () => {
+    apiMock.mockResolvedValueOnce({
+      active_plan: {
+        name: 'Plano nutricional',
+        status: 'active',
+        starts_at: '2026-07-01',
+        ends_at: '2026-07-07',
+      },
+    });
+
+    const dashboard = await patientDashboardApi.getPatientDashboard();
+
+    expect(dashboard.hasActiveMonitoring).toBe(true);
+    expect(dashboard.goal).toBe('Plano nutricional');
+    expect(dashboard.status).toBe('active');
+    expect(dashboard.startDate).toBe('2026-07-01');
+    expect(dashboard.endDate).toBe('2026-07-07');
+    expect(dashboard.daysTotal).toBe(7);
+  });
+
 });
