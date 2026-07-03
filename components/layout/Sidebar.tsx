@@ -31,23 +31,20 @@ type AppSidebarProps = {
   profileHref: string;
   footerHref: string;
   footerLabel: string;
-  collapsed?: boolean;
   mobileOpen?: boolean;
-  onToggleCollapsed?: () => void;
   onNavigate?: () => void;
 };
 
-export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, collapsed = false, mobileOpen = false, onToggleCollapsed, onNavigate }: AppSidebarProps) {
+export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, mobileOpen = false, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { isSuperAdmin } = useAuth();
   const { t } = useI18n();
-  return <aside className={`sidebar app-sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
+  return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
       <div className="sidebar-brand-main">
         <span className="brand-icon sidebar-logo-slot" aria-label="Espaço para logo da Julha">{marker}</span>
         <span className="sidebar-label">{title}</span>
       </div>
-      {onToggleCollapsed ? <button className="sidebar-collapse-button" type="button" onClick={onToggleCollapsed} aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} aria-pressed={collapsed}>{collapsed ? '→' : '←'}</button> : null}
     </div>
     <nav className="menu" aria-label={t('nav.mainMenu')}>
       {links.map(([href,label]) => <Link className={pathname === href ? 'is-current' : ''} key={href} href={href as never} onClick={onNavigate} title={label}><span aria-hidden="true">{icons[label] ?? '•'}</span><span className="sidebar-label">{label}</span></Link>)}
