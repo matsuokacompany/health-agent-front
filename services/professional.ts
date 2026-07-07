@@ -1,4 +1,5 @@
 import type { Anamnese } from '@/lib/types';
+import { ForbiddenError } from '@/infrastructure/http/ApiClient';
 import { api } from './api';
 
 export type ProfessionalPatient = {
@@ -54,8 +55,34 @@ export type ProfessionalCheckInsParams = {
 };
 
 export type ProfessionalPaginatedResponse<T> = { items: T[]; pagination: { page: number; per_page: number; total: number; total_pages: number } };
-export type ProfessionalAiReportRequest = { periodo?: 'diario' | 'semanal' | 'mensal'; modo?: 'preventivo' | 'avaliacao_clinica' };
-export type ProfessionalAiReportResponse = { patient_id: number; periodo: string; modo: string; clinical_summary: string; ai: unknown };
+export type AiReportPeriod = 'diario' | 'semanal' | 'mensal';
+export type AiReportMode = 'preventivo' | 'avaliacao_clinica';
+export type SuspicionLevel = 'baixo' | 'moderado' | 'alto';
+export type PriorityLevel = 'baixa' | 'media' | 'alta';
+
+export type ClinicalAiReport = {
+  avaliacao_clinica: {
+    hipotese_principal: string;
+    possiveis_doencas?: string[];
+    nivel_de_suspeicao: SuspicionLevel | string;
+    justificativa: string[];
+  };
+  especialista_recomendado: string;
+  exames_prioritarios: string[];
+  urgencia: PriorityLevel | string;
+  alerta_legal: string;
+};
+
+export type PreventiveAiReport = {
+  cenarios: Record<'otimista' | 'intermediario' | 'grave', { descricao: string; condicoes_para_ocorrer: string; probabilidade: PriorityLevel | string }>;
+  cenario_mais_provavel: 'otimista' | 'intermediario' | 'grave' | string;
+  especialista_recomendado: string;
+  exames_sugeridos: string[];
+  alerta_importante: string;
+};
+
+export type ProfessionalAiReportRequest = { periodo?: AiReportPeriod; modo?: AiReportMode };
+export type ProfessionalAiReportResponse = { patient_id: number; periodo: AiReportPeriod; modo: AiReportMode; clinical_summary: string; ai: ClinicalAiReport | PreventiveAiReport };
 
 function withQuery(path: string, params: Record<string, string | number | boolean | undefined>) {
   const search = new URLSearchParams();
@@ -69,5 +96,12 @@ export const professionalApi = {
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
   getAnamnese: (patientId: number | string) => api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`),
-  generateAiReport: (patientId: number | string, payload: ProfessionalAiReportRequest) => api<ProfessionalAiReportResponse>(`/api/professional/patients/${patientId}/ai-report`, { method: 'POST', body: JSON.stringify(payload) }),
+  async generateAiReport(patientId: number | string, payload: ProfessionalAiReportRequest = {}) {
+    try {
+      return await api<ProfessionalAiReportResponse>(`/api/professional/patients/${patientId}/ai-report`, { method: 'POST', body: JSON.stringify({ periodo: payload.periodo ?? 'semanal', modo: payload.modo ?? 'avaliacao_clinica' }) });
+    } catch (error) {
+      if (error instanceof ForbiddenError) throw new Error('Você não tem permissão profissional para gerar relatório de IA.');
+      throw error;
+    }
+  },
 };
