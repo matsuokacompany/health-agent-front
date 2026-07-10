@@ -43,32 +43,36 @@ async function defaultAccessToken() {
   return session?.access_token ?? null;
 }
 
-function resolveDefaultBaseUrl() {
-  const configuredUrl = process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL;
-  if (configuredUrl) return configuredUrl;
+function resolveConfiguredBaseUrl(baseUrl?: string) {
+  return baseUrl ?? process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL;
+}
+
+function resolveRequestBaseUrl(baseUrl?: string) {
+  if (baseUrl) return baseUrl;
   if (process.env.NODE_ENV === 'test') return 'http://localhost';
   throw new Error('API URL não configurada. Defina NEXT_PUBLIC_API_URL para este ambiente.');
 }
 
 export class ApiClient {
-  private readonly baseUrl: string;
+  private readonly baseUrl?: string;
   private readonly getAccessToken: () => Promise<string | null>;
   private readonly onUnauthorized?: () => void;
 
-  constructor({ baseUrl = resolveDefaultBaseUrl(), getAccessToken = defaultAccessToken, onUnauthorized }: ApiClientOptions = {}) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
+  constructor({ baseUrl, getAccessToken = defaultAccessToken, onUnauthorized }: ApiClientOptions = {}) {
+    this.baseUrl = resolveConfiguredBaseUrl(baseUrl)?.replace(/\/$/, '');
     this.getAccessToken = getAccessToken;
     this.onUnauthorized = onUnauthorized;
   }
 
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const baseUrl = resolveRequestBaseUrl(this.baseUrl);
     const token = await this.getAccessToken();
     const headers = new Headers(init.headers);
 
     if (!headers.has('content-type') && init.body) headers.set('content-type', 'application/json');
     if (token) headers.set('authorization', `Bearer ${token}`);
 
-    const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers });
+    const response = await fetch(`${baseUrl}${path}`, { ...init, headers });
 
     if (response.ok) {
       if (response.status === 204) return undefined as T;
