@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { RequireAuth } from '@/components/auth/guards';
 import { updatePassword } from '@/lib/supabase';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 function ChangePasswordForm() {
   const [password, setPassword] = useState('');
@@ -48,14 +49,8 @@ function ChangePasswordForm() {
       <h1>Alterar senha</h1>
       <p className="muted">Cadastre uma nova senha para manter sua conta segura.</p>
       <form className="card" onSubmit={onSubmit}>
-        <label>
-          Nova senha
-          <input autoComplete="new-password" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
-        </label>
-        <label>
-          Confirmar nova senha
-          <input autoComplete="new-password" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
-        </label>
+        <PasswordInput autoComplete="new-password" label="Nova senha" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required value={password} />
+        <PasswordInput autoComplete="new-password" label="Confirmar nova senha" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required value={confirmPassword} />
         {message ? <p className="notice success">{message}</p> : null}
         {error ? <p className="notice danger">{error}</p> : null}
         <button className="button" disabled={submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>

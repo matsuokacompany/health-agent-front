@@ -8,6 +8,8 @@ const links = [
   ['/admin/pacientes', 'Pacientes'],
   ['/admin/pacientes/novo', 'Novo paciente'],
   ['/admin/profissionais', 'Profissionais'],
+  ['/admin/custos', 'Custos'],
+  ['/admin/parametros', 'Parâmetros'],
   ['/admin/whatsapp', 'WhatsApp'],
   ['/patient', 'Paciente'],
 ];
