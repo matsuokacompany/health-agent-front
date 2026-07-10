@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { recoverSessionFromUrl, updatePassword } from '@/lib/supabase';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -59,14 +60,8 @@ export default function ResetPasswordPage() {
         <h1>Redefinir senha</h1>
         <p className="muted">Digite uma nova senha para concluir a recuperação do seu acesso.</p>
         <form className="card" onSubmit={onSubmit}>
-          <label>
-            Nova senha
-            <input autoComplete="new-password" disabled={!ready || submitting} minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
-          </label>
-          <label>
-            Confirmar nova senha
-            <input autoComplete="new-password" disabled={!ready || submitting} minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
-          </label>
+          <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Nova senha" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required value={password} />
+          <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Confirmar nova senha" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required value={confirmPassword} />
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
