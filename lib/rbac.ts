@@ -47,6 +47,14 @@ export function canAccessPatient(requester: User, patientId: number | string) {
   return requester.linkedPatientIds?.map(String).includes(String(patientId)) === true;
 }
 
+export function assertCanAccessPatient(requester: User, patientId: number | string) {
+  if (!canAccessPatient(requester, patientId)) throw new Error('forbidden');
+}
+
+export function assertSuperAdmin(requester: User) {
+  if (!isSuperAdmin(requester)) throw new Error('forbidden');
+}
+
 export function sanitizeClinicalText(input: string) {
   return input.replace(/[\w.-]+@[\w.-]+/g, '[email]').replace(/\+?\d[\d\s().-]{7,}\d/g, '[phone]').replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[cpf]').slice(0, 2000).trim();
 }
