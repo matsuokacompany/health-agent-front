@@ -9,6 +9,8 @@ describe('ApiClient', () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('NEXT_PUBLIC_API_URL', '');
     vi.stubEnv('VITE_API_URL', '');
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', '');
+    vi.stubEnv('VITE_API_BASE_URL', '');
 
     const client = new ApiClient({ getAccessToken: async () => null });
 

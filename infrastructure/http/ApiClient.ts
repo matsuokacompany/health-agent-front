@@ -44,13 +44,21 @@ async function defaultAccessToken() {
 }
 
 function resolveConfiguredBaseUrl(baseUrl?: string) {
-  return baseUrl ?? process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL;
+  return baseUrl
+    ?? process.env.NEXT_PUBLIC_API_URL
+    ?? process.env['NEXT_PUBLIC_API_URL']
+    ?? process.env.NEXT_PUBLIC_API_BASE_URL
+    ?? process.env['NEXT_PUBLIC_API_BASE_URL']
+    ?? process.env.VITE_API_URL
+    ?? process.env['VITE_API_URL']
+    ?? process.env.VITE_API_BASE_URL
+    ?? process.env['VITE_API_BASE_URL'];
 }
 
 function resolveRequestBaseUrl(baseUrl?: string) {
   if (baseUrl) return baseUrl;
   if (process.env.NODE_ENV === 'test') return 'http://localhost';
-  throw new Error('API URL não configurada. Defina NEXT_PUBLIC_API_URL para este ambiente.');
+  throw new Error('API URL não configurada. Defina NEXT_PUBLIC_API_URL ou NEXT_PUBLIC_API_BASE_URL para este ambiente.');
 }
 
 export class ApiClient {
