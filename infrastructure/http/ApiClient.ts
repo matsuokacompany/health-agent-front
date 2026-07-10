@@ -43,12 +43,19 @@ async function defaultAccessToken() {
   return session?.access_token ?? null;
 }
 
+function resolveDefaultBaseUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL;
+  if (configuredUrl) return configuredUrl;
+  if (process.env.NODE_ENV === 'test') return 'http://localhost';
+  throw new Error('API URL não configurada. Defina NEXT_PUBLIC_API_URL para este ambiente.');
+}
+
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly getAccessToken: () => Promise<string | null>;
   private readonly onUnauthorized?: () => void;
 
-  constructor({ baseUrl = process.env.NEXT_PUBLIC_API_URL ?? process.env.VITE_API_URL ?? 'https://api.julha.com.br', getAccessToken = defaultAccessToken, onUnauthorized }: ApiClientOptions = {}) {
+  constructor({ baseUrl = resolveDefaultBaseUrl(), getAccessToken = defaultAccessToken, onUnauthorized }: ApiClientOptions = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.getAccessToken = getAccessToken;
     this.onUnauthorized = onUnauthorized;

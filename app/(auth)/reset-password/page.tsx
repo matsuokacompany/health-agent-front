@@ -11,6 +11,7 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const minimumPasswordLength = 10;
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +29,11 @@ export default function ResetPasswordPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
+
+    if (password.length < minimumPasswordLength) {
+      setError(`A senha deve ter pelo menos ${minimumPasswordLength} caracteres.`);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('As senhas não conferem.');
@@ -55,11 +61,11 @@ export default function ResetPasswordPage() {
         <form className="card" onSubmit={onSubmit}>
           <label>
             Nova senha
-            <input autoComplete="new-password" disabled={!ready || submitting} minLength={6} name="password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+            <input autoComplete="new-password" disabled={!ready || submitting} minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
           </label>
           <label>
             Confirmar nova senha
-            <input autoComplete="new-password" disabled={!ready || submitting} minLength={6} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
+            <input autoComplete="new-password" disabled={!ready || submitting} minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
           </label>
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}

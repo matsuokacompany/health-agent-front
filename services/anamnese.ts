@@ -1,4 +1,5 @@
-import type { Anamnese } from '@/lib/types';
+import type { Anamnese, User } from '@/lib/types';
+import { assertCanAccessPatient } from '@/lib/rbac';
 import { api } from './api';
 
 let currentUserAnamneseRequest: Promise<Anamnese> | null = null;
@@ -29,5 +30,8 @@ export const anamnesesApi = {
     return api<void>(`/api/anamneses/${id}`, { method: 'DELETE' });
   },
 };
-export const getAnamnese = (_user: unknown, patientId: number) => anamnesesApi.byUser(patientId);
+export const getAnamnese = async (user: User, patientId: number) => {
+  assertCanAccessPatient(user, patientId);
+  return anamnesesApi.byUser(patientId);
+};
 export const saveAnamnese = (_user: unknown, data: Anamnese) => data.id ? anamnesesApi.updateMe(data) : anamnesesApi.create(data);
