@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const { apiMock } = vi.hoisted(() => ({ apiMock: vi.fn() }));
 
@@ -7,6 +7,9 @@ vi.mock('@/services/api', () => ({ api: apiMock }));
 import { patientDashboardApi } from '@/services/patientDashboard';
 
 describe('patientDashboardApi', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it('normalizes object anamnesis summaries to renderable preview text', async () => {
     apiMock.mockResolvedValueOnce({
       anamnesis_summary: {
@@ -62,6 +65,8 @@ describe('patientDashboardApi', () => {
   });
 
   it('uses plan fields, derives followed days from dates, and limits timeline to 7 days', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T12:00:00Z'));
     apiMock.mockResolvedValueOnce({
       has_active_monitoring: true,
       plan_name: 'Plano pós-operatório',

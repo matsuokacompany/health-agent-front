@@ -1,4 +1,5 @@
 import type { Role, User } from '@/lib/types';
+import { assertSuperAdmin } from '@/lib/rbac';
 import { api } from './api';
 export type UserPayload = Partial<Omit<User, 'id' | 'created_at' | 'updated_at' | 'roles'>> & { roles?: Role[] };
 export const usersApi = {
@@ -10,5 +11,11 @@ export const usersApi = {
   updateRoles: (id: number, roles: Role[]) => api<User>(`/api/users/${id}/roles`, { method: 'PUT', body: JSON.stringify({ roles }) }),
 };
 export const listUsers = usersApi.list;
-export const getUser = (_requester: User, userId: number) => usersApi.get(userId);
-export const updateUserRoles = (_requester: User, userId: number, roles: Role[]) => usersApi.updateRoles(userId, roles);
+export const getUser = async (requester: User, userId: number) => {
+  assertSuperAdmin(requester);
+  return usersApi.get(userId);
+};
+export const updateUserRoles = async (requester: User, userId: number, roles: Role[]) => {
+  assertSuperAdmin(requester);
+  return usersApi.updateRoles(userId, roles);
+};
