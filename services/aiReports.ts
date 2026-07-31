@@ -1,0 +1,50 @@
+import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
+import { api } from './api';
+
+export type AiReportMode = 'preventivo' | 'avaliacao_clinica';
+export type AiReportStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+export type AiReportMetrics = { total_checkins: number; completed_checkins: number; pending_checkins: number; checkins_with_symptoms: number; checkins_without_symptoms: number; days_with_checkins: number; adherence_percentage: number; symptom_rate_percentage: number; calendar_coverage_percentage: number };
+export type AiReportPreviewResponse = {
+  modo: AiReportMode;
+  eligibility: { can_generate: boolean; reason: string | null; next_generation_at: string | null; sufficient_data: boolean; completed_checkins: number; minimum_required: number; latest_report_id: number | null; last_generated_at: string | null };
+  summary: { patient_id: number; start_date: string; end_date: string; period_days: number; aggregation: 'weekly' | 'monthly' | 'yearly'; minimum_completed_checkins: number; sufficient_data: boolean; metrics: AiReportMetrics; symptom_trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data'; longest_gap_days: number; symptoms: Array<{ description: string; occurrences: number; first_reported_at: string; last_reported_at: string }>; timeline: Array<{ start_date: string; end_date: string; metrics: AiReportMetrics }> };
+  preview_token: string | null;
+  preview_expires_at: string | null;
+};
+export type AiReport = { report_id: number; patient_id: number; requested_by_user_id: number; start_date: string; end_date: string; modo: AiReportMode; status: AiReportStatus; requested_at: string; processing_started_at: string | null; generated_at: string | null; next_generation_at: string | null; clinical_summary: string | null; ai: Record<string, unknown> | null; input_tokens: number | null; output_tokens: number | null; estimated_cost: number | null; actual_cost: number | null; model_name: string | null; failure_code: string | null };
+export type AiReportHistoryItem = Pick<AiReport, 'report_id' | 'patient_id' | 'requested_by_user_id' | 'start_date' | 'end_date' | 'modo' | 'status' | 'requested_at' | 'generated_at' | 'next_generation_at' | 'estimated_cost' | 'actual_cost' | 'model_name' | 'failure_code'>;
+export type AiReportHistoryResponse = { items: AiReportHistoryItem[]; pagination: { page: number; per_page: number; total: number; total_pages: number } };
+export type AiReportPeriod = { start_date: string; end_date: string; modo: AiReportMode };
+
+const DAY = 86_400_000;
+export function localIsoDate(date: Date) { const offset = date.getTimezoneOffset() * 60_000; return new Date(date.getTime() - offset).toISOString().slice(0, 10); }
+export function inclusiveDays(start: string, end: string) { return Math.floor((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY) + 1; }
+export function subtractInclusiveDays(end: Date, days: number) { const start = new Date(end); start.setDate(start.getDate() - days + 1); return localIsoDate(start); }
+export function validateAiReportPeriod(start: string, end: string, today = localIsoDate(new Date())) {
+  if (!start || !end) return 'Informe a data inicial e a data final.';
+  if (start > end) return 'A data inicial não pode ser posterior à data final.';
+  if (end > today) return 'A data final não pode estar no futuro.';
+  if (inclusiveDays(start, end) < 30) return 'O período deve conter no mínimo 30 dias.';
+  const maxEnd = new Date(`${start}T00:00:00`); maxEnd.setFullYear(maxEnd.getFullYear() + 5);
+  if (new Date(`${end}T00:00:00`) >= maxEnd) return 'O período deve estar limitado a cinco anos-calendário.';
+  return null;
+}
+export function shortcutPeriod(days: 30 | 365, today = new Date()) { return { start_date: subtractInclusiveDays(today, days), end_date: localIsoDate(today) }; }
+export function fullMonitoringPeriod(monitoringStart?: string | null, today = new Date()) { const end = localIsoDate(today); const limit = new Date(today); limit.setFullYear(limit.getFullYear() - 5); limit.setDate(limit.getDate() + 1); return { start_date: monitoringStart && monitoringStart > localIsoDate(limit) ? monitoringStart.slice(0, 10) : localIsoDate(limit), end_date: end }; }
+
+const reasonMessages: Record<string, string> = { REPORT_IN_PROGRESS: 'Já existe um relatório em processamento para este paciente.', PATIENT_MONTHLY_LIMIT_REACHED: 'Este paciente já teve um relatório gerado nos últimos 30 dias.', INSUFFICIENT_DATA: 'Ainda não existem dados suficientes para gerar uma interpretação.' };
+const errorMessages: Record<string, string> = { PREVIEW_DATA_CHANGED: 'Os dados foram atualizados depois da pré-visualização. Gere uma nova prévia.', REPORT_INPUT_TOO_LARGE: 'O período selecionado contém informações demais. Escolha um período menor.', REPORT_COST_LIMIT_EXCEEDED: 'A geração ultrapassaria o limite configurado. Escolha um período menor.', PREVIEW_TOKEN_MISMATCH: 'A pré-visualização não corresponde aos dados enviados. Gere uma nova prévia.', PREVIEW_TOKEN_EXPIRED: 'A pré-visualização expirou. Gere uma nova prévia.' };
+export function eligibilityMessage(reason: string | null) { return reason ? reasonMessages[reason] ?? reason : null; }
+function errorCode(payload: unknown): string | null { if (!payload || typeof payload !== 'object') return null; const value = payload as Record<string, unknown>; const detail = value.detail; if (typeof value.code === 'string') return value.code; if (typeof detail === 'string') return detail; if (detail && typeof detail === 'object' && typeof (detail as Record<string, unknown>).code === 'string') return (detail as Record<string, unknown>).code as string; return null; }
+export function aiReportErrorMessage(error: unknown) { if (error instanceof ForbiddenError) return 'Você não tem acesso a este paciente.'; if (error instanceof ApiError && error.status === 404) return 'Paciente ou relatório não encontrado.'; const code = error instanceof ApiError ? errorCode(error.payload) : null; return (code && errorMessages[code]) || (error instanceof Error ? error.message : 'Não foi possível concluir a operação.'); }
+
+function base(patientId: number | string) { return `/api/professional/patients/${patientId}/ai-reports`; }
+export const aiReportsApi = {
+  preview: (patientId: number | string, payload: AiReportPeriod) => api<AiReportPreviewResponse>(`${base(patientId)}/preview`, { method: 'POST', body: JSON.stringify(payload) }),
+  generate: (patientId: number | string, payload: AiReportPeriod & { preview_token: string }) => api<AiReport>(base(patientId), { method: 'POST', body: JSON.stringify(payload) }),
+  history: (patientId: number | string, page = 1, perPage = 20, status?: AiReportStatus | '') => api<AiReportHistoryResponse>(`${base(patientId)}?${new URLSearchParams({ page: String(page), per_page: String(perPage), ...(status ? { status } : {}) })}`),
+  detail: (patientId: number | string, reportId: number) => api<AiReport>(`${base(patientId)}/${reportId}`),
+};
+
+/** @deprecated Fluxo semanal legado; mantido enquanto outros consumidores forem migrados. */
+export const LEGACY_AI_REPORT_ENDPOINT = '/api/professional/patients/{patient_id}/ai-report';

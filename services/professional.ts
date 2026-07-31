@@ -96,6 +96,7 @@ export const professionalApi = {
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
   getAnamnese: (patientId: number | string) => api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`),
+  /** @deprecated Use aiReportsApi para preview, geração personalizada e histórico. */
   async generateAiReport(patientId: number | string, payload: ProfessionalAiReportRequest = {}) {
     try {
       return await api<ProfessionalAiReportResponse>(`/api/professional/patients/${patientId}/ai-report`, { method: 'POST', body: JSON.stringify({ periodo: payload.periodo ?? 'semanal', modo: payload.modo ?? 'avaliacao_clinica' }) });
