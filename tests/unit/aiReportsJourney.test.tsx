@@ -1,53 +1,27 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AiReportsJourney } from '@/components/professional/AiReportsJourney';
+import { AiReportsJourney, AI_REPORT_STATUS_LABELS } from '@/components/professional/AiReportsJourney';
 import { aiReportsApi, type AiReport, type AiReportPreviewResponse } from '@/services/aiReports';
+import { ApiError } from '@/infrastructure/http/ApiClient';
 
 const metrics = { total_checkins: 30, completed_checkins: 25, pending_checkins: 5, checkins_with_symptoms: 4, checkins_without_symptoms: 21, days_with_checkins: 30, adherence_percentage: 83, symptom_rate_percentage: 16, calendar_coverage_percentage: 100 };
-const preview: AiReportPreviewResponse = { modo: 'avaliacao_clinica', eligibility: { can_generate: true, reason: null, next_generation_at: null, sufficient_data: true, completed_checkins: 25, minimum_required: 10, latest_report_id: null, last_generated_at: null }, summary: { patient_id: 7, start_date: '2026-07-02', end_date: '2026-07-31', period_days: 30, aggregation: 'weekly', minimum_completed_checkins: 10, sufficient_data: true, metrics, symptom_trend: 'stable', longest_gap_days: 1, symptoms: [], timeline: [] }, preview_token: 'secret-preview-token', preview_expires_at: '2026-07-31T12:00:00Z' };
-const pending: AiReport = { report_id: 11, patient_id: 7, requested_by_user_id: 2, start_date: '2026-07-02', end_date: '2026-07-31', modo: 'avaliacao_clinica', status: 'PENDING', requested_at: '2026-07-31T10:00:00Z', processing_started_at: null, generated_at: null, next_generation_at: null, clinical_summary: null, ai: null, input_tokens: null, output_tokens: null, estimated_cost: null, actual_cost: null, model_name: null, failure_code: null };
-const emptyHistory = { items: [], pagination: { page: 1, per_page: 20, total: 0, total_pages: 0 } };
+const eligible: AiReportPreviewResponse = { modo: 'avaliacao_clinica', eligibility: { can_generate: true, reason: null, next_generation_at: null, sufficient_data: true, completed_checkins: 25, minimum_required: 10, latest_report_id: null, last_generated_at: null }, summary: { patient_id: 7, start_date: '2026-07-02', end_date: '2026-07-31', period_days: 30, aggregation: 'weekly', minimum_completed_checkins: 10, sufficient_data: true, metrics, symptom_trend: 'stable', longest_gap_days: 1, symptoms: [], timeline: [] }, preview_token: 'secret-preview-token', preview_expires_at: '2099-07-31T12:00:00Z' };
+const report: AiReport = { report_id: 11, patient_id: 7, requested_by_user_id: 2, start_date: '2026-07-02', end_date: '2026-07-31', modo: 'avaliacao_clinica', status: 'COMPLETED', requested_at: '2026-07-31T10:00:00Z', processing_started_at: null, generated_at: '2026-07-31T10:01:00Z', next_generation_at: '2026-08-30T10:01:00Z', clinical_summary: 'Resumo seguro', ai: { interpretacao: 'Interpretação segura' }, input_tokens: null, output_tokens: null, estimated_cost: null, actual_cost: null, model_name: null, failure_code: null };
+const history = { items: [], pagination: { page: 1, per_page: 20, total: 0, total_pages: 0 } };
+const start = async () => { fireEvent.click(screen.getByRole('button', { name: 'Revisar dados do relatório' })); await screen.findByText('Revise os dados do relatório'); };
 
-describe('jornada de relatórios com IA', () => {
-  beforeEach(() => { vi.spyOn(aiReportsApi, 'history').mockResolvedValue(emptyHistory); vi.spyOn(aiReportsApi, 'preview').mockResolvedValue(preview); vi.spyOn(aiReportsApi, 'generate').mockResolvedValue({ ...pending, status: 'COMPLETED', clinical_summary: 'Concluído' }); });
-  afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
-
-  it('mostra histórico vazio e preview elegível sem revelar token', async () => {
-    render(<AiReportsJourney patientId="7" />);
-    expect(await screen.findByText('Nenhum relatório encontrado')).toBeTruthy();
-    fireEvent.click(screen.getByText('Analisar período'));
-    expect(await screen.findByText('Dados suficientes')).toBeTruthy();
-    expect(screen.getByText('Gerar interpretação com IA')).toBeTruthy();
-    expect(screen.queryByText('secret-preview-token')).toBeNull();
-  });
-
-  it.each([
-    ['INSUFFICIENT_DATA', 'Ainda não existem dados suficientes'],
-    ['PATIENT_MONTHLY_LIMIT_REACHED', 'últimos 30 dias'],
-    ['REPORT_IN_PROGRESS', 'em processamento'],
-  ])('mostra bloqueio %s', async (reason, message) => {
-    vi.mocked(aiReportsApi.preview).mockResolvedValue({ ...preview, preview_token: null, eligibility: { ...preview.eligibility, can_generate: false, sufficient_data: reason !== 'INSUFFICIENT_DATA', reason } });
-    render(<AiReportsJourney patientId="7" />); fireEvent.click(screen.getByText('Analisar período'));
-    expect(await screen.findByText(new RegExp(message))).toBeTruthy();
-    expect(screen.getByText('Gerar interpretação com IA')).toHaveProperty('disabled', true);
-  });
-
-  it('confirma a geração com o texto clínico obrigatório', async () => {
-    render(<AiReportsJourney patientId="7" />); fireEvent.click(screen.getByText('Analisar período')); await screen.findByText('Dados suficientes'); fireEvent.click(screen.getByText('Gerar interpretação com IA'));
-    expect(screen.getByRole('dialog').textContent).toMatch(/somente em 30 dias/); expect(screen.getByRole('dialog').textContent).toMatch(/não representam diagnóstico médico/);
-    fireEvent.click(screen.getByText('Confirmar e gerar')); await waitFor(() => expect(aiReportsApi.generate).toHaveBeenCalledWith('7', expect.objectContaining({ preview_token: 'secret-preview-token' })));
-  });
-
-  it('aplica filtro de status e paginação', async () => {
-    vi.mocked(aiReportsApi.history).mockResolvedValue({ items: [{ ...pending, status: 'COMPLETED', generated_at: '2026-07-31T10:10:00Z' }], pagination: { page: 1, per_page: 20, total: 21, total_pages: 2 } });
-    render(<AiReportsJourney patientId="7" />); expect(await screen.findByText('Ver detalhe')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Filtrar histórico por status'), { target: { value: 'COMPLETED' } }); await waitFor(() => expect(aiReportsApi.history).toHaveBeenCalledWith('7', 1, 20, 'COMPLETED'));
-    fireEvent.click(screen.getByText('Próxima')); await waitFor(() => expect(aiReportsApi.history).toHaveBeenCalledWith('7', 2, 20, 'COMPLETED'));
-  });
-
-  it('faz polling e cancela timers ao desmontar', async () => {
-    vi.useFakeTimers(); vi.mocked(aiReportsApi.generate).mockResolvedValue(pending); const detail = vi.spyOn(aiReportsApi, 'detail').mockResolvedValue({ ...pending, status: 'COMPLETED', generated_at: '2026-07-31T10:01:00Z' });
-    const view = render(<AiReportsJourney patientId="7" />); await act(async () => { await Promise.resolve(); }); fireEvent.click(screen.getByText('Analisar período')); await act(async () => { await Promise.resolve(); }); fireEvent.click(screen.getByText('Gerar interpretação com IA')); fireEvent.click(screen.getByText('Confirmar e gerar')); await act(async () => { await Promise.resolve(); await Promise.resolve(); vi.advanceTimersByTime(2000); await Promise.resolve(); }); expect(detail).toHaveBeenCalled();
-    view.unmount(); expect(vi.getTimerCount()).toBe(0);
-  });
+describe('jornada completa de relatórios com IA', () => {
+ beforeEach(() => { vi.spyOn(aiReportsApi, 'history').mockResolvedValue(history); vi.spyOn(aiReportsApi, 'preview').mockResolvedValue(eligible); vi.spyOn(aiReportsApi, 'generate').mockResolvedValue(report); });
+ afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
+ it('mostra preview elegível e nunca revela o token', async () => { render(<AiReportsJourney patientId="7"/>); await start(); expect(screen.getByText('Tudo pronto para gerar')).toBeTruthy(); expect(document.body.textContent).not.toContain('secret-preview-token'); });
+ it.each([['INSUFFICIENT_DATA','Ainda não há dados suficientes neste período'],['REPORT_IN_PROGRESS','Já existe um relatório em geração'],['PATIENT_MONTHLY_LIMIT_REACHED','Nova geração disponível em']])('explica bloqueio %s', async (reason,title) => { vi.mocked(aiReportsApi.preview).mockResolvedValue({ ...eligible, preview_token: null, eligibility: { ...eligible.eligibility, can_generate: false, reason, completed_checkins: 4, next_generation_at: '2026-09-01T10:00:00Z' } }); render(<AiReportsJourney patientId="7"/>); await start(); expect(screen.getByText(new RegExp(title))).toBeTruthy(); expect(screen.queryByRole('button',{name:'Gerar relatório com IA'})).toBeNull(); });
+ it('detecta token expirado', async () => { vi.mocked(aiReportsApi.preview).mockResolvedValue({ ...eligible, preview_expires_at: '2020-01-01T00:00:00Z' }); render(<AiReportsJourney patientId="7"/>); await start(); expect(await screen.findByText('A revisão expirou')).toBeTruthy(); expect(screen.getByRole('button',{name:'Atualizar revisão'})).toBeTruthy(); });
+ it('alterar período ou modo invalida a revisão', async () => { render(<AiReportsJourney patientId="7"/>); await start(); fireEvent.click(screen.getByRole('radio',{name:/Análise preventiva/})); expect(screen.queryByText('Revise os dados do relatório')).toBeNull(); });
+ it('gera com os mesmos dados e mostra sucesso', async () => { render(<AiReportsJourney patientId="7" patientName="Ana"/>); await start(); fireEvent.click(screen.getByRole('button',{name:'Gerar relatório com IA'})); expect(await screen.findByText('Relatório gerado com sucesso')).toBeTruthy(); expect(aiReportsApi.generate).toHaveBeenCalledWith('7', { start_date:'2026-07-02', end_date:'2026-07-31', modo:'avaliacao_clinica', preview_token:'secret-preview-token' }); expect(screen.getByText('Ana')).toBeTruthy(); });
+ it('traduz falha da IA sem mostrar código', async () => { vi.mocked(aiReportsApi.generate).mockRejectedValue(new ApiError('raw',502,{detail:{code:'AI_GENERATION_FAILED'}})); render(<AiReportsJourney patientId="7"/>); await start(); fireEvent.click(screen.getByRole('button',{name:'Gerar relatório com IA'})); expect(await screen.findByText('Não foi possível concluir a análise')).toBeTruthy(); expect(document.body.textContent).not.toContain('AI_GENERATION_FAILED'); });
+ it('exige nova revisão quando os dados mudam', async () => { vi.mocked(aiReportsApi.generate).mockRejectedValue(new ApiError('raw',422,{detail:{code:'PREVIEW_DATA_CHANGED'}})); render(<AiReportsJourney patientId="7"/>); await start(); fireEvent.click(screen.getByRole('button',{name:'Gerar relatório com IA'})); expect(await screen.findByText('Os dados foram atualizados')).toBeTruthy(); expect(screen.getByRole('button',{name:'Atualizar revisão'})).toBeTruthy(); });
+ it('impede clique duplicado na geração', async () => { let resolve!: (r: AiReport) => void; vi.mocked(aiReportsApi.generate).mockImplementation(() => new Promise(r => { resolve=r; })); render(<AiReportsJourney patientId="7"/>); await start(); const b=screen.getByRole('button',{name:'Gerar relatório com IA'}); fireEvent.click(b); fireEvent.click(b); expect(aiReportsApi.generate).toHaveBeenCalledTimes(1); resolve(report); });
+ it('traduz todos os estados', () => expect(AI_REPORT_STATUS_LABELS).toEqual({PENDING:'Aguardando processamento',PROCESSING:'Gerando relatório',COMPLETED:'Concluído',FAILED:'Falha na geração'}));
+ it('oferece navegação básica por teclado e labels explícitos', () => { render(<AiReportsJourney patientId="7"/>); expect(screen.getByLabelText('Data inicial')).toBeTruthy(); expect(screen.getByRole('radio',{name:/Apoio à avaliação clínica/})).toHaveProperty('checked',true); screen.getByRole('button',{name:'Período personalizado'}).focus(); fireEvent.keyDown(document.activeElement!,{key:'Enter'}); expect(screen.getByLabelText('Data inicial')).toBeTruthy(); });
+ it('filtra e pagina o histórico', async () => { vi.mocked(aiReportsApi.history).mockResolvedValue({items:[report],pagination:{page:1,per_page:20,total:21,total_pages:2}}); render(<AiReportsJourney patientId="7"/>); await screen.findByText('Ver relatório completo'); fireEvent.click(screen.getByRole('button',{name:'Concluídos'})); await waitFor(()=>expect(aiReportsApi.history).toHaveBeenCalledWith('7',1,20,'COMPLETED')); fireEvent.click(screen.getByRole('button',{name:'Próxima'})); await waitFor(()=>expect(aiReportsApi.history).toHaveBeenCalledWith('7',2,20,'COMPLETED')); });
 });

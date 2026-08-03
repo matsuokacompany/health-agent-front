@@ -29,14 +29,38 @@ export function validateAiReportPeriod(start: string, end: string, today = local
   if (new Date(`${end}T00:00:00`) >= maxEnd) return 'O período deve estar limitado a cinco anos-calendário.';
   return null;
 }
-export function shortcutPeriod(days: 30 | 365, today = new Date()) { return { start_date: subtractInclusiveDays(today, days), end_date: localIsoDate(today) }; }
+export function shortcutPeriod(days: 30 | 90 | 180 | 365, today = new Date()) { return { start_date: subtractInclusiveDays(today, days), end_date: localIsoDate(today) }; }
 export function fullMonitoringPeriod(monitoringStart?: string | null, today = new Date()) { const end = localIsoDate(today); const limit = new Date(today); limit.setFullYear(limit.getFullYear() - 5); limit.setDate(limit.getDate() + 1); return { start_date: monitoringStart && monitoringStart > localIsoDate(limit) ? monitoringStart.slice(0, 10) : localIsoDate(limit), end_date: end }; }
 
-const reasonMessages: Record<string, string> = { REPORT_IN_PROGRESS: 'Já existe um relatório em processamento para este paciente.', PATIENT_MONTHLY_LIMIT_REACHED: 'Este paciente já teve um relatório gerado nos últimos 30 dias.', INSUFFICIENT_DATA: 'Ainda não existem dados suficientes para gerar uma interpretação.' };
-const errorMessages: Record<string, string> = { PREVIEW_DATA_CHANGED: 'Os dados foram atualizados depois da pré-visualização. Gere uma nova prévia.', REPORT_INPUT_TOO_LARGE: 'O período selecionado contém informações demais. Escolha um período menor.', REPORT_COST_LIMIT_EXCEEDED: 'A geração ultrapassaria o limite configurado. Escolha um período menor.', PREVIEW_TOKEN_MISMATCH: 'A pré-visualização não corresponde aos dados enviados. Gere uma nova prévia.', PREVIEW_TOKEN_EXPIRED: 'A pré-visualização expirou. Gere uma nova prévia.' };
-export function eligibilityMessage(reason: string | null) { return reason ? reasonMessages[reason] ?? reason : null; }
+export type AiReportUserError = { title: string; message: string; action?: string; code?: string };
+const errors: Record<string, AiReportUserError> = {
+  PREVIEW_DATA_CHANGED: { title: 'Os dados foram atualizados', message: 'Os check-ins do paciente mudaram desde a última revisão. Atualize os dados antes de gerar.', action: 'Atualizar revisão' },
+  REPORT_IN_PROGRESS: { title: 'Relatório em andamento', message: 'Já existe um relatório em geração para este paciente.', action: 'Ver histórico' },
+  PATIENT_MONTHLY_LIMIT_REACHED: { title: 'Nova geração ainda indisponível', message: 'Consulte a data indicada para saber quando um novo relatório poderá ser gerado.', action: 'Ver último relatório' },
+  INSUFFICIENT_DATA: { title: 'Dados insuficientes', message: 'O período selecionado não possui check-ins respondidos suficientes.', action: 'Alterar período' },
+  REPORT_INPUT_TOO_LARGE: { title: 'Período muito extenso', message: 'O período possui dados demais para uma única análise. Selecione um intervalo menor.', action: 'Alterar período' },
+  REPORT_COST_LIMIT_EXCEEDED: { title: 'Geração indisponível', message: 'Não foi possível gerar o relatório devido a um limite operacional.', action: 'Tentar mais tarde' },
+  AI_GENERATION_FAILED: { title: 'Não foi possível concluir a análise', message: 'Ocorreu uma falha durante a geração. A tentativa não consumiu a disponibilidade do paciente.', action: 'Tentar novamente' },
+  PREVIEW_TOKEN_EXPIRED: { title: 'A revisão expirou', message: 'Atualize os dados para continuar com segurança.', action: 'Atualizar revisão' },
+  PREVIEW_TOKEN_MISMATCH: { title: 'A revisão expirou', message: 'Atualize os dados para continuar com segurança.', action: 'Atualizar revisão' },
+};
+export function eligibilityMessage(reason: string | null) { return reason ? errors[reason]?.message ?? 'A geração não está disponível neste momento.' : null; }
 function errorCode(payload: unknown): string | null { if (!payload || typeof payload !== 'object') return null; const value = payload as Record<string, unknown>; const detail = value.detail; if (typeof value.code === 'string') return value.code; if (typeof detail === 'string') return detail; if (detail && typeof detail === 'object' && typeof (detail as Record<string, unknown>).code === 'string') return (detail as Record<string, unknown>).code as string; return null; }
-export function aiReportErrorMessage(error: unknown) { if (error instanceof ForbiddenError) return 'Você não tem acesso a este paciente.'; if (error instanceof ApiError && error.status === 404) return 'Paciente ou relatório não encontrado.'; const code = error instanceof ApiError ? errorCode(error.payload) : null; return (code && errorMessages[code]) || (error instanceof Error ? error.message : 'Não foi possível concluir a operação.'); }
+export function aiReportUserError(error: unknown): AiReportUserError {
+  if (error instanceof ForbiddenError) return { title: 'Acesso não autorizado', message: 'Você não possui acesso a este paciente.' };
+  if (error instanceof ApiError) {
+    const code = errorCode(error.payload);
+    if (code && errors[code]) return { ...errors[code], code };
+    if (error.status === 401) return { title: 'Sessão expirada', message: 'Sua sessão expirou. Entre novamente.' };
+    if (error.status === 403) return { title: 'Acesso não autorizado', message: 'Você não possui acesso a este paciente.' };
+    if (error.status === 502) return { ...errors.AI_GENERATION_FAILED, code: 'AI_GENERATION_FAILED' };
+    if (error.status === 503) return { title: 'Serviço indisponível', message: 'A geração de relatórios está temporariamente indisponível.' };
+    if (error.status === 404) return { title: 'Relatório não encontrado', message: 'Não foi possível localizar este relatório.' };
+    return { title: 'Não foi possível concluir', message: 'Não foi possível concluir a operação. Tente novamente.' };
+  }
+  return { title: 'Falha de conexão', message: 'Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.' };
+}
+export function aiReportErrorMessage(error: unknown) { return aiReportUserError(error).message; }
 
 function base(patientId: number | string) { return `/api/professional/patients/${patientId}/ai-reports`; }
 export const aiReportsApi = {
