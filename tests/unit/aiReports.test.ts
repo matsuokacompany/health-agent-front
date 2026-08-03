@@ -14,17 +14,17 @@ describe('períodos de relatórios com IA', () => {
 
 describe('cliente e mensagens', () => {
   it.each([
-    ['INSUFFICIENT_DATA', 'dados suficientes'],
-    ['PATIENT_MONTHLY_LIMIT_REACHED', 'últimos 30 dias'],
-    ['REPORT_IN_PROGRESS', 'processamento'],
+    ['INSUFFICIENT_DATA', 'check-ins respondidos suficientes'],
+    ['PATIENT_MONTHLY_LIMIT_REACHED', 'data indicada'],
+    ['REPORT_IN_PROGRESS', 'geração'],
   ])('traduz inelegibilidade %s', (code, fragment) => expect(eligibilityMessage(code)).toContain(fragment));
 
   it.each([
-    ['PREVIEW_TOKEN_EXPIRED', 'expirou'],
-    ['PREVIEW_DATA_CHANGED', 'atualizados'],
-    ['PREVIEW_TOKEN_MISMATCH', 'não corresponde'],
-    ['REPORT_INPUT_TOO_LARGE', 'período menor'],
-    ['REPORT_COST_LIMIT_EXCEEDED', 'limite configurado'],
+    ['PREVIEW_TOKEN_EXPIRED', 'segurança'],
+    ['PREVIEW_DATA_CHANGED', 'mudaram'],
+    ['PREVIEW_TOKEN_MISMATCH', 'segurança'],
+    ['REPORT_INPUT_TOO_LARGE', 'intervalo menor'],
+    ['REPORT_COST_LIMIT_EXCEEDED', 'limite operacional'],
   ])('traduz erro %s', (code, fragment) => expect(aiReportErrorMessage(new ApiError('x', 422, { detail: { code } }))).toContain(fragment));
 
   it('monta preview, geração, histórico paginado/filtro e detalhe no cliente autenticado', async () => {
