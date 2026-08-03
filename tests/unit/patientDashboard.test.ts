@@ -21,6 +21,7 @@ describe('patientDashboardApi', () => {
 
     const overview = await patientDashboardApi.getOverview();
 
+    expect(apiMock).toHaveBeenLastCalledWith('/api/patient/dashboard');
     expect(overview.anamnesisSummary).toBe('Paciente relata acompanhamento clínico regular.');
   });
 
