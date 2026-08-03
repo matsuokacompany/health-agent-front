@@ -1,3 +1,5 @@
+import { ApiError } from '@/infrastructure/http/ApiClient';
+import type { DailyReport } from '@/lib/types';
 import { api } from './api';
 
 export type DashboardPeriod = '7d' | '30d' | '90d' | '1y' | 'custom';
@@ -68,6 +70,30 @@ function normalizeOverview(value: unknown): PatientDashboardOverview { const sou
 function normalizeStatistics(value: unknown): PatientDashboardStatistics { const source = isRecord(value) ? value : {}; const cards = normalizeStatisticList(source.cards ?? source.statistics ?? source.summary ?? value); const charts = normalizeArray<{ id: string; title: string; data: Array<{ label: string; value: number }> }>(source.charts); return { cards, charts }; }
 function normalizeCalendar(value: unknown, year: number, month: number): PatientDashboardCalendar { const source = isRecord(value) ? value : {}; const rawDays = normalizeArray<RecordValue>(source.days ?? value); const days = rawDays.map((day) => { const checkins = normalizeArray<DashboardCheckIn>(day.checkins); return { date: String(day.date ?? ''), status: typeof day.status === 'string' ? day.status : undefined, has_checkin: Boolean(day.has_checkin), completed: Boolean(day.completed), pending: Boolean(day.pending), has_symptoms: Boolean(day.has_symptoms), had_symptoms: typeof day.had_symptoms === 'boolean' ? day.had_symptoms : null, checkins }; }).filter((day) => day.date); return { year: Number(source.year ?? year), month: Number(source.month ?? month), days, planStartsAt: (source.planStartsAt ?? source.plan_starts_at ?? null) as string | null, planEndsAt: (source.planEndsAt ?? source.plan_ends_at ?? null) as string | null }; }
 
+async function fallbackOnNotFound<T>(primary: () => Promise<T>, fallback: () => Promise<T>) {
+  try {
+    return await primary();
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    return fallback();
+  }
+}
+
+function calendarFromDailyReports(value: unknown, year: number, month: number): PatientDashboardCalendar {
+  const reports = normalizeArray<DailyReport>(value);
+  const byDate = new Map(reports.filter((report) => report.report_date).map((report) => [report.report_date, report]));
+  const dayCount = new Date(year, month, 0).getDate();
+  const days = Array.from({ length: dayCount }, (_, index): PatientDashboardCalendarDay => {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`;
+    const report = byDate.get(date);
+    const completed = Boolean(report && (report.status === 'COMPLETED' || report.completed));
+    const pending = Boolean(report && !completed);
+    const checkins: DashboardCheckIn[] = report ? [{ ...report, date: report.report_date }] : [];
+    return { date, status: report?.status, has_checkin: Boolean(report), completed, pending, has_symptoms: Boolean(report?.had_symptoms), had_symptoms: report?.had_symptoms ?? null, checkins };
+  });
+  return { year, month, days };
+}
+
 export function normalizePatientDashboard(value: unknown): PatientDashboardAggregate {
   const source = isRecord(value) ? value : {};
   const responses = isRecord(source.responses) ? source.responses : {};
@@ -108,8 +134,14 @@ export function normalizePatientDashboard(value: unknown): PatientDashboardAggre
 
 export const patientDashboardApi = {
   getPatientDashboard: async () => normalizePatientDashboard(await api<unknown>('/dashboard/patient')),
-  getOverview: async () => normalizeOverview(await api<unknown>('/patient/dashboard')),
-  getCalendar: async (year: number, month: number) => normalizeCalendar(await api<unknown>(withQuery('/patient/dashboard/calendar', { year, month })), year, month),
+  getOverview: async () => fallbackOnNotFound(
+    async () => normalizeOverview(await api<unknown>('/patient/dashboard')),
+    async () => normalizeOverview(await api<unknown>('/dashboard/patient')),
+  ),
+  getCalendar: async (year: number, month: number) => fallbackOnNotFound(
+    async () => normalizeCalendar(await api<unknown>(withQuery('/patient/dashboard/calendar', { year, month })), year, month),
+    async () => calendarFromDailyReports(await api<unknown>(`/api/daily-reports/?month=${year}-${String(month).padStart(2, '0')}`), year, month),
+  ),
   getHistory: async (params: HistoryParams) => normalizePaginated<DashboardCheckIn>(await api<unknown>(withQuery('/patient/dashboard/history', params)), params),
   getStatistics: async (params: StatisticsParams) => normalizeStatistics(await api<unknown>(withQuery('/patient/dashboard/statistics', params))),
   getCheckIns: async (params: CheckInsParams) => normalizePaginated<DashboardCheckIn>(await api<unknown>(withQuery('/patient/dashboard/checkins', params)), params),

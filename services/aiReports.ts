@@ -66,7 +66,18 @@ function base(patientId: number | string) { return `/api/professional/patients/$
 export const aiReportsApi = {
   preview: (patientId: number | string, payload: AiReportPeriod) => api<AiReportPreviewResponse>(`${base(patientId)}/preview`, { method: 'POST', body: JSON.stringify(payload) }),
   generate: (patientId: number | string, payload: AiReportPeriod & { preview_token: string }) => api<AiReport>(base(patientId), { method: 'POST', body: JSON.stringify(payload) }),
-  history: (patientId: number | string, page = 1, perPage = 20, status?: AiReportStatus | '') => api<AiReportHistoryResponse>(`${base(patientId)}?${new URLSearchParams({ page: String(page), per_page: String(perPage), ...(status ? { status } : {}) })}`),
+  history: async (patientId: number | string, page = 1, perPage = 20, status?: AiReportStatus | '') => {
+    try {
+      return await api<AiReportHistoryResponse>(`${base(patientId)}?${new URLSearchParams({ page: String(page), per_page: String(perPage), ...(status ? { status } : {}) })}`);
+    } catch (error) {
+      // A API responde 404 quando o paciente ainda não possui relatórios. Para uma
+      // coleção, isso representa um histórico vazio, não um relatório inexistente.
+      if (error instanceof ApiError && error.status === 404) {
+        return { items: [], pagination: { page, per_page: perPage, total: 0, total_pages: 1 } };
+      }
+      throw error;
+    }
+  },
   detail: (patientId: number | string, reportId: number) => api<AiReport>(`${base(patientId)}/${reportId}`),
 };
 

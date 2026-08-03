@@ -1,10 +1,20 @@
 import type { DailyReport, MonitoringPlan } from '@/lib/types';
+import { ApiError } from '@/infrastructure/http/ApiClient';
 
 export type MonitoringDayStatus = 'answered' | 'unanswered' | 'noCheckIn' | 'incomplete';
 
 export type MonitoringCalendarDay = { date: string; status: MonitoringDayStatus; className: string; report?: DailyReport };
 export type PatientMonitoringSummary = { startsAt: string | null; endsAt: string | null; status: string };
 export type MonthKey = `${number}-${string}`;
+
+export function monitoringLoadErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.status === 404) return 'Não foi possível localizar o calendário deste monitoramento.';
+    if (error.status === 401) return 'Sessão expirada. Faça login novamente.';
+    if (error.status === 403) return 'Você não possui acesso a este monitoramento.';
+  }
+  return 'Não foi possível carregar o calendário. Tente novamente.';
+}
 
 function dateKey(date: Date) { return date.toISOString().slice(0, 10); }
 export function monthKey(date: Date): MonthKey { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` as MonthKey; }

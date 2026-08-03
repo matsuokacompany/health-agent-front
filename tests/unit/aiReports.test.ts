@@ -36,4 +36,12 @@ describe('cliente e mensagens', () => {
     await aiReportsApi.detail(9, 4);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/ai-reports/4');
   });
+
+  it('trata histórico ainda inexistente como uma coleção vazia', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: 'Not found' }), { status: 404 })));
+    await expect(aiReportsApi.history(9)).resolves.toEqual({
+      items: [],
+      pagination: { page: 1, per_page: 20, total: 0, total_pages: 1 },
+    });
+  });
 });
