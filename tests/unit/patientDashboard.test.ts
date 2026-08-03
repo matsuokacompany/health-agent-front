@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@/infrastructure/http/ApiClient';
 
 const { apiMock } = vi.hoisted(() => ({ apiMock: vi.fn() }));
 
@@ -7,6 +8,9 @@ vi.mock('@/services/api', () => ({ api: apiMock }));
 import { patientDashboardApi } from '@/services/patientDashboard';
 
 describe('patientDashboardApi', () => {
+  beforeEach(() => {
+    apiMock.mockReset();
+  });
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -21,7 +25,7 @@ describe('patientDashboardApi', () => {
 
     const overview = await patientDashboardApi.getOverview();
 
-    expect(apiMock).toHaveBeenLastCalledWith('/api/patient/dashboard');
+    expect(apiMock).toHaveBeenLastCalledWith('/patient/dashboard');
     expect(overview.anamnesisSummary).toBe('Paciente relata acompanhamento clínico regular.');
   });
 
@@ -36,6 +40,39 @@ describe('patientDashboardApi', () => {
     const overview = await patientDashboardApi.getOverview();
 
     expect(overview.anamnesisSummary).toBe('1 condição registrada na anamnese.');
+  });
+
+  it('requests the monitoring calendar without duplicating the API prefix', async () => {
+    apiMock.mockResolvedValueOnce({ year: 2026, month: 8, days: [] });
+
+    await patientDashboardApi.getCalendar(2026, 8);
+
+    expect(apiMock).toHaveBeenLastCalledWith('/patient/dashboard/calendar?year=2026&month=8');
+  });
+
+  it('builds the calendar from daily reports when the dedicated route is unavailable', async () => {
+    apiMock
+      .mockRejectedValueOnce(new ApiError('Not found', 404))
+      .mockResolvedValueOnce([{ id: 17, report_date: '2026-08-03', status: 'COMPLETED', completed: true, had_symptoms: false }]);
+
+    const calendar = await patientDashboardApi.getCalendar(2026, 8);
+
+    expect(apiMock).toHaveBeenNthCalledWith(1, '/patient/dashboard/calendar?year=2026&month=8');
+    expect(apiMock).toHaveBeenNthCalledWith(2, '/api/daily-reports/?month=2026-08');
+    expect(calendar.days).toHaveLength(31);
+    expect(calendar.days[2]).toMatchObject({ date: '2026-08-03', has_checkin: true, completed: true, checkins: [{ id: 17 }] });
+  });
+
+  it('uses the aggregate patient dashboard when the overview route is unavailable', async () => {
+    apiMock
+      .mockRejectedValueOnce(new ApiError('Not found', 404))
+      .mockResolvedValueOnce({ monitoring: { title: 'Acompanhamento', active: true, start_date: '2026-08-01' } });
+
+    const overview = await patientDashboardApi.getOverview();
+
+    expect(apiMock).toHaveBeenNthCalledWith(1, '/patient/dashboard');
+    expect(apiMock).toHaveBeenNthCalledWith(2, '/dashboard/patient');
+    expect(overview.activePlan).toMatchObject({ name: 'Acompanhamento', active: true, starts_at: '2026-08-01' });
   });
 
   it('normalizes the aggregated patient dashboard response', async () => {

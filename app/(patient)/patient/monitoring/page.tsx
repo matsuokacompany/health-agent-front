@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { CalendarSkeleton } from '@/components/ui/Skeleton';
 import { dailyReportsApi } from '@/services/dailyReports';
 import { patientDashboardApi, type PatientDashboardCalendarDay, type PatientDashboardOverview } from '@/services/patientDashboard';
-import { addMonths } from '@/services/patientMonitoring';
+import { addMonths, monitoringLoadErrorMessage } from '@/services/patientMonitoring';
 import type { DailyReport } from '@/lib/types';
 
 type EditFormState = { had_symptoms: boolean; symptom_description: string; suspected_cause: string };
@@ -83,12 +83,19 @@ export default function PatientMonitoring() {
   const canGoNext = true;
 
   const loadDashboard = useCallback(async () => {
-    const [nextOverview, calendar] = await Promise.all([
+    const [overviewResult, calendarResult] = await Promise.allSettled([
       patientDashboardApi.getOverview(),
       patientDashboardApi.getCalendar(year, month),
     ]);
-    setOverview(nextOverview);
-    setDays(calendar.days);
+
+    if (calendarResult.status === 'rejected') throw calendarResult.reason;
+
+    setDays(calendarResult.value.days);
+    if (overviewResult.status === 'fulfilled') {
+      setOverview(overviewResult.value);
+    } else if (!(overviewResult.reason instanceof ApiError && overviewResult.reason.status === 404)) {
+      throw overviewResult.reason;
+    }
   }, [month, year]);
 
   useEffect(() => {
@@ -96,7 +103,7 @@ export default function PatientMonitoring() {
     setLoading(true);
     setFeedback(null);
     loadDashboard().catch((error) => {
-      if (mounted) setFeedback(monitoringErrorMessage(error));
+      if (mounted) setFeedback(monitoringLoadErrorMessage(error));
     }).finally(() => {
       if (mounted) setLoading(false);
     });
