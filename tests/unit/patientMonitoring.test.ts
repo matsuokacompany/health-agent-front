@@ -17,7 +17,7 @@ vi.mock('@/services/patientDashboard', async (importOriginal) => {
   };
 });
 
-import { loadPatientMonitoringMonth } from '@/app/(patient)/patient/monitoring/page';
+import { loadPatientMonitoringMonth } from '@/services/patientMonitoring';
 
 describe('patient monitoring calendar loading', () => {
   afterEach(() => vi.clearAllMocks());
