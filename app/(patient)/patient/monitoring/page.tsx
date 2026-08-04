@@ -44,12 +44,27 @@ function monitoringErrorMessage(error: unknown) {
   return 'Não foi possível atualizar sua resposta. Tente novamente.';
 }
 
+function isNotFound(error: unknown) {
+  return error instanceof ApiError && error.status === 404;
+}
+
 function normalizeEditForm(report: DailyReport): EditFormState {
   return {
     had_symptoms: Boolean(report.had_symptoms),
     symptom_description: String(report.symptom_description ?? ''),
     suspected_cause: String(report.suspected_cause ?? report.cause ?? ''),
   };
+}
+
+export async function loadPatientMonitoringMonth(year: number, month: number) {
+  // Calendar data is required, while the overview only enriches the header.
+  // Keeping these failure domains separate prevents an optional 404 from
+  // replacing a valid calendar with an unrelated "response not found" alert.
+  const [calendar, overview] = await Promise.all([
+    patientDashboardApi.getCalendar(year, month),
+    patientDashboardApi.getOverview().catch(() => null),
+  ]);
+  return { calendar, overview };
 }
 
 export default function PatientMonitoring() {
@@ -84,10 +99,7 @@ export default function PatientMonitoring() {
   const canGoNext = true;
 
   const loadDashboard = useCallback(async () => {
-    const [nextOverview, calendar] = await Promise.all([
-      patientDashboardApi.getOverview(),
-      patientDashboardApi.getCalendar(year, month),
-    ]);
+    const { calendar, overview: nextOverview } = await loadPatientMonitoringMonth(year, month);
     setOverview(nextOverview);
     setDays(calendar.days);
   }, [month, year]);
@@ -118,7 +130,10 @@ export default function PatientMonitoring() {
     try {
       setSelectedReport(await dailyReportsApi.get(reportIdFromCheckIn(checkin)));
     } catch (error) {
-      setFeedback(monitoringErrorMessage(error));
+      // The calendar already contains enough state to render and operate on the
+      // report. A stale/missing details route must not discard that valid data.
+      if (isNotFound(error)) setSelectedReport(checkin as DailyReport);
+      else setFeedback(monitoringErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -133,7 +148,15 @@ export default function PatientMonitoring() {
       setSelectedCheckin(checkin);
       setEditing(true);
     } catch (error) {
-      setFeedback(monitoringErrorMessage(error));
+      if (isNotFound(error)) {
+        const calendarReport = checkin as DailyReport;
+        setEditForm(normalizeEditForm(calendarReport));
+        setSelectedReport(calendarReport);
+        setSelectedCheckin(checkin);
+        setEditing(true);
+      } else {
+        setFeedback(monitoringErrorMessage(error));
+      }
     } finally {
       setSaving(false);
     }
