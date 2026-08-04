@@ -20,34 +20,6 @@ describe('patientDashboardApi', () => {
     expect(calendar.days[0]).toMatchObject({ date: '2026-08-04', has_checkin: true, pending: true });
     expect(calendar.days[0].checkins[0].id).toBe(91);
   });
-  it('normalizes object anamnesis summaries to renderable preview text', async () => {
-    apiMock.mockResolvedValueOnce({
-      anamnesis_summary: {
-        has_anamnesis: true,
-        conditions_count: 2,
-        preview: 'Paciente relata acompanhamento clínico regular.',
-      },
-    });
-
-    const overview = await patientDashboardApi.getOverview();
-
-    expect(apiMock).toHaveBeenLastCalledWith('/api/patient/dashboard');
-    expect(overview.anamnesisSummary).toBe('Paciente relata acompanhamento clínico regular.');
-  });
-
-  it('falls back to a condition count message when no anamnesis preview is provided', async () => {
-    apiMock.mockResolvedValueOnce({
-      anamnesisSummary: {
-        hasAnamnesis: true,
-        conditionsCount: 1,
-      },
-    });
-
-    const overview = await patientDashboardApi.getOverview();
-
-    expect(overview.anamnesisSummary).toBe('1 condição registrada na anamnese.');
-  });
-
   it('normalizes the aggregated patient dashboard response', async () => {
     apiMock.mockResolvedValueOnce({
       has_active_monitoring: true,

@@ -22,14 +22,14 @@ describe('service API wrappers', () => {
     expect(apiMock).toHaveBeenCalledWith('/api/daily-reports/?monitoring_plan_id=7&month=2026-07');
   });
 
-  it('tries monitoring plan fallback paths until a plan list is found', async () => {
-    apiMock.mockResolvedValueOnce([]).mockResolvedValueOnce({ items: [{ id: 1, patient_id: 2, status: 'active' }] });
+  it('lists monitoring plans through the patient-specific endpoint', async () => {
+    apiMock.mockResolvedValueOnce({ items: [{ id: 1, patient_id: 2, status: 'active' }] });
 
     const plans = await monitoringApi.listCurrentPatientPlans(2);
 
     expect(plans).toHaveLength(1);
-    expect(apiMock).toHaveBeenNthCalledWith(1, '/plans');
-    expect(apiMock).toHaveBeenNthCalledWith(2, '/api/plans');
+    expect(apiMock).toHaveBeenCalledOnce();
+    expect(apiMock).toHaveBeenCalledWith('/api/monitoring/patients/2/plans');
   });
 
   it('uses the authenticated user endpoint for getMe', async () => {
