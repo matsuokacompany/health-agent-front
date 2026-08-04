@@ -14,14 +14,8 @@ export function addMonths(date: Date, amount: number) { return new Date(date.get
 export function compareMonths(left: Date, right: Date) { return left.getFullYear() === right.getFullYear() ? left.getMonth() - right.getMonth() : left.getFullYear() - right.getFullYear(); }
 
 export async function loadPatientMonitoringMonth(year: number, month: number) {
-  // Calendar data is required, while the overview only enriches the header.
-  // Keeping these failure domains separate prevents an optional 404 from
-  // replacing a valid calendar with an unrelated "response not found" alert.
-  const [calendar, overview] = await Promise.all([
-    patientDashboardApi.getCalendar(year, month),
-    patientDashboardApi.getOverview().catch(() => null),
-  ]);
-  return { calendar, overview };
+  const calendar = await patientDashboardApi.getCalendar(year, month);
+  return { calendar, overview: null };
 }
 
 export function getMonitoringMonthRange(plan?: MonitoringPlan, today = new Date()) {
