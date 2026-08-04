@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { CalendarSkeleton } from '@/components/ui/Skeleton';
 import { dailyReportsApi } from '@/services/dailyReports';
 import { patientDashboardApi, type PatientDashboardCalendarDay, type PatientDashboardOverview } from '@/services/patientDashboard';
-import { addMonths } from '@/services/patientMonitoring';
+import { addMonths, loadPatientMonitoringMonth } from '@/services/patientMonitoring';
 import type { DailyReport } from '@/lib/types';
 
 type EditFormState = { had_symptoms: boolean; symptom_description: string; suspected_cause: string };
@@ -54,17 +54,6 @@ function normalizeEditForm(report: DailyReport): EditFormState {
     symptom_description: String(report.symptom_description ?? ''),
     suspected_cause: String(report.suspected_cause ?? report.cause ?? ''),
   };
-}
-
-export async function loadPatientMonitoringMonth(year: number, month: number) {
-  // Calendar data is required, while the overview only enriches the header.
-  // Keeping these failure domains separate prevents an optional 404 from
-  // replacing a valid calendar with an unrelated "response not found" alert.
-  const [calendar, overview] = await Promise.all([
-    patientDashboardApi.getCalendar(year, month),
-    patientDashboardApi.getOverview().catch(() => null),
-  ]);
-  return { calendar, overview };
 }
 
 export default function PatientMonitoring() {

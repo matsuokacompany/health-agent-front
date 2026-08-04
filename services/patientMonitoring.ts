@@ -1,4 +1,5 @@
 import type { DailyReport, MonitoringPlan } from '@/lib/types';
+import { patientDashboardApi } from '@/services/patientDashboard';
 
 export type MonitoringDayStatus = 'answered' | 'unanswered' | 'noCheckIn' | 'incomplete';
 
@@ -11,6 +12,17 @@ export function monthKey(date: Date): MonthKey { return `${date.getFullYear()}-$
 export function monthFromDateString(value?: string | null) { if (!value) return undefined; const date = new Date(`${value.slice(0, 10)}T00:00:00`); return Number.isNaN(date.getTime()) ? undefined : new Date(date.getFullYear(), date.getMonth(), 1); }
 export function addMonths(date: Date, amount: number) { return new Date(date.getFullYear(), date.getMonth() + amount, 1); }
 export function compareMonths(left: Date, right: Date) { return left.getFullYear() === right.getFullYear() ? left.getMonth() - right.getMonth() : left.getFullYear() - right.getFullYear(); }
+
+export async function loadPatientMonitoringMonth(year: number, month: number) {
+  // Calendar data is required, while the overview only enriches the header.
+  // Keeping these failure domains separate prevents an optional 404 from
+  // replacing a valid calendar with an unrelated "response not found" alert.
+  const [calendar, overview] = await Promise.all([
+    patientDashboardApi.getCalendar(year, month),
+    patientDashboardApi.getOverview().catch(() => null),
+  ]);
+  return { calendar, overview };
+}
 
 export function getMonitoringMonthRange(plan?: MonitoringPlan, today = new Date()) {
   if (!plan) return { start: new Date(today.getFullYear(), today.getMonth(), 1), end: new Date(today.getFullYear(), today.getMonth(), 1) };
