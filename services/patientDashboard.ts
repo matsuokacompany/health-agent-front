@@ -109,7 +109,7 @@ export function normalizePatientDashboard(value: unknown): PatientDashboardAggre
 export const patientDashboardApi = {
   getPatientDashboard: async () => normalizePatientDashboard(await api<unknown>('/dashboard/patient')),
   getOverview: async () => normalizeOverview(await api<unknown>('/api/patient/dashboard')),
-  getCalendar: async (year: number, month: number) => normalizeCalendar(await api<unknown>(withQuery('/api/patient/dashboard/calendar', { year, month })), year, month),
+  getCalendar: async (year: number, month: number) => normalizeCalendar(await api<unknown>(withQuery('/patient/dashboard/calendar', { year, month })), year, month),
   getHistory: async (params: HistoryParams) => normalizePaginated<DashboardCheckIn>(await api<unknown>(withQuery('/api/patient/dashboard/history', params)), params),
   getStatistics: async (params: StatisticsParams) => normalizeStatistics(await api<unknown>(withQuery('/api/patient/dashboard/statistics', params))),
   getCheckIns: async (params: CheckInsParams) => normalizePaginated<DashboardCheckIn>(await api<unknown>(withQuery('/api/patient/dashboard/checkins', params)), params),

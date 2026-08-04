@@ -8,8 +8,8 @@ export const dailyReportsApi = {
     const query = params.toString();
     return api<DailyReport[]>(`/api/daily-reports/${query ? `?${query}` : ''}`);
   },
-  get: (id: number) => api<DailyReport>(`/api/daily-reports/${id}`),
-  update: (id: number, payload: Partial<DailyReport>) => api<DailyReport>(`/api/daily-reports/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  get: (id: number | string) => api<DailyReport>(`/api/daily-reports/${id}`),
+  update: (id: number | string, payload: Pick<DailyReport, 'had_symptoms' | 'symptom_description' | 'suspected_cause'>) => api<DailyReport>(`/api/daily-reports/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   remove: (id: number) => api<void>(`/api/daily-reports/${id}`, { method: 'DELETE' }),
-  removeResponse: (id: number) => api<void>(`/api/daily-reports/${id}/response`, { method: 'DELETE' }),
+  removeResponse: (id: number | string) => api<void>(`/api/daily-reports/${id}/response`, { method: 'DELETE' }),
 };

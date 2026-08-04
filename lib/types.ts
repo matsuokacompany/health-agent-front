@@ -69,6 +69,7 @@ export type DailyReport = {
   report_date?: string;
   status: DailyReportStatus;
   symptom_description?: string | null;
+  suspected_cause?: string | null;
   cause?: string | null;
   had_symptoms?: boolean | null;
   completed?: boolean;
