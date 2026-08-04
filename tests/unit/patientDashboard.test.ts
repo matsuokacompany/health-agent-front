@@ -9,6 +9,16 @@ import { patientDashboardApi } from '@/services/patientDashboard';
 describe('patientDashboardApi', () => {
   afterEach(() => {
     vi.useRealTimers();
+    apiMock.mockReset();
+  });
+  it('requests and normalizes the patient calendar endpoint', async () => {
+    apiMock.mockResolvedValueOnce({ year: 2026, month: 8, days: [{ date: '2026-08-04', has_checkin: true, pending: true, checkins: [{ id: 91, status: 'PENDING' }] }] });
+
+    const calendar = await patientDashboardApi.getCalendar(2026, 8);
+
+    expect(apiMock).toHaveBeenCalledWith('/patient/dashboard/calendar?year=2026&month=8');
+    expect(calendar.days[0]).toMatchObject({ date: '2026-08-04', has_checkin: true, pending: true });
+    expect(calendar.days[0].checkins[0].id).toBe(91);
   });
   it('normalizes object anamnesis summaries to renderable preview text', async () => {
     apiMock.mockResolvedValueOnce({
