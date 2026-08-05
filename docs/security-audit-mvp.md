@@ -5,9 +5,9 @@ Escopo: aplicação Next.js/front-end, autenticação Supabase via REST, RBAC cl
 
 ## Resumo executivo
 
-O front-end já possui algumas proteções úteis para MVP: headers básicos de segurança no middleware, guards de rotas por perfil, token Bearer nas chamadas à API, mensagens genéricas para recuperação de senha e testes de RBAC. Mesmo assim, há pontos que devem ser tratados antes de expor dados reais de saúde:
+O front-end já possui algumas proteções úteis para MVP: headers básicos de segurança no middleware, guards de rotas por perfil, cookies HttpOnly nas chamadas à API, mensagens genéricas para recuperação de senha e testes de RBAC. Mesmo assim, há pontos que devem ser tratados antes de expor dados reais de saúde:
 
-1. **Sessão em `localStorage` é o maior risco do front-end**, porque qualquer XSS consegue ler access/refresh tokens.
+1. **Sessão em cookie `HttpOnly` foi adotada no front-end**, removendo access/refresh tokens do alcance direto do JavaScript; o backend ainda precisa garantir flags, refresh, CSRF e validação de sessão.
 2. **CSP ainda permite `unsafe-inline`**, mas `unsafe-eval` foi removido para produção; o próximo passo é nonce/hash para o script de tema.
 3. **Autorização real depende do backend**, pois guards do front-end são apenas barreira de UX/defesa em profundidade.
 4. **Testes E2E usam cookie `role` como autenticação simulada**, o que pode mascarar cenários reais se vazar para ambiente fora de teste.
@@ -24,15 +24,15 @@ O front-end já possui algumas proteções úteis para MVP: headers básicos de 
 
 #### 1. Tokens em `localStorage`
 
-A sessão Supabase é serializada diretamente no `localStorage` (`health-agent.supabase.session`). Isso facilita persistência, mas torna access/refresh tokens legíveis por qualquer JavaScript executado na origem. Em um produto de saúde, um XSS pequeno vira sequestro de sessão.
+O frontend foi migrado para chamar endpoints do FastAPI (`/api/auth/login`, `/api/auth/me`, `/api/auth/refresh`, `/api/auth/logout` e fluxos de senha) usando `credentials: "include"`, sem persistir `access_token`/`refresh_token` e sem montar `Authorization: Bearer` no navegador.
 
-**Evidência:** `getStoredSession` lê do `localStorage`, `storeSession` grava/remove a sessão e `recoverSessionFromUrl` persiste tokens vindos do link de recuperação.
+**Evidência:** o cliente de autenticação remove a chave legada `health-agent.supabase.session`; o `ApiClient` usa cookies com credenciais e tenta refresh explícito uma única vez.
 
-**Recomendação MVP:** migrar para sessão em cookie `HttpOnly`, `Secure`, `SameSite=Lax/Strict`, gerenciada no servidor/middleware ou por um backend-for-frontend. Se isso for grande demais agora, reduzir TTL dos tokens, reforçar CSP e revisar todos os pontos de renderização de conteúdo dinâmico.
+**Recomendação MVP restante:** confirmar no backend cookies `HttpOnly`, `Secure`, `SameSite=Lax/Strict`, proteção CSRF, CORS com credenciais e validação server-side da sessão em todas as rotas protegidas.
 
 #### 2. CSP ainda permite `unsafe-inline`
 
-O middleware configura CSP e já removeu `unsafe-eval` de `script-src`; ainda resta `unsafe-inline`, principalmente por causa do script de tema em `app/layout.tsx`. Isso ainda reduz a proteção contra XSS, principalmente combinado com tokens em `localStorage`.
+O middleware configura CSP e já removeu `unsafe-eval` de `script-src`; ainda resta `unsafe-inline`, principalmente por causa do script de tema em `app/layout.tsx`. Isso ainda reduz a proteção contra XSS, principalmente em telas que renderizam conteúdo dinâmico.
 
 **Recomendação MVP:** trocar o script inline por nonce/hash ou por estratégia sem script inline. Manter uma CSP diferente para dev se necessário.
 
