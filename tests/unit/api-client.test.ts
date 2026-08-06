@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiClient, clearCsrfToken, ConflictError, ForbiddenError, UnauthorizedError } from '@/infrastructure/http/ApiClient';
+import { ApiClient, clearCsrfToken, ConflictError, ForbiddenError, shouldRedirectToLogin, UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
 describe('ApiClient', () => {
   afterEach(() => {
@@ -95,5 +95,13 @@ describe('ApiClient', () => {
 
     vi.stubGlobal('fetch', async () => new Response('{}', { status: 409 }));
     await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/api/auth/me')).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('does not redirect authentication failures back to login', () => {
+    expect(shouldRedirectToLogin('/api/auth/me')).toBe(false);
+    expect(shouldRedirectToLogin('/api/auth/login')).toBe(false);
+    expect(shouldRedirectToLogin('/api/auth/refresh')).toBe(false);
+    expect(shouldRedirectToLogin('/api/auth/csrf')).toBe(false);
+    expect(shouldRedirectToLogin('/api/patients')).toBe(true);
   });
 });
