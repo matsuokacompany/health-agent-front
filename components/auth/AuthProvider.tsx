@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { RoleName, UserRead } from '@/lib/types';
 import { clearLegacySupabaseSession, getCurrentUser, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
 export type AccessContext = 'admin' | 'professional' | 'patient';
 
@@ -72,7 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return me;
     } catch (err) {
       setUser(null);
-      setError(toFriendlyErrorMessage(err));
+      // A missing/expired cookie is the normal signed-out state. The API client
+      // already redirects protected requests, so surfacing it on /login makes
+      // every fresh visit look like an error. Keep actionable failures visible.
+      setError(err instanceof UnauthorizedError ? null : toFriendlyErrorMessage(err));
       return null;
     }
   }, []);

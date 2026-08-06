@@ -16,7 +16,8 @@ O front-end já possui algumas proteções úteis para MVP: headers básicos de 
 7. **Configuração pública de API agora falha sem URL explícita fora de testes**, reduzindo risco de builds apontarem acidentalmente para produção.
 8. **Há rotas legadas `/app` no repositório**, enquanto o RBAC explicitamente nega acesso a `/app`, criando risco de manutenção/confusão.
 9. **Sanitização de texto clínico é limitada**, útil para exibição rápida, mas insuficiente como anonimização/controle de PHI.
-10. **Teste completo falha em data corrente**, reduzindo confiança de regressão antes de releases.
+10. **A suíte completa foi estabilizada para cenários sensíveis à data**, preservando a confiança de regressão antes de releases.
+11. **Ausência ou expiração de sessão agora é tratada como estado deslogado normal**, sem exibir um alerta recorrente na tela de login; falhas inesperadas, como indisponibilidade de rede, continuam visíveis.
 
 ## Achados priorizados
 
@@ -100,3 +101,14 @@ As telas de reset/change-password agora usam mínimo de 10 caracteres. Para MVP 
 ## Observação importante
 
 As proteções adicionadas nos serviços do front-end são defesa em profundidade e melhoram UX/evitam chamadas indevidas, mas **não substituem RBAC e controle de escopo no backend**.
+
+## Checklist operacional recomendado
+
+- Definir cookies de sessão no backend com `HttpOnly`, `Secure`, `SameSite=Lax` (ou `Strict`, se compatível), escopo de domínio/path mínimo e expiração curta com rotação segura do refresh token.
+- Invalidar a sessão no servidor no logout, troca de senha, remoção de acesso e detecção de reutilização de refresh token; não depender apenas da remoção do cookie no navegador.
+- Aplicar autorização e vínculo profissional-paciente em cada endpoint, com política de menor privilégio e negação por padrão.
+- Manter proteção CSRF em toda operação mutável autenticada por cookie e CORS restrito às origens conhecidas, sem origem curinga com credenciais.
+- Adotar MFA para profissionais e administradores, rate limiting progressivo em login/recuperação e alertas para tentativas anômalas, evitando bloqueios que facilitem negação de serviço.
+- Eliminar `unsafe-inline` da CSP com nonce/hash, validar e codificar entradas/saídas e manter dependências atualizadas com análise automatizada no CI.
+- Persistir trilhas de auditoria imutáveis para login, logout, falhas de autorização e acesso/alteração de dados clínicos, sem registrar tokens, senhas ou conteúdo clínico desnecessário.
+- Criptografar dados sensíveis em trânsito e em repouso, realizar backups testados, definir retenção mínima e preparar um plano de resposta a incidentes alinhado à LGPD.
