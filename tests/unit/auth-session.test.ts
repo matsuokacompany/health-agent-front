@@ -20,6 +20,7 @@ describe('backend auth client', () => {
     vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
       calls.push({ url, init });
       if (url.endsWith('/api/auth/login')) return new Response(JSON.stringify({ id: '1', email: 'ana@example.com', roles: ['patient'] }), { status: 200 });
+      if (url.endsWith('/api/auth/csrf')) return new Response(JSON.stringify({ csrf_token: 'csrf-value' }), { status: 200 });
       return new Response(null, { status: 204 });
     });
 
@@ -31,6 +32,7 @@ describe('backend auth client', () => {
 
     expect(calls.map(({ url }) => url)).toEqual([
       'http://localhost/api/auth/login',
+      'http://localhost/api/auth/csrf',
       'http://localhost/api/auth/forgot-password',
       'http://localhost/api/auth/change-password',
       'http://localhost/api/auth/recovery/exchange',

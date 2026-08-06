@@ -1,4 +1,5 @@
 import type { UserRead } from '@/lib/types';
+import { clearCsrfToken, refreshCsrfToken } from '@/infrastructure/http/ApiClient';
 import { api } from '@/services/api';
 
 export const LEGACY_SUPABASE_SESSION_KEY = 'health-agent.supabase.session';
@@ -19,12 +20,15 @@ export async function signOut() {
   try {
     await api<void>('/api/auth/logout', { method: 'POST' });
   } finally {
+    clearCsrfToken();
     clearLegacySupabaseSession();
   }
 }
 
-export function getCurrentUser() {
-  return api<UserRead>('/api/auth/me');
+export async function getCurrentUser() {
+  const user = await api<UserRead>('/api/auth/me');
+  await refreshCsrfToken();
+  return user;
 }
 
 export function refreshSession() {
