@@ -95,6 +95,14 @@ function shouldTryRefresh(path: string, response: Response, retryOnUnauthorized:
   return response.status === 401 && retryOnUnauthorized && path !== '/api/auth/refresh' && path !== '/api/auth/login' && path !== '/api/auth/logout';
 }
 
+export function shouldRedirectToLogin(path: string) {
+  // Authentication endpoints are also used while the login page restores (or
+  // discovers the absence of) a session. Reloading /login when one of those
+  // requests returns 401 starts the same request again and creates a reload
+  // loop. Protected API requests can still send the user back to login.
+  return !path.startsWith('/api/auth/');
+}
+
 export class ApiClient {
   private readonly baseUrl?: string;
   private readonly onUnauthorized?: () => void;
@@ -175,7 +183,7 @@ export class ApiClient {
 
     if (response.status === 401) {
       this.onUnauthorized?.();
-      if (path !== '/api/auth/me' && typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') window.location.assign('/login');
+      if (shouldRedirectToLogin(path) && typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') window.location.assign('/login');
       throw new UnauthorizedError(payload);
     }
 
