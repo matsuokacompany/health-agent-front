@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { recoverSessionFromUrl, updatePassword } from '@/lib/supabase';
+import { exchangePasswordRecoveryCode, updatePassword } from '@/lib/supabase';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 
 export default function ResetPasswordPage() {
@@ -18,12 +18,27 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      recoverSessionFromUrl();
-      setReady(true);
-    } catch (err) {
-      setError(toFriendlyErrorMessage(err));
+    async function prepareRecoverySession() {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      if (hashParams.has('access_token') || hashParams.has('refresh_token')) {
+        window.history.replaceState(null, document.title, window.location.pathname);
+        setError('Link de redefinição temporariamente incompatível. Solicite um novo link para usar o fluxo seguro.');
+        return;
+      }
+
+      const code = new URLSearchParams(window.location.search).get('code');
+      try {
+        if (code) {
+          await exchangePasswordRecoveryCode(code);
+          window.history.replaceState(null, document.title, window.location.pathname);
+        }
+        setReady(true);
+      } catch (err) {
+        setError(toFriendlyErrorMessage(err));
+      }
     }
+
+    void prepareRecoverySession();
   }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {

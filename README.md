@@ -1,43 +1,36 @@
 # Health Agent Frontend
 
-Frontend Next.js integrado à API FastAPI em `https://api.julha.com.br`, com Supabase Auth no cliente e autorização por roles locais retornadas pelo backend.
+Frontend Next.js integrado à API FastAPI em `https://api.julha.com.br`, com autenticação gerenciada pelo backend via cookies HttpOnly e autorização por roles locais retornadas pela API.
 
 ## Variáveis de ambiente
 
 Crie `.env.local` apontando para sua API em produção/EC2:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
 NEXT_PUBLIC_API_URL=https://api.julha.com.br
 ```
 
-Se `NEXT_PUBLIC_API_URL` não for definido, o front-end usa `https://api.julha.com.br` como padrão.
+`NEXT_PUBLIC_API_URL` é obrigatória fora dos testes automatizados. As variáveis públicas do Supabase não são necessárias para autenticação no navegador.
 
 ## Fluxo de login
 
-1. A tela `/login` chama `supabase.auth.signInWithPassword({ email, password })`.
-2. A senha nunca é enviada ao FastAPI.
-3. O `ApiClient` busca a sessão atual do Supabase antes de cada request.
-4. Se existir `access_token`, o header `Authorization: Bearer <supabase_access_token>` é enviado.
-5. Após login, restore de sessão ou refresh de token, o frontend chama `GET /api/auth/me`.
-6. O FastAPI valida o JWT Supabase, resolve/cria o usuário local e devolve `UserRead` com `roles`.
+1. A tela `/login` chama `POST /api/auth/login` no FastAPI.
+2. O FastAPI autentica server-to-server no Supabase e define cookies de sessão `HttpOnly`.
+3. O navegador não recebe nem persiste `access_token` ou `refresh_token`.
+4. O `ApiClient` envia chamadas autenticadas com `credentials: "include"`, sem montar `Authorization: Bearer`.
+5. Após login ou restauração de sessão, o frontend chama `GET /api/auth/me`.
+6. O FastAPI valida a sessão/JWT Supabase, resolve/cria o usuário local e devolve `UserRead` com `roles`.
 
 
 ## Recuperação e alteração de senha
 
-As telas de senha usam apenas o Supabase Auth no navegador:
+As telas de senha chamam o FastAPI e dependem da sessão em cookie `HttpOnly`:
 
-- `/forgot-password`: solicita o e-mail de recuperação ao Supabase.
-- `/reset-password`: recebe o link de recuperação, salva temporariamente a sessão enviada no link e permite cadastrar a nova senha.
-- `/change-password`: permite alterar a senha quando o usuário já está autenticado.
+- `/forgot-password`: chama `POST /api/auth/forgot-password`.
+- `/reset-password`: aceita um `code` de recuperação para troca server-side em `POST /api/auth/recovery/exchange`; links legados com tokens no fragmento são rejeitados e limpos da URL.
+- `/change-password`: chama `POST /api/auth/change-password` quando o usuário já está autenticado.
 
-Para que o e-mail de recuperação funcione em produção/Vercel, configure no Supabase:
-
-1. Em **Authentication > URL Configuration**, adicione a URL pública do frontend em **Site URL**.
-2. Em **Redirect URLs**, permita a URL exata de redefinição, por exemplo `https://seu-dominio.com/reset-password`.
-3. Em **Authentication > SMTP Settings**, configure um SMTP próprio se os e-mails do provedor padrão não chegarem, forem limitados por rate limit ou caírem em spam.
-4. Opcionalmente defina `NEXT_PUBLIC_PASSWORD_RESET_REDIRECT_URL=https://seu-dominio.com/reset-password` na Vercel para fixar a URL enviada ao Supabase e evitar links de preview/domínios não autorizados.
+Para que o e-mail de recuperação funcione em produção, configure no Supabase o callback definido pelo backend em **Authentication > URL Configuration > Redirect URLs**. O frontend não deve receber tokens Supabase em links de recuperação.
 
 ## Roles
 
@@ -79,6 +72,6 @@ Hooks disponíveis:
 
 ## Erros HTTP tratados
 
-- `401`: limpa sessão Supabase/local e redireciona para `/login`.
+- `401`: tenta renovar a sessão uma vez em `/api/auth/refresh`; se falhar, redireciona para `/login`.
 - `403`: exibe mensagem de permissão insuficiente.
 - `409`: exibe mensagem amigável para conflito, incluindo e-mail Supabase já vinculado a outro usuário local.

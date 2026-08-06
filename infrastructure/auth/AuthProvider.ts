@@ -9,5 +9,4 @@ export interface AuthProvider {
   getCurrentUser(defaultRole?: Role): Promise<User | null>;
   signIn?(input: SignInInput): Promise<User>;
   signOut?(): Promise<void>;
-  getAccessToken?(): Promise<string | null>;
 }

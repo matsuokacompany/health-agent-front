@@ -23,8 +23,4 @@ export class SupabaseAuth implements AuthProvider {
   async signOut(): Promise<void> {
     throw new Error('SupabaseAuth.signOut is not configured.');
   }
-
-  async getAccessToken(): Promise<string | null> {
-    return null;
-  }
 }

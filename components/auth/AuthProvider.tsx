@@ -1,10 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { Session } from '@/lib/supabase';
 import type { RoleName, UserRead } from '@/lib/types';
-import { getSession, onAuthStateChange, signInWithPassword, signOut as supabaseSignOut } from '@/lib/supabase';
-import { api } from '@/services/api';
+import { clearLegacySupabaseSession, getCurrentUser, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
 export type AccessContext = 'admin' | 'professional' | 'patient';
@@ -24,7 +22,6 @@ function readStoredAccessContext(): AccessContext | null {
 }
 
 export type AuthContextValue = {
-  session: Session | null;
   user: UserRead | null;
   roles: RoleName[];
   activeAccessContext: AccessContext | null;
@@ -38,14 +35,13 @@ export type AuthContextValue = {
   isPatient: boolean;
   signIn(email: string, password: string): Promise<UserRead>;
   signOut(): Promise<void>;
-  refreshMe(): Promise<UserRead>;
+  refreshMe(): Promise<UserRead | null>;
   clearAuthState(): void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<UserRead | null>(null);
   const [activeAccessContextState, setActiveAccessContextState] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearAuthState = useCallback(() => {
-    setSession(null);
     setUser(null);
     setError(null);
     setActiveAccessContext(null);
@@ -71,14 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshMe = useCallback(async () => {
     try {
-      const me = await api<UserRead>('/api/auth/me');
+      const me = await getCurrentUser();
       setUser(me);
       setError(null);
       return me;
     } catch (err) {
       setUser(null);
       setError(toFriendlyErrorMessage(err));
-      throw err;
+      return null;
     }
   }, []);
 
@@ -87,11 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function restoreSession() {
       setLoading(true);
+      clearLegacySupabaseSession();
       try {
-        const currentSession = await getSession();
-        if (!mounted) return;
-        setSession(currentSession);
-        if (currentSession) await refreshMe();
+        await refreshMe();
       } finally {
         if (mounted) setLoading(false);
       }
@@ -99,50 +92,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     void restoreSession();
 
-    const { data } = onAuthStateChange((event, nextSession) => {
-      setSession(nextSession);
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        if (nextSession) void refreshMe();
-      }
-
-      if (event === 'SIGNED_OUT') clearAuthState();
-    });
-
     return () => {
       mounted = false;
-      data.subscription.unsubscribe();
     };
-  }, [clearAuthState, refreshMe]);
+  }, [refreshMe]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setActiveAccessContext(null);
     try {
-      const { data, error: signInError } = await signInWithPassword(email, password);
-      if (signInError) throw new Error(signInError.message);
-      setSession(data.session);
-      return await refreshMe();
+      const me = await signInWithPassword(email, password);
+      setUser(me);
+      setError(null);
+      return me;
     } finally {
       setLoading(false);
     }
-  }, [refreshMe, setActiveAccessContext]);
+  }, [setActiveAccessContext]);
 
   const signOut = useCallback(async () => {
-    await supabaseSignOut();
-    clearAuthState();
+    try {
+      await backendSignOut();
+    } finally {
+      clearAuthState();
+    }
   }, [clearAuthState]);
 
   const roles = user?.roles ?? [];
   const value = useMemo<AuthContextValue>(() => ({
-    session,
     user,
     roles,
     activeAccessContext: activeAccessContextState,
     setActiveAccessContext,
     loading,
     error,
-    isAuthenticated: Boolean(session && user),
+    isAuthenticated: Boolean(user),
     isSuperAdmin: roles.includes('super_admin'),
     isAdmin: roles.includes('admin') || roles.includes('super_admin'),
     isProfessional: roles.includes('professional'),
@@ -151,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshMe,
     clearAuthState,
-  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, session, setActiveAccessContext, signIn, signOut, user]);
+  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, setActiveAccessContext, signIn, signOut, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
