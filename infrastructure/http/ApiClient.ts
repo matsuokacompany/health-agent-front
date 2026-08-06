@@ -35,9 +35,11 @@ export class ConflictError extends ApiError {
   }
 }
 
-const CSRF_COOKIE_NAMES = ['ha-csrf-token', 'csrf_token', 'XSRF-TOKEN'];
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const CSRF_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/forgot-password']);
 let refreshPromise: Promise<boolean> | null = null;
+let csrfToken: string | null = null;
+let csrfPromise: Promise<string> | null = null;
 
 function resolveConfiguredBaseUrl(baseUrl?: string) {
   return baseUrl
@@ -57,24 +59,36 @@ function resolveRequestBaseUrl(baseUrl?: string) {
   throw new Error('API URL não configurada. Defina NEXT_PUBLIC_API_URL ou NEXT_PUBLIC_API_BASE_URL para este ambiente.');
 }
 
-function readCookie(name: string) {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';').map((cookie) => cookie.trim());
-  const prefix = `${name}=`;
-  const match = cookies.find((cookie) => cookie.startsWith(prefix));
-  return match ? decodeURIComponent(match.slice(prefix.length)) : null;
+export function clearCsrfToken() {
+  csrfToken = null;
+  csrfPromise = null;
 }
 
-function readCsrfToken() {
-  for (const name of CSRF_COOKIE_NAMES) {
-    const token = readCookie(name);
-    if (token) return token;
-  }
-  return null;
+export function refreshCsrfToken(baseUrl?: string): Promise<string> {
+  if (csrfPromise) return csrfPromise;
+  const requestBaseUrl = resolveRequestBaseUrl(resolveConfiguredBaseUrl(baseUrl)?.replace(/\/$/, ''));
+  csrfPromise = fetch(`${requestBaseUrl}/api/auth/csrf`, {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+  }).then(async (response) => {
+    if (!response.ok) throw new Error(`Não foi possível obter o token CSRF: ${response.status}`);
+    const headerToken = response.headers.get('X-CSRF-Token');
+    const body = headerToken ? null : await response.json().catch(() => null) as { csrf_token?: string } | null;
+    const token = headerToken ?? body?.csrf_token;
+    if (!token) throw new Error('O backend não retornou um token CSRF.');
+    csrfToken = token;
+    return token;
+  }).finally(() => { csrfPromise = null; });
+  return csrfPromise;
 }
 
-function shouldAttachCsrf(method: string) {
-  return MUTATING_METHODS.has(method.toUpperCase());
+export function getCsrfToken(baseUrl?: string) {
+  return csrfToken ? Promise.resolve(csrfToken) : refreshCsrfToken(baseUrl);
+}
+
+function canSafelyRetry(init: RequestInit) {
+  return init.body == null || typeof init.body === 'string' || init.body instanceof URLSearchParams;
 }
 
 function shouldTryRefresh(path: string, response: Response, retryOnUnauthorized: boolean) {
@@ -95,12 +109,12 @@ export class ApiClient {
   }
 
   private async requestWithRefresh<T>(path: string, init: RequestInit, retryOnUnauthorized: boolean): Promise<T> {
-    const response = await this.fetchWithCookies(path, init);
+    const response = await this.fetchWithCookies(path, init, true);
 
     if (response.ok) return parseResponse<T>(response);
 
     if (shouldTryRefresh(path, response, retryOnUnauthorized) && await this.refreshSession()) {
-      const retryResponse = await this.fetchWithCookies(path, init);
+      const retryResponse = await this.fetchWithCookies(path, init, true);
       if (retryResponse.ok) return parseResponse<T>(retryResponse);
       return this.handleError<T>(path, retryResponse);
     }
@@ -108,21 +122,41 @@ export class ApiClient {
     return this.handleError<T>(path, response);
   }
 
-  private async fetchWithCookies(path: string, init: RequestInit) {
+  private async fetchWithCookies(path: string, init: RequestInit, retryCsrf: boolean): Promise<Response> {
     const baseUrl = resolveRequestBaseUrl(this.baseUrl);
     const method = init.method ?? 'GET';
     const headers = new Headers(init.headers);
 
     if (!headers.has('content-type') && init.body) headers.set('content-type', 'application/json');
 
-    const csrfToken = readCsrfToken();
-    if (csrfToken && shouldAttachCsrf(method) && !headers.has('x-csrf-token')) headers.set('x-csrf-token', csrfToken);
+    if (MUTATING_METHODS.has(method.toUpperCase()) && !CSRF_EXEMPT_PATHS.has(path) && !headers.has('x-csrf-token')) {
+      headers.set('x-csrf-token', await getCsrfToken(baseUrl));
+    }
 
-    return fetch(`${baseUrl}${path}`, {
+    const response = await fetch(`${baseUrl}${path}`, {
       ...init,
       headers,
       credentials: 'include',
     });
+
+    if (response.status === 403 && retryCsrf && canSafelyRetry(init)) {
+      const payload = await response.clone().json().catch(() => null) as { detail?: string } | null;
+      if (payload?.detail === 'Invalid CSRF token') {
+        clearCsrfToken();
+        await refreshCsrfToken(baseUrl);
+        return this.fetchWithCookies(path, init, false);
+      }
+    }
+
+    const rotatedToken = response.headers.get('X-CSRF-Token');
+    if (response.ok && rotatedToken) csrfToken = rotatedToken;
+
+    if (response.ok && path === '/api/auth/login' && !rotatedToken) await refreshCsrfToken(baseUrl);
+    if (response.ok && path === '/api/auth/refresh' && !rotatedToken) {
+      clearCsrfToken();
+      await refreshCsrfToken(baseUrl);
+    }
+    return response;
   }
 
   private async refreshSession() {
