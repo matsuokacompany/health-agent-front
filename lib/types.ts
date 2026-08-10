@@ -3,6 +3,9 @@ export type RoleName = Role;
 
 export type User = {
   id: number | string;
+  /** Internal patient record id; distinct from the authentication provider UUID. */
+  patient_id?: number;
+  ai_report_next_generation_at?: string | null;
   name: string;
   email: string;
   phone?: string | null;
