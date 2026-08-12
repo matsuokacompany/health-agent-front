@@ -21,6 +21,17 @@ NEXT_PUBLIC_API_URL=https://api.julha.com.br
 5. Após login ou restauração de sessão, o frontend chama `GET /api/auth/me`.
 6. O FastAPI valida a sessão/JWT Supabase, resolve/cria o usuário local e devolve `UserRead` com `roles`.
 
+Enquanto houver um usuário autenticado e a aba estiver visível, o frontend chama
+`POST /api/auth/refresh` a cada 10 minutos. Ao voltar para uma aba que ficou em
+segundo plano por esse período, a renovação também é feita imediatamente. Isso
+evita que o access token expire durante o uso normal da plataforma.
+
+A duração máxima da sessão continua sendo definida pelo backend. Para aumentá-la,
+ajuste no FastAPI a expiração do cookie de refresh (`Max-Age`/`Expires`) e a política
+de rotação/expiração do provedor, mantendo um limite absoluto adequado para dados
+de saúde. O endpoint `/api/auth/refresh` precisa renovar os cookies `HttpOnly`; não
+é seguro resolver isso armazenando tokens no `localStorage`.
+
 
 ## Recuperação e alteração de senha
 

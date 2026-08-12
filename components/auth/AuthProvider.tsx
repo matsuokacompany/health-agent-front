@@ -2,13 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { RoleName, UserRead } from '@/lib/types';
-import { clearLegacySupabaseSession, getCurrentUser, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
+import { clearLegacySupabaseSession, getCurrentUser, refreshSession, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
 export type AccessContext = 'admin' | 'professional' | 'patient';
 
 const ACCESS_CONTEXT_KEY = 'julha.activeAccessContext';
+const SESSION_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 export const accessContextLabels: Record<AccessContext, string> = {
   admin: 'Administração',
@@ -100,6 +101,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
     };
   }, [refreshMe]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let lastRefreshAt = Date.now();
+    const keepSessionAlive = async () => {
+      if (document.visibilityState === 'hidden') return;
+      try {
+        await refreshSession();
+        lastRefreshAt = Date.now();
+      } catch {
+        // Protected requests still retry refresh and handle an expired session.
+        // A transient keep-alive failure must not interrupt an active user.
+      }
+    };
+    const interval = window.setInterval(() => { void keepSessionAlive(); }, SESSION_REFRESH_INTERVAL_MS);
+    const refreshAfterBackground = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastRefreshAt >= SESSION_REFRESH_INTERVAL_MS) {
+        void keepSessionAlive();
+      }
+    };
+    document.addEventListener('visibilitychange', refreshAfterBackground);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshAfterBackground);
+    };
+  }, [user]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
