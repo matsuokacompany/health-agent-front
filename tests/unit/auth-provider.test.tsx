@@ -1,13 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
 import { UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
-const { getCurrentUserMock } = vi.hoisted(() => ({ getCurrentUserMock: vi.fn() }));
+const { getCurrentUserMock, refreshSessionMock } = vi.hoisted(() => ({ getCurrentUserMock: vi.fn(), refreshSessionMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   clearLegacySupabaseSession: vi.fn(),
   getCurrentUser: getCurrentUserMock,
+  refreshSession: refreshSessionMock,
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
 }));
@@ -35,5 +36,18 @@ describe('AuthProvider session restoration', () => {
     render(<AuthProvider><AuthStatus /></AuthProvider>);
 
     await waitFor(() => expect(screen.getByText('Não foi possível conectar ao servidor.')).toBeTruthy());
+  });
+
+  it('renews an authenticated session periodically while the page is visible', async () => {
+    vi.useFakeTimers();
+    refreshSessionMock.mockResolvedValue(undefined);
+    getCurrentUserMock.mockResolvedValueOnce({ id: '1', email: 'ana@example.com', roles: ['patient'] });
+
+    render(<AuthProvider><AuthStatus /></AuthProvider>);
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60 * 1000); });
+
+    expect(refreshSessionMock).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 });
