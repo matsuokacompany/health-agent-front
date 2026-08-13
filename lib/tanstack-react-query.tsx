@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type QueryKey = readonly unknown[];
@@ -22,6 +22,37 @@ const QueryClientContext = createContext<QueryClient | null>(null);
 
 export function QueryClientProvider({ client, children }: { client: QueryClient; children: ReactNode }) {
   return <QueryClientContext.Provider value={client}>{children}</QueryClientContext.Provider>;
+}
+
+export function useQueryClient() {
+  const client = useContext(QueryClientContext);
+  if (!client) throw new Error('useQueryClient must be used inside QueryClientProvider');
+  return client;
+}
+
+export function useMutation<TData, TError = Error, TVariables = void>({ mutationFn, onSuccess, onError }: {
+  mutationFn: (variables: TVariables) => Promise<TData>;
+  onSuccess?: (data: TData, variables: TVariables) => void | Promise<void>;
+  onError?: (error: TError, variables: TVariables) => void | Promise<void>;
+}) {
+  const [isPending, setIsPending] = useState(false);
+
+  const mutateAsync = useCallback(async (variables: TVariables) => {
+    if (isPending) throw new Error('Uma solicitação já está em andamento.');
+    setIsPending(true);
+    try {
+      const data = await mutationFn(variables);
+      await onSuccess?.(data, variables);
+      return data;
+    } catch (error) {
+      await onError?.(error as TError, variables);
+      throw error;
+    } finally {
+      setIsPending(false);
+    }
+  }, [isPending, mutationFn, onError, onSuccess]);
+
+  return { mutateAsync, isPending };
 }
 
 function hashKey(queryKey: QueryKey) { return JSON.stringify(queryKey); }

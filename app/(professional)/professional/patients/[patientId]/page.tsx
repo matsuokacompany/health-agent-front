@@ -8,8 +8,9 @@ import { ErrorState, LoadingState, EmptyState } from '@/components/ui/states';
 
 function fmt(value?: string | null) { return value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: value.includes('T') ? 'short' : undefined }).format(new Date(value)) : '—'; }
 function SensitivePlaceholder({ label = 'Informação sensível oculta' }: { label?: string }) { return <span className="sensitive-placeholder">🔒 {label}</span>; }
-export default function PatientDetail({ params }: { params: Promise<{ patientId: string }> }) {
+export default function PatientDetail({ params, searchParams }: { params: Promise<{ patientId: string }>; searchParams: Promise<{ created?: string }> }) {
   const { patientId } = use(params);
+  const { created } = use(searchParams);
   const dashboard = useProfessionalDashboard(patientId);
   const anamnese = useProfessionalAnamnese(patientId);
   const [page, setPage] = useState(1);
@@ -27,6 +28,7 @@ export default function PatientDetail({ params }: { params: Promise<{ patientId:
   const displayName = data?.user?.name ?? 'Prontuário do paciente';
 
   return <div className="professional-patient-detail">
+    {created === '1' ? <p className="notice success" role="status">Paciente cadastrado. O acesso à conta será vinculado pelo fluxo de autenticação/convite da plataforma.</p> : null}
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/professional">Profissional</Link><span>/</span><Link href="/professional/patients">Pacientes</Link><span>/</span><span>{displayName ?? 'Prontuário'}</span></nav>
     <div className="topbar professional-detail-topbar"><span className="badge">Prontuário vinculado</span><div className="professional-detail-actions"><Link href="/professional/patients">← Pacientes</Link></div></div>
     <header className="page-header professional-detail-header"><div><span className="eyebrow">Visão 360°</span><h1>{displayName}</h1><p className="muted">Dashboard profissional com check-ins, anamnese, histórico de sintomas e relatório clínico por IA.</p></div></header>
