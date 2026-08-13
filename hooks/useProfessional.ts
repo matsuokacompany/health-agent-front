@@ -1,9 +1,21 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { professionalApi, type ProfessionalCheckInsParams, type ProfessionalCheckIn, type ProfessionalDashboard, type ProfessionalPaginatedResponse, type ProfessionalPatient } from '@/services/professional';
 import type { Anamnese } from '@/lib/types';
 
 export function useProfessionalPatients() {
   return useQuery<ProfessionalPatient[]>({ queryKey: ['professional', 'patients'], queryFn: professionalApi.listPatients, staleTime: 60_000 });
+}
+
+export function useCreateProfessionalPatient(options: { onSuccess?: (patientId: number) => void; onError?: (error: unknown) => void } = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: professionalApi.createPatient,
+    onSuccess: async (response) => {
+      queryClient.invalidateQueries({ queryKey: ['professional', 'patients'] });
+      options.onSuccess?.(response.patient.id);
+    },
+    onError: options.onError,
+  });
 }
 
 export function useProfessionalDashboard(patientId: string) {

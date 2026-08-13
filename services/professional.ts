@@ -17,6 +17,56 @@ export type ProfessionalPatient = {
   symptom_reports_count: number;
 };
 
+export type CreateProfessionalPatientRequest = {
+  name: string;
+  email: string;
+  phone?: string;
+  cpf?: string;
+  birth_date?: string;
+  gender?: string;
+  city?: string;
+  state?: string;
+  plan_title: string;
+  plan_description?: string;
+  plan_start_date?: string;
+  plan_end_date?: string;
+};
+
+export type CreatedPatient = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  gender?: string | null;
+  birth_date?: string | null;
+  cpf?: string | null;
+  supabase_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  roles: ['patient'] | string[];
+};
+
+export type CreateProfessionalPatientResponse = {
+  patient: CreatedPatient;
+  monitoring_plan: {
+    id: number;
+    patient_id: number;
+    title: string;
+    description?: string | null;
+    active: boolean;
+    start_date?: string | null;
+    end_date?: string | null;
+    created_at: string;
+    updated_at: string;
+  };
+};
+
+export function createProfessionalPatient(payload: CreateProfessionalPatientRequest) {
+  return api<CreateProfessionalPatientResponse>('/api/professional/patients', { method: 'POST', body: JSON.stringify(payload) });
+}
+
 export type ProfessionalDashboard = {
   user?: { id?: number | string; name?: string; first_name?: string; avatar?: string | null };
   monitoring?: { id?: number | string; active?: boolean; title?: string | null; start_date?: string | null; end_date?: string | null; days_active?: number | null; days_remaining?: number | null } | null;
@@ -93,6 +143,7 @@ function withQuery(path: string, params: Record<string, string | number | boolea
 
 export const professionalApi = {
   listPatients: () => api<ProfessionalPatient[]>('/api/professional/patients'),
+  createPatient: createProfessionalPatient,
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
   getAnamnese: (patientId: number | string) => api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`),
