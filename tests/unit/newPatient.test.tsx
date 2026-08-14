@@ -64,11 +64,12 @@ describe('cadastro profissional de pacientes', () => {
     expect((screen.getByRole('button', { name: 'Cadastrando...' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('fecha e navega com o id retornado após o sucesso', () => {
+  it('fecha e navega com o id retornado após o sucesso', async () => {
     const close = vi.fn();
-    render(<NewPatientModal open onClose={close} />);
-    act(() => handlers.onSuccess?.(123));
-    expect(close).toHaveBeenCalled();
+    mutateAsync.mockResolvedValue({ patient: { id: 123 } });
+    render(<NewPatientModal open onClose={close} />); fillRequired();
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
+    await waitFor(() => expect(close).toHaveBeenCalled());
     expect(push).toHaveBeenCalledWith('/professional/patients/123?created=1');
   });
 

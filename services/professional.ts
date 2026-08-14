@@ -1,5 +1,4 @@
-import type { Anamnese } from '@/lib/types';
-import { ForbiddenError } from '@/infrastructure/http/ApiClient';
+import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
 import { api } from './api';
 
 export type ProfessionalPatient = {
@@ -62,6 +61,33 @@ export type CreateProfessionalPatientResponse = {
     updated_at: string;
   };
 };
+
+export type Anamnese = {
+  id: number;
+  user_id: number;
+  info: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SaveAnamnesePayload = { info: string };
+
+export async function getPatientAnamnese(patientId: number | string): Promise<Anamnese | null> {
+  try {
+    return await api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export function createPatientAnamnese(patientId: number | string, payload: SaveAnamnesePayload) {
+  return api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updatePatientAnamnese(patientId: number | string, payload: SaveAnamnesePayload) {
+  return api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`, { method: 'PUT', body: JSON.stringify(payload) });
+}
 
 export function createProfessionalPatient(payload: CreateProfessionalPatientRequest) {
   return api<CreateProfessionalPatientResponse>('/api/professional/patients', { method: 'POST', body: JSON.stringify(payload) });
@@ -146,7 +172,9 @@ export const professionalApi = {
   createPatient: createProfessionalPatient,
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
-  getAnamnese: (patientId: number | string) => api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`),
+  getAnamnese: getPatientAnamnese,
+  createAnamnese: createPatientAnamnese,
+  updateAnamnese: updatePatientAnamnese,
   /** @deprecated Use aiReportsApi para preview, geração personalizada e histórico. */
   async generateAiReport(patientId: number | string, payload: ProfessionalAiReportRequest = {}) {
     try {
