@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { useCreateProfessionalPatient } from '@/hooks/useProfessional';
 import type { CreateProfessionalPatientRequest } from '@/services/professional';
+import { createPatientAnamnese } from '@/services/professional';
 import { Button } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
 
@@ -44,8 +45,9 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [errorMessage, setErrorMessage] = useState('');
+  const [anamnese, setAnamnese] = useState('');
+  const [isSavingAnamnese, setIsSavingAnamnese] = useState(false);
   const mutation = useCreateProfessionalPatient({
-    onSuccess: (patientId) => { onClose(); router.push(`/professional/patients/${patientId}?created=1`); },
     onError: (error) => {
       if (!(error instanceof ApiError)) return setErrorMessage('Não foi possível cadastrar o paciente. Tente novamente.');
       if (error.status === 403) return setErrorMessage('É necessário possuir um perfil profissional ativo para cadastrar pacientes.');
@@ -78,16 +80,32 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     setErrors(next); setErrorMessage('');
     if (Object.keys(next).length) return;
     submitting.current = true;
-    try { await mutation.mutateAsync(toCreatePatientPayload(values)); } catch { /* The mutation displays API errors without clearing values. */ }
+    try {
+      const response = await mutation.mutateAsync(toCreatePatientPayload(values));
+      const patientId = response.patient.id;
+      if (anamnese.trim()) {
+        setIsSavingAnamnese(true);
+        try {
+          await createPatientAnamnese(patientId, { info: anamnese.trim() });
+        } catch {
+          router.push(`/professional/patients/${patientId}?created=1&anamneseError=1`);
+          onClose();
+          return;
+        } finally { setIsSavingAnamnese(false); }
+      }
+      onClose();
+      router.push(`/professional/patients/${patientId}?created=1`);
+    } catch { /* The mutation displays API errors without clearing values. */ }
     finally { submitting.current = false; }
   }
 
   const input = (name: keyof FormValues, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => <label>{label}{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<input {...props} name={name} value={values[name]} onChange={(event) => setValue(name, event.target.value)} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name] ? `${name}-error` : undefined} /></label>;
-  return <Modal open={open} title="Novo paciente" onClose={() => { if (!mutation.isPending) onClose(); }}><form onSubmit={submit} noValidate>
+  return <Modal open={open} title="Novo paciente" onClose={() => { if (!mutation.isPending && !isSavingAnamnese) onClose(); }}><form onSubmit={submit} noValidate>
     <p className="muted">Cadastre o paciente e crie seu plano inicial de acompanhamento.</p>
     <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', placeholder: '+55 (11) 99999-9999' })}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: 14 })}{input('birth_date', 'Data de nascimento', { type: 'date' })}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2' })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: 2, placeholder: 'UF' })}</div>
     <h3 className="new-patient-section-title">Plano de acompanhamento</h3>{input('plan_title', 'Título do plano *', { required: true })}<label>Descrição do plano<textarea name="plan_description" rows={3} value={values.plan_description} onChange={(event) => setValue('plan_description', event.target.value)} /></label>
     <div className="new-patient-grid">{input('plan_start_date', 'Data inicial do plano', { type: 'date' })}{input('plan_end_date', 'Data final do plano', { type: 'date', min: values.plan_start_date || undefined })}</div>
-    {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}<div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending}>Cancelar</Button><Button type="submit" loading={mutation.isPending} loadingLabel="Cadastrando...">Cadastrar paciente</Button></div>
+    <h3 className="new-patient-section-title">Anamnese</h3><label>Anamnese<textarea name="anamnese" rows={8} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
+    {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}<div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button><Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button></div>
   </form></Modal>;
 }
