@@ -1,5 +1,5 @@
 'use client';
-import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { toLoginErrorMessage } from '@/components/ui/errors';
 import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
@@ -21,13 +21,13 @@ export default function Login() {
     setFormError(null);
 
     try {
-      const me = await signIn(email, password);
+      const me = await signIn(email.trim().toLowerCase(), password);
       if (me.roles.includes('super_admin')) router.replace('/choose-context');
       else if (me.roles.includes('professional')) router.replace('/professional');
       else if (me.roles.includes('patient')) router.replace('/patient');
       else setFormError('Usuário autenticado, mas sem contexto de acesso configurado.');
     } catch (err) {
-      setFormError(toFriendlyErrorMessage(err));
+      setFormError(toLoginErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -44,11 +44,11 @@ export default function Login() {
           <div className="login-fields">
             <label>
               E-mail
-              <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" required type="email" value={email} />
+              <input autoCapitalize="none" autoComplete="email" maxLength={254} name="email" onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" required spellCheck={false} type="email" value={email} />
             </label>
-            <PasswordInput autoComplete="current-password" label="Senha" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required value={password} />
+            <PasswordInput autoComplete="current-password" label="Senha" maxLength={128} name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required value={password} />
           </div>
-          {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
+          {(formError || error) ? <p aria-live="polite" className="notice danger" role="alert">{formError ?? error}</p> : null}
           <div className="login-actions">
             <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
             <Link href="/forgot-password">Esqueci minha senha</Link>
