@@ -68,6 +68,20 @@ export function PatientDataProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  useEffect(() => {
+    const cacheKey = user ? String(user.id) : null;
+    if (!cacheKey) {
+      patientDataCache.clear();
+      patientDataRequests.clear();
+    }
+    return () => {
+      if (cacheKey) {
+        patientDataCache.delete(cacheKey);
+        patientDataRequests.delete(cacheKey);
+      }
+    };
+  }, [user]);
+
   const value = useMemo(() => ({
     reports,
     plans,

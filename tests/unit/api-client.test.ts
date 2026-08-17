@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiClient, clearCsrfToken, ConflictError, ForbiddenError, shouldRedirectToLogin, UnauthorizedError } from '@/infrastructure/http/ApiClient';
+import { ApiClient, clearCsrfToken, ConflictError, ForbiddenError, NotFoundError, shouldRedirectToLogin, UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
 describe('ApiClient', () => {
   afterEach(() => {
@@ -86,12 +86,15 @@ describe('ApiClient', () => {
     expect(mutationTokens).toEqual(['csrf-1', 'csrf-2']);
   });
 
-  it('maps 401, 403 and 409 errors', async () => {
+  it('maps 401, 403, 404 and 409 errors', async () => {
     vi.stubGlobal('fetch', async () => new Response('{}', { status: 401 }));
     await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/api/auth/me')).rejects.toBeInstanceOf(UnauthorizedError);
 
     vi.stubGlobal('fetch', async () => new Response('{}', { status: 403 }));
     await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/admin')).rejects.toBeInstanceOf(ForbiddenError);
+
+    vi.stubGlobal('fetch', async () => new Response('{}', { status: 404 }));
+    await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/patients/123')).rejects.toBeInstanceOf(NotFoundError);
 
     vi.stubGlobal('fetch', async () => new Response('{}', { status: 409 }));
     await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/api/auth/me')).rejects.toBeInstanceOf(ConflictError);

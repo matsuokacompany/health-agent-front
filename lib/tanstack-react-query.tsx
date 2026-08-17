@@ -16,6 +16,7 @@ export class QueryClient {
   setQueryData<T>(queryKey: QueryKey, data: T) { this.cache.set(hashKey(queryKey), { data, error: null, updatedAt: Date.now() }); }
   setState<T>(queryKey: QueryKey, state: QueryState<T>) { this.cache.set(hashKey(queryKey), state as QueryState<unknown>); }
   invalidateQueries({ queryKey }: { queryKey: QueryKey }) { const prefix = hashKey(queryKey); for (const key of this.cache.keys()) if (key.startsWith(prefix)) this.cache.delete(key); }
+  clear() { this.cache.clear(); }
 }
 
 const QueryClientContext = createContext<QueryClient | null>(null);
@@ -28,6 +29,10 @@ export function useQueryClient() {
   const client = useContext(QueryClientContext);
   if (!client) throw new Error('useQueryClient must be used inside QueryClientProvider');
   return client;
+}
+
+export function useOptionalQueryClient() {
+  return useContext(QueryClientContext);
 }
 
 export function useMutation<TData, TError = Error, TVariables = void>({ mutationFn, onSuccess, onError }: {
