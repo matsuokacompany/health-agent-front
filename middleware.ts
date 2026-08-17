@@ -8,12 +8,15 @@ const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
   'Content-Security-Policy': `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
 };
 
 function withSecurityHeaders(response: NextResponse) {
   Object.entries(securityHeaders).forEach(([key, value]) => response.headers.set(key, value));
+  if (!isDevelopment) response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   return response;
 }
 

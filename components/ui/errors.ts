@@ -11,3 +11,9 @@ export function toFriendlyErrorMessage(error: unknown) {
 
   return 'Não foi possível concluir a operação. Tente novamente.';
 }
+
+export function toLoginErrorMessage(error: unknown) {
+  const status = typeof error === 'object' && error !== null && 'status' in error ? Number(error.status) : 0;
+  if (status === 400 || status === 401) return 'E-mail ou senha incorretos. Confira os dados e tente novamente.';
+  return toFriendlyErrorMessage(error);
+}
