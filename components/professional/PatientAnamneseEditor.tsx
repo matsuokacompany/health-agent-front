@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { createPatientAnamnese, getPatientAnamnese, updatePatientAnamnese, type Anamnese } from '@/services/professional';
 import { Button } from '@/components/ui/design';
+import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
 
 function friendlyError(error: unknown) {
   if (error instanceof ApiError) {
@@ -51,12 +52,15 @@ export function PatientAnamneseEditor({ patientId }: { patientId: string }) {
 
   async function save() {
     if (isSavingAnamnese) return;
-    if (!anamnese.trim()) { setSaveError('Informe o conteúdo da anamnese antes de salvar.'); return; }
+    const normalized = normalizeUserText(anamnese);
+    if (!normalized.trim()) { setSaveError('Informe o conteúdo da anamnese antes de salvar.'); return; }
+    const validationError = validateUserText(normalized, INPUT_LIMITS.anamnesis);
+    if (validationError) { setSaveError(validationError); return; }
     setIsSavingAnamnese(true); setSaveError(null); setSuccess(null);
     try {
       const updated = hasAnamnese
-        ? await updatePatientAnamnese(patientId, { info: anamnese.trim() })
-        : await createPatientAnamnese(patientId, { info: anamnese.trim() });
+        ? await updatePatientAnamnese(patientId, { info: normalized.trim() })
+        : await createPatientAnamnese(patientId, { info: normalized.trim() });
       setRecord(updated); setHasAnamnese(true); setAnamnese(updated.info); setSavedText(updated.info);
       setSuccess(hasAnamnese ? 'Anamnese atualizada com sucesso.' : 'Anamnese cadastrada com sucesso.');
     } catch (error) {
@@ -71,7 +75,7 @@ export function PatientAnamneseEditor({ patientId }: { patientId: string }) {
   }
 
   return <section className="card professional-detail-section"><div className="professional-section-heading"><div><h2>Anamnese</h2><p className="muted compact">{hasAnamnese ? 'Registro clínico do paciente.' : 'Este paciente ainda não possui anamnese.'}</p></div>{record?.updated_at ? <small className="muted">Atualizada em {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(record.updated_at))}</small> : null}</div>
-    {isLoadingAnamnese ? <p className="muted" role="status">Carregando anamnese...</p> : <><label>Conteúdo clínico<textarea rows={12} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} disabled={isSavingAnamnese || Boolean(anamneseError)} /></label><p className="muted compact">Registre queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</p><Button onClick={save} loading={isSavingAnamnese} loadingLabel="Salvando..." disabled={Boolean(anamneseError)}>Salvar anamnese</Button></>}
+    {isLoadingAnamnese ? <p className="muted" role="status">Carregando anamnese...</p> : <><label>Conteúdo clínico<textarea rows={12} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} disabled={isSavingAnamnese || Boolean(anamneseError)} /></label><p className="muted compact">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</p><Button onClick={save} loading={isSavingAnamnese} loadingLabel="Salvando..." disabled={Boolean(anamneseError)}>Salvar anamnese</Button></>}
     {anamneseError ? <p className="notice danger" role="alert">{anamneseError} <button type="button" className="button secondary" onClick={() => void load()}>Tentar novamente</button></p> : null}
     {saveError ? <p className="notice danger" role="alert">{saveError}</p> : null}{success ? <p className="notice success" role="status">{success}</p> : null}
   </section>;
