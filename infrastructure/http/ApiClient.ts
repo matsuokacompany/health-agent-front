@@ -28,6 +28,13 @@ export class ForbiddenError extends ApiError {
   }
 }
 
+export class NotFoundError extends ApiError {
+  constructor(payload?: unknown) {
+    super('O recurso solicitado não foi encontrado.', 404, payload);
+    this.name = 'NotFoundError';
+  }
+}
+
 export class ConflictError extends ApiError {
   constructor(payload?: unknown) {
     super('Não foi possível salvar porque já existe um cadastro com estes dados.', 409, payload);
@@ -188,6 +195,7 @@ export class ApiClient {
     }
 
     if (response.status === 403) throw new ForbiddenError(payload);
+    if (response.status === 404) throw new NotFoundError(payload);
     if (response.status === 409) throw new ConflictError(payload);
 
     throw new ApiError('Ocorreu um erro inesperado.', response.status, payload);

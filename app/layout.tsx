@@ -6,23 +6,11 @@ import { PatientDashboardQueryProvider } from '@/components/patient/dashboard/Pa
 
 export const metadata: Metadata = { title: 'Julha Saúde', description: 'Plataforma clínica para acompanhamento de saúde' };
 
-const themeScript = `
-(function() {
-  try {
-    var stored = window.localStorage.getItem('theme');
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.dataset.theme = stored || (prefersDark ? 'dark' : 'light');
-  } catch (_) {
-    document.documentElement.dataset.theme = 'light';
-  }
-})();
-`;
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script src="/theme-init.js" />
       </head>
       <body><PatientDashboardQueryProvider><I18nProvider><AuthProvider>{children}</AuthProvider></I18nProvider></PatientDashboardQueryProvider></body>
     </html>

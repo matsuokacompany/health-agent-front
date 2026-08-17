@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
-const scriptSrc = isDevelopment ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self' 'unsafe-inline'";
+const scriptSrc = isDevelopment ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self'";
 const connectSrc = isDevelopment ? "'self' http: https: ws: wss:" : "'self' https:";
 
 const securityHeaders = {

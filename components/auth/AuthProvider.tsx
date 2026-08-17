@@ -5,6 +5,7 @@ import type { RoleName, UserRead } from '@/lib/types';
 import { clearLegacySupabaseSession, getCurrentUser, refreshSession, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { UnauthorizedError } from '@/infrastructure/http/ApiClient';
+import { useOptionalQueryClient } from '@/lib/tanstack-react-query';
 
 export type AccessContext = 'admin' | 'professional' | 'patient';
 
@@ -44,6 +45,7 @@ export type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useOptionalQueryClient();
   const [user, setUser] = useState<UserRead | null>(null);
   const [activeAccessContextState, setActiveAccessContextState] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,10 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearAuthState = useCallback(() => {
+    // Clinical responses must not survive logout or become visible to the next
+    // account using the same browser tab.
+    queryClient?.clear();
     setUser(null);
     setError(null);
     setActiveAccessContext(null);
-  }, [setActiveAccessContext]);
+  }, [queryClient, setActiveAccessContext]);
 
   const refreshMe = useCallback(async () => {
     try {

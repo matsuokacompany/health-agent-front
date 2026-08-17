@@ -1,5 +1,7 @@
 # Auditoria de segurança MVP — Health Agent Front
 
+> **Documento histórico:** para o inventário estático completo e o estado após as correções de 2026-08-17, consulte `docs/security-audit-frontend.md`. Os itens abaixo refletem o estado da auditoria anterior.
+
 Data da auditoria: 2026-07-08
 Escopo: aplicação Next.js/front-end, autenticação Supabase via REST, RBAC client-side, serviços HTTP e testes existentes.
 
