@@ -142,7 +142,8 @@ export class ApiClient {
     const method = init.method ?? 'GET';
     const headers = new Headers(init.headers);
 
-    if (!headers.has('content-type') && init.body) headers.set('content-type', 'application/json');
+    // FormData must keep the browser-generated multipart boundary.
+    if (!headers.has('content-type') && init.body && !(init.body instanceof FormData)) headers.set('content-type', 'application/json');
 
     if (MUTATING_METHODS.has(method.toUpperCase()) && !CSRF_EXEMPT_PATHS.has(path) && !headers.has('x-csrf-token')) {
       headers.set('x-csrf-token', await getCsrfToken(baseUrl));
