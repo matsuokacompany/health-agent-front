@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { RoleName, UserRead } from '@/lib/types';
 import { clearLegacySupabaseSession, getCurrentUser, refreshSession, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
@@ -50,6 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [activeAccessContextState, setActiveAccessContextState] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Every async authentication operation captures this value. Clearing the
+  // session invalidates its result, so a late /me, login, or refresh response
+  // cannot sign the user back in after logout (or after a terminal 401).
+  const authGeneration = useRef(0);
 
   useEffect(() => {
     setActiveAccessContextState(readStoredAccessContext());
@@ -63,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearAuthState = useCallback(() => {
+    authGeneration.current += 1;
     // Clinical responses must not survive logout or become visible to the next
     // account using the same browser tab.
     queryClient?.clear();
@@ -77,12 +82,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAuthState]);
 
   const refreshMe = useCallback(async () => {
+    const generation = authGeneration.current;
     try {
       const me = await getCurrentUser();
+      if (generation !== authGeneration.current) return null;
       setUser(me);
       setError(null);
       return me;
     } catch (err) {
+      if (generation !== authGeneration.current) return null;
       setUser(null);
       // A missing/expired cookie is the normal signed-out state. The API client
       // already redirects protected requests, so surfacing it on /login makes
@@ -143,8 +151,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setActiveAccessContext(null);
+    const generation = authGeneration.current;
     try {
       const me = await signInWithPassword(email, password);
+      if (generation !== authGeneration.current) return me;
       setUser(me);
       setError(null);
       return me;

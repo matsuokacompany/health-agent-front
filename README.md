@@ -45,6 +45,24 @@ domínio registrável). Se forem publicados em sites distintos, o navegador não
 enviará esse cookie; essa limitação deve ser resolvida em conjunto com o backend,
 sem reduzir isoladamente a política para `SameSite=None`.
 
+### Checklist de validação da sessão
+
+Depois de uma alteração no cookie de refresh (especialmente a correção de
+`Path=/`), descarte a sessão antiga e faça **um novo login** antes de validar:
+
+1. Em **Network**, confirme que o login responde com os cookies
+   `__Host-ha_access`, `__Host-ha_refresh` e `ha_csrf`, sem copiar seus valores.
+2. Em **Application**, confirme que `__Host-ha_refresh` tem `Secure`,
+   `HttpOnly`, `SameSite=Strict`, `Path=/`, nenhum `Domain` e expiração próxima
+   de 30 dias.
+3. Expire somente o access token e confirme a sequência: requisição protegida
+   `401`, `GET /api/auth/csrf` `200`, `POST /api/auth/refresh` `204` e um único
+   retry bem-sucedido.
+4. Confirme que a tela permanece autenticada e que várias respostas `401`
+   simultâneas geram somente um GET de CSRF e um POST de refresh.
+5. Confirme no preflight/resposta que o backend permite a origem exata do
+   frontend e envia `Access-Control-Allow-Credentials: true`.
+
 
 ## Recuperação e alteração de senha
 
