@@ -9,7 +9,7 @@ let pending = false;
 let handlers: { onSuccess?: (id: number) => void; onError?: (error: unknown) => void } = {};
 let isProfessional = true;
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }), useSearchParams: () => new URLSearchParams() }));
 vi.mock('@/hooks/useProfessional', () => ({
   useProfessionalPatients: () => ({ data: [], isLoading: false, error: null }),
   useCreateProfessionalPatient: (options: typeof handlers) => {

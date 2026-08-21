@@ -43,8 +43,6 @@ export default function PatientDetail({ params, searchParams }: { params: Promis
     {created === '1' ? <p className="notice success" role="status">Paciente cadastrado. O acesso à conta será vinculado pelo fluxo de autenticação/convite da plataforma.</p> : null}
     {anamneseError === '1' ? <p className="notice danger" role="alert">Paciente cadastrado com sucesso, mas não foi possível salvar a anamnese. Você poderá adicioná-la posteriormente na edição do paciente.</p> : null}
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/professional">Profissional</Link><span>/</span><Link href="/professional/patients">Pacientes</Link><span>/</span><span>{displayName ?? 'Prontuário'}</span></nav>
-    <div className="topbar professional-detail-topbar"><span className="badge">Prontuário vinculado</span><div className="professional-detail-actions"><Link href="/professional/patients">← Pacientes</Link></div></div>
-    <header className="page-header professional-detail-header"><div><span className="eyebrow">Visão 360°</span><h1>{displayName}</h1><p className="muted">Consulte cada etapa do acompanhamento sem perder o contexto do paciente.</p></div></header>
     <nav className="professional-patient-tabs" aria-label="Seções do prontuário" role="tablist">
       {patientDetailTabs.map((tab) => <button id={`patient-tab-${tab.id}`} className={activeTab === tab.id ? 'active' : ''} key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`patient-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)}><span>{tab.label}</span><small>{tab.description}</small></button>)}
     </nav>

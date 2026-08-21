@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/ui/states';
 import { aiReportsApi, aiReportUserError, shortcutPeriod, validateAiReportPeriod, type AiReport, type AiReportMode, type AiReportPeriod, type AiReportPreviewResponse, type AiReportStatus, type AiReportUserError } from '@/services/aiReports';
 import { ApiError } from '@/infrastructure/http/ApiClient';
+import { AiReportPdfButton } from './AiReportPdfButton';
 
 export const AI_REPORT_STATUS_LABELS: Record<AiReportStatus, string> = { PENDING: 'Aguardando processamento', PROCESSING: 'Gerando relatório', COMPLETED: 'Concluído', FAILED: 'Falha na geração' };
 const MODE_LABELS: Record<AiReportMode, string> = { preventivo: 'Análise preventiva', avaliacao_clinica: 'Apoio à avaliação clínica' };
@@ -46,7 +47,7 @@ export function AiReportResult({ report, patientName }: { report: AiReport; pati
     {narrative ? <section className="ai-summary"><span className="eyebrow">Contexto do paciente</span><h3>Resumo das informações de saúde</h3><p>{narrative}</p></section> : null}
     {report.status === 'COMPLETED' ? <AiInterpretation ai={report.ai} mode={report.modo}/> : null}
     <p className="notice"><strong>Aviso:</strong> Conteúdo gerado com apoio de inteligência artificial a partir de dados auto-relatados pelo paciente. Não representa diagnóstico e deve ser interpretado por um profissional qualificado.</p>
-    <div className="ai-actions"><a className="button" href="#ai-history">Ver relatório completo</a><a className="button secondary" href="#ai-history">Ver histórico</a><a className="button secondary" href="#top">Voltar ao paciente</a></div>
+    <div className="ai-actions"><AiReportPdfButton report={report} patientId={report.patient_id} reportId={report.report_id} status={report.status} patientName={patientName} /><a className="button" href="#ai-history">Ver relatório completo</a><a className="button secondary" href="#ai-history">Ver histórico</a><a className="button secondary" href="#top">Voltar ao paciente</a></div>
   </article>;
 }
 

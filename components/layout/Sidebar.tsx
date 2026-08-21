@@ -42,7 +42,7 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
   return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
       <div className="sidebar-brand-main">
-        <span className="brand-icon sidebar-logo-slot" aria-label="Espaço para logo da Julha">{marker}</span>
+        <span className="sidebar-logo-slot"><img src="/brand/julha-logo.svg" alt="Julha" /></span>
         <span className="sidebar-label">{title}</span>
       </div>
     </div>
