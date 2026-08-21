@@ -16,6 +16,8 @@ describe('anamnese do profissional', () => {
   beforeEach(() => { api.get.mockReset(); api.create.mockReset(); api.update.mockReset(); });
   afterEach(cleanup);
 
+  it('mantém o campo inteiro visível e usa skeletons enquanto carrega', () => { api.get.mockReturnValue(new Promise(() => {})); render(<PatientAnamneseEditor patientId="10" />); expect(screen.getByRole('textbox')).toBeTruthy(); expect(screen.getByRole('textbox').getAttribute('aria-busy')).toBe('true'); expect(screen.getByLabelText('Carregando anamnese')).toBeTruthy(); });
+
   it('carrega e atualiza uma anamnese existente com PUT', async () => {
     api.get.mockResolvedValue(existing);
     api.update.mockResolvedValue({ ...existing, info: 'Conteúdo atualizado' });
