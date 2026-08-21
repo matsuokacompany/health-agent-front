@@ -75,4 +75,17 @@ describe('AuthProvider session restoration', () => {
     await waitFor(() => expect(screen.getByText('Sem aviso')).toBeTruthy());
     finishLogout();
   });
+
+  it('does not restore the user when a pending /me response arrives after logout', async () => {
+    let finishBootstrap!: (user: { id: string; email: string; roles: ['patient'] }) => void;
+    getCurrentUserMock.mockReturnValueOnce(new Promise(resolve => { finishBootstrap = resolve; }));
+    signOutMock.mockResolvedValueOnce(undefined);
+    render(<AuthProvider><AuthStatus /></AuthProvider>);
+
+    screen.getByRole('button', { name: 'Sair' }).click();
+    finishBootstrap({ id: '1', email: 'ana@example.com', roles: ['patient'] });
+
+    await waitFor(() => expect(screen.getByText('Sem aviso')).toBeTruthy());
+    expect(screen.queryByText('Autenticado')).toBeNull();
+  });
 });
