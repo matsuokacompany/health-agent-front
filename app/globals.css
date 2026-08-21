@@ -124,6 +124,27 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
 .ai-reports-section .ai-result{gap:13px;padding:16px}
 .ai-reports-section .ai-friendly-report{gap:16px}
 .ai-reports-section .ai-scenarios article,.ai-reports-section .ai-recommendations>div,.ai-reports-section .ai-clinical-grid>div{padding:11px}
+.ai-config-card .ai-config-heading{padding-bottom:10px;border-bottom:1px solid var(--line)}
+.ai-config-card .ai-config-heading h2,.ai-config-card .ai-config-heading p,.ai-config-main h3{margin-bottom:0}
+.ai-config-card .eyebrow{margin-bottom:7px}
+.ai-config-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px);gap:16px;align-items:start}
+.ai-config-main{display:grid;gap:11px;min-width:0}
+.ai-shortcuts{gap:7px}
+.ai-shortcuts .button{width:auto;min-height:34px;padding:6px 10px;border-radius:8px;font-size:.82rem;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease}
+.ai-shortcuts .button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand);color:#fff;box-shadow:0 2px 7px rgb(15 118 110 / 22%)}
+.ai-shortcuts .button[aria-pressed="true"]:hover{border-color:var(--brand-dark);background:var(--brand-dark);color:#fff}
+.ai-config-main .ai-period-grid{gap:10px}
+.ai-config-main .ai-period-grid label{gap:5px;margin:0;font-size:.82rem}
+.ai-config-main .ai-period-grid input{padding:9px 11px}
+.ai-period-help{margin:0;font-size:.79rem;line-height:1.4}
+.ai-config-main .ai-mode{gap:8px}
+.ai-config-main .ai-mode legend{margin-bottom:7px;font-size:.9rem}
+.ai-config-main .ai-mode label{gap:8px;margin:0;padding:9px}
+.ai-config-main .ai-mode small{font-size:.76rem;line-height:1.35}
+.ai-config-card .ai-requirements{position:sticky;top:88px;padding:13px;border-left-width:3px;font-size:.82rem}
+.ai-config-card .ai-requirements ul{display:grid;gap:6px;margin:8px 0;padding-left:18px}
+.ai-config-card .ai-requirements p{font-size:.77rem;line-height:1.45}
+.ai-review-button{justify-self:start;width:auto;min-height:38px;padding:8px 13px}
 .ai-history-filters button{min-height:36px;padding:7px 12px;border-color:var(--line);transition:transform .15s ease,background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease}
 .ai-history-filters button:hover{transform:translateY(-1px);border-color:var(--brand);background:var(--brand-soft);color:var(--brand-dark)}
 .ai-history-filters button:active{transform:translateY(0) scale(.98);background:color-mix(in srgb,var(--brand-soft) 72%,var(--brand));box-shadow:inset 0 1px 3px rgb(15 23 42 / 14%)}
@@ -134,5 +155,5 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
 .clinical-images-section.is-checkin .clinical-image-card{gap:8px;padding:10px}
 .clinical-images-section.is-checkin .clinical-thumbnail,.clinical-images-section.is-checkin .clinical-placeholder{height:96px}
 .checkin-edit-content{gap:12px}.checkin-edit-actions{padding-top:2px}
-@media(max-width:980px){.professional-clinical-content{grid-template-columns:1fr}.professional-clinical-content .clinical-images-section{position:static}}
-@media(max-width:767px){.sidebar-logo-slot{flex-basis:68px;width:68px;height:42px}.clinical-images-section{padding:13px}.ai-reports-section>article.card{padding:13px}}
+@media(max-width:980px){.professional-clinical-content{grid-template-columns:1fr}.professional-clinical-content .clinical-images-section{position:static}.ai-config-grid{grid-template-columns:1fr}.ai-config-card .ai-requirements{position:static}}
+@media(max-width:767px){.sidebar-logo-slot{flex-basis:68px;width:68px;height:42px}.clinical-images-section{padding:13px}.ai-reports-section>article.card{padding:13px}.ai-shortcuts{display:flex}.ai-shortcuts .button{width:auto}.ai-review-button{width:100%}}
