@@ -11,7 +11,9 @@ function createSecurityHeaders(nonce: string) {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
-    'Content-Security-Policy': `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentScriptSource}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
+    // Clinical attachments use short-lived URLs that may point at a dedicated
+    // HTTPS object-storage origin rather than the application origin.
+    'Content-Security-Policy': `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentScriptSource}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src ${connectSrc}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
   };
 }
 

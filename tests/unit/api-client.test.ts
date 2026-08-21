@@ -69,6 +69,19 @@ describe('ApiClient', () => {
     ]);
   });
 
+  it('only retries after a 204 refresh carrying a rotated CSRF token', async () => {
+    const privateCalls: string[] = [];
+    vi.stubGlobal('fetch', async (url: string) => {
+      if (url.endsWith('/api/auth/csrf')) return new Response(JSON.stringify({ csrf_token: 'csrf' }), { status: 200 });
+      if (url.endsWith('/api/auth/refresh')) return new Response('{}', { status: 200, headers: { 'X-CSRF-Token': 'not-accepted' } });
+      privateCalls.push(url);
+      return new Response('{}', { status: 401 });
+    });
+
+    await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/private')).rejects.toBeInstanceOf(UnauthorizedError);
+    expect(privateCalls).toEqual(['http://api.test/private']);
+  });
+
   it('recovers from an invalid CSRF token once and retries replayable JSON', async () => {
     let csrfCalls = 0;
     const mutationTokens: Array<string | null> = [];
