@@ -176,8 +176,23 @@ export class ApiClient {
   }
 
   private async refreshSession() {
-    refreshPromise ??= this.requestWithRefresh<void>('/api/auth/refresh', { method: 'POST' }, false)
-      .then(() => true)
+    refreshPromise ??= (async () => {
+      const baseUrl = resolveRequestBaseUrl(this.baseUrl);
+
+      // A 401 may mean both the session and the in-memory CSRF token are stale.
+      // Always obtain a fresh token before attempting the cookie-based refresh.
+      clearCsrfToken();
+      const token = await refreshCsrfToken(baseUrl);
+      const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': token },
+      });
+      const rotatedToken = response.headers.get('X-CSRF-Token');
+      if (response.status !== 204 || !rotatedToken) return false;
+      csrfToken = rotatedToken;
+      return true;
+    })()
       .catch(() => false)
       .finally(() => {
         refreshPromise = null;
