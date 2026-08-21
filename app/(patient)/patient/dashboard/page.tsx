@@ -27,7 +27,7 @@ function truncate(text?: string | null) {
 }
 
 function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function diffDays(start?: string | null, end?: string | null) {
@@ -61,7 +61,7 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
   const reportsByDate = new Map(planReports.map((report) => [String(report.report_date ?? report.created_at ?? '').slice(0, 10), report]));
   const timeline = Array.from({ length: 7 }, (_, index) => {
     const day = new Date();
-    day.setDate(day.getDate() - (6 - index));
+    day.setDate(day.getDate() - (7 - index));
     const key = dateKey(day);
     const report = reportsByDate.get(key);
     let status: PatientDashboardTimelineDay['status'] = 'no_response';
@@ -122,7 +122,8 @@ function formatTimelineLabel(value: string) {
 }
 
 function Timeline({ days }: { days: PatientDashboardTimelineDay[] }) {
-  const visibleDays = days.slice(-7);
+  const today = dateKey(new Date());
+  const visibleDays = days.filter((day) => day.date.slice(0, 10) < today).slice(-7);
   return <Card className="patient-dashboard-timeline-card"><span className="eyebrow">Últimos 7 dias</span><h2>Linha do tempo</h2><div className="patient-timeline-grid">{visibleDays.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{formatTimelineLabel(day.date)}</small></span>; })}</div><div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div></Card>;
 }
 

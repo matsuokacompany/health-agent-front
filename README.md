@@ -26,11 +26,24 @@ Enquanto houver um usuário autenticado e a aba estiver visível, o frontend cha
 segundo plano por esse período, a renovação também é feita imediatamente. Isso
 evita que o access token expire durante o uso normal da plataforma.
 
+Se uma chamada protegida ainda assim responder `401`, o cliente obtém um CSRF
+novo em `GET /api/auth/csrf`, renova os cookies em `POST /api/auth/refresh` e
+repete a chamada original uma única vez. Renovações concorrentes compartilham a
+mesma operação (*single-flight*), para não disputar a rotação do refresh cookie.
+
 A duração máxima da sessão continua sendo definida pelo backend. Para aumentá-la,
 ajuste no FastAPI a expiração do cookie de refresh (`Max-Age`/`Expires`) e a política
 de rotação/expiração do provedor, mantendo um limite absoluto adequado para dados
 de saúde. O endpoint `/api/auth/refresh` precisa renovar os cookies `HttpOnly`; não
 é seguro resolver isso armazenando tokens no `localStorage`.
+
+Em todos os ambientes, a origem exata do frontend deve estar liberada no CORS
+do backend com credenciais, e proxies devem preservar `Set-Cookie` e
+`X-CSRF-Token`. O cookie `__Host-ha_refresh` usa `SameSite=Strict`: frontend e
+API precisam continuar no mesmo *site* (por exemplo, subdomínios HTTPS do mesmo
+domínio registrável). Se forem publicados em sites distintos, o navegador não
+enviará esse cookie; essa limitação deve ser resolvida em conjunto com o backend,
+sem reduzir isoladamente a política para `SameSite=None`.
 
 
 ## Recuperação e alteração de senha

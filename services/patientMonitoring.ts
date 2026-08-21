@@ -12,6 +12,7 @@ export function monthKey(date: Date): MonthKey { return `${date.getFullYear()}-$
 export function monthFromDateString(value?: string | null) { if (!value) return undefined; const date = new Date(`${value.slice(0, 10)}T00:00:00`); return Number.isNaN(date.getTime()) ? undefined : new Date(date.getFullYear(), date.getMonth(), 1); }
 export function addMonths(date: Date, amount: number) { return new Date(date.getFullYear(), date.getMonth() + amount, 1); }
 export function compareMonths(left: Date, right: Date) { return left.getFullYear() === right.getFullYear() ? left.getMonth() - right.getMonth() : left.getFullYear() - right.getFullYear(); }
+export function resolvePatientRecordId(...candidates: unknown[]) { return candidates.map(Number).find((id) => Number.isSafeInteger(id) && id > 0); }
 
 export async function loadPatientMonitoringMonth(year: number, month: number) {
   const calendar = await patientDashboardApi.getCalendar(year, month);

@@ -7,7 +7,7 @@ export type SortDirection = 'asc' | 'desc';
 
 export type DashboardProfessional = { id: number | string; name: string; specialty?: string | null; photo_url?: string | null; avatar_url?: string | null };
 export type DashboardPlan = { id: number | string; name: string; status: string; starts_at?: string | null; ends_at?: string | null; active?: boolean };
-export type DashboardCheckIn = { id: number | string; date?: string; status?: DashboardStatus | string; title?: string; had_symptoms?: boolean | null; symptom_description?: string | null; suspected_cause?: string | null; cause?: string | null; completed?: boolean };
+export type DashboardCheckIn = { id: number | string; patient_id?: number; user_id?: number; date?: string; status?: DashboardStatus | string; title?: string; had_symptoms?: boolean | null; symptom_description?: string | null; suspected_cause?: string | null; cause?: string | null; completed?: boolean };
 export type DashboardAlert = { id: number | string; title: string; description?: string; severity?: 'info' | 'warning' | 'danger' | 'success' | string };
 export type DashboardStatistic = { label: string; value: number | string; description?: string; trend?: number; tone?: 'neutral' | 'success' | 'warning' | 'danger' };
 export type PatientDashboardTimelineDay = { date: string; status: 'without_symptoms' | 'mild_symptoms' | 'with_symptoms' | 'no_response'; label?: string };
@@ -75,7 +75,9 @@ export function normalizePatientDashboard(value: unknown): PatientDashboardAggre
   const nextSource = source.next_prompt ?? source.nextPrompt;
   const next = isRecord(nextSource) ? nextSource : null;
   const planSource = [source.active_plan, source.activePlan, source.plan, source.monitoring_plan, source.monitoringPlan].find(isRecord) ?? {};
-  const timeline = normalizeArray<RecordValue>(source.timeline).slice(-7).map((day) => ({ date: String(day.date ?? ''), status: String(day.status ?? day.state ?? 'no_response') as PatientDashboardTimelineDay['status'], label: stringOrNull(day.label) ?? undefined })).filter((day) => day.date);
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const timeline = normalizeArray<RecordValue>(source.timeline).map((day) => ({ date: String(day.date ?? ''), status: String(day.status ?? day.state ?? 'no_response') as PatientDashboardTimelineDay['status'], label: stringOrNull(day.label) ?? undefined })).filter((day) => day.date && day.date.slice(0, 10) < todayKey).slice(-7);
   const withSymptoms = numberFrom(symptoms.with_symptoms ?? symptoms.withSymptoms);
   const withoutSymptoms = numberFrom(symptoms.without_symptoms ?? symptoms.withoutSymptoms);
   const mildSymptoms = numberFrom(symptoms.mild_symptoms ?? symptoms.mildSymptoms);

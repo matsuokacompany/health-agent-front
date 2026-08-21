@@ -44,9 +44,29 @@ export class ConflictError extends ApiError {
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/forgot-password']);
+const REFRESH_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/csrf', '/api/auth/refresh', '/api/auth/logout']);
 let refreshPromise: Promise<boolean> | null = null;
 let csrfToken: string | null = null;
 let csrfPromise: Promise<string> | null = null;
+let logoutInProgress = false;
+let sessionGeneration = 0;
+let unauthorizedHandled = false;
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
+export function beginLogout() {
+  logoutInProgress = true;
+  sessionGeneration += 1;
+  clearCsrfToken();
+}
+
+export function resetAuthLifecycle() {
+  logoutInProgress = false;
+  unauthorizedHandled = false;
+}
 
 function resolveConfiguredBaseUrl(baseUrl?: string) {
   return baseUrl
@@ -99,7 +119,7 @@ function canSafelyRetry(init: RequestInit) {
 }
 
 function shouldTryRefresh(path: string, response: Response, retryOnUnauthorized: boolean) {
-  return response.status === 401 && retryOnUnauthorized && path !== '/api/auth/refresh' && path !== '/api/auth/login' && path !== '/api/auth/logout';
+  return response.status === 401 && retryOnUnauthorized && !logoutInProgress && !REFRESH_EXEMPT_PATHS.has(path);
 }
 
 export function shouldRedirectToLogin(path: string) {
@@ -153,6 +173,7 @@ export class ApiClient {
       ...init,
       headers,
       credentials: 'include',
+      ...(path.startsWith('/api/auth/') ? { cache: 'no-store' as const } : {}),
     });
 
     if (response.status === 403 && retryCsrf && canSafelyRetry(init)) {
@@ -176,8 +197,10 @@ export class ApiClient {
   }
 
   private async refreshSession() {
+    if (logoutInProgress) return false;
     refreshPromise ??= (async () => {
       const baseUrl = resolveRequestBaseUrl(this.baseUrl);
+      const generation = sessionGeneration;
 
       // A 401 may mean both the session and the in-memory CSRF token are stale.
       // Always obtain a fresh token before attempting the cookie-based refresh.
@@ -186,11 +209,14 @@ export class ApiClient {
       const response = await fetch(`${baseUrl}/api/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
+        cache: 'no-store',
         headers: { 'X-CSRF-Token': token },
       });
+      if (logoutInProgress || generation !== sessionGeneration) return false;
       const rotatedToken = response.headers.get('X-CSRF-Token');
-      if (response.status !== 204 || !rotatedToken) return false;
-      csrfToken = rotatedToken;
+      if (response.status !== 204) return false;
+      if (rotatedToken) csrfToken = rotatedToken;
+      else clearCsrfToken();
       return true;
     })()
       .catch(() => false)
@@ -205,8 +231,14 @@ export class ApiClient {
     const payload = await readErrorPayload(response);
 
     if (response.status === 401) {
-      this.onUnauthorized?.();
-      if (shouldRedirectToLogin(path) && typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') window.location.assign('/login');
+      if (shouldRedirectToLogin(path) && !logoutInProgress && !unauthorizedHandled) {
+        unauthorizedHandled = true;
+        const handleUnauthorized = this.onUnauthorized ?? unauthorizedHandler;
+        handleUnauthorized?.();
+        // AuthProvider's guards perform the single client-side redirect after
+        // clearing user state. Keep a fallback for standalone client usage.
+        if (!handleUnauthorized && typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') window.location.assign('/login');
+      }
       throw new UnauthorizedError(payload);
     }
 

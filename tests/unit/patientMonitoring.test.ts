@@ -15,7 +15,7 @@ vi.mock('@/services/patientDashboard', async (importOriginal) => {
   };
 });
 
-import { loadPatientMonitoringMonth } from '@/services/patientMonitoring';
+import { loadPatientMonitoringMonth, resolvePatientRecordId } from '@/services/patientMonitoring';
 
 describe('patient monitoring calendar loading', () => {
   afterEach(() => vi.clearAllMocks());
@@ -29,5 +29,10 @@ describe('patient monitoring calendar loading', () => {
     getCalendarMock.mockResolvedValueOnce(calendar);
     await expect(loadPatientMonitoringMonth(2026, 8)).resolves.toEqual({ calendar, overview: null });
     expect(getCalendarMock).toHaveBeenCalledWith(2026, 8);
+  });
+
+  it('resolves the patient record from daily-report fields used by image uploads', () => {
+    expect(resolvePatientRecordId(undefined, null, 0, 17)).toBe(17);
+    expect(resolvePatientRecordId(undefined, '23')).toBe(23);
   });
 });
