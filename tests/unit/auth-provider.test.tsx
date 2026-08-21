@@ -1,25 +1,25 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '@/components/auth/AuthProvider';
 import { UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
-const { getCurrentUserMock, refreshSessionMock } = vi.hoisted(() => ({ getCurrentUserMock: vi.fn(), refreshSessionMock: vi.fn() }));
+const { getCurrentUserMock, refreshSessionMock, signInMock, signOutMock } = vi.hoisted(() => ({ getCurrentUserMock: vi.fn(), refreshSessionMock: vi.fn(), signInMock: vi.fn(), signOutMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   clearLegacySupabaseSession: vi.fn(),
   getCurrentUser: getCurrentUserMock,
   refreshSession: refreshSessionMock,
-  signInWithPassword: vi.fn(),
-  signOut: vi.fn(),
+  signInWithPassword: signInMock,
+  signOut: signOutMock,
 }));
 
 function AuthStatus() {
-  const { error, loading } = useAuth();
-  return <div>{loading ? 'Carregando' : error ?? 'Sem aviso'}</div>;
+  const { error, isAuthenticated, loading, signIn, signOut } = useAuth();
+  return <div><span>{loading ? 'Carregando' : error ?? (isAuthenticated ? 'Autenticado' : 'Sem aviso')}</span><button onClick={() => void signIn('ana@example.com', 'senha')}>Entrar</button><button onClick={() => void signOut()}>Sair</button></div>;
 }
 
 describe('AuthProvider session restoration', () => {
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => { cleanup(); vi.clearAllMocks(); vi.useRealTimers(); });
 
   it('treats an absent or expired session as a normal signed-out state', async () => {
     getCurrentUserMock.mockRejectedValueOnce(new UnauthorizedError());
@@ -48,6 +48,31 @@ describe('AuthProvider session restoration', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60 * 1000); });
 
     expect(refreshSessionMock).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+    expect(screen.getByText('Autenticado')).toBeTruthy();
+  });
+
+  it('keeps the authenticated user after login', async () => {
+    getCurrentUserMock.mockRejectedValueOnce(new UnauthorizedError());
+    signInMock.mockResolvedValueOnce({ id: '1', email: 'ana@example.com', roles: ['patient'] });
+    render(<AuthProvider><AuthStatus /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('Sem aviso')).toBeTruthy());
+
+    screen.getByRole('button', { name: 'Entrar' }).click();
+
+    await waitFor(() => expect(screen.getByText('Autenticado')).toBeTruthy());
+    expect(signInMock).toHaveBeenCalledWith('ana@example.com', 'senha');
+  });
+
+  it('clears the local user immediately when logout starts', async () => {
+    let finishLogout!: () => void;
+    signOutMock.mockReturnValueOnce(new Promise<void>(resolve => { finishLogout = resolve; }));
+    getCurrentUserMock.mockResolvedValueOnce({ id: '1', email: 'ana@example.com', roles: ['patient'] });
+    render(<AuthProvider><AuthStatus /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('Autenticado')).toBeTruthy());
+
+    screen.getByRole('button', { name: 'Sair' }).click();
+
+    await waitFor(() => expect(screen.getByText('Sem aviso')).toBeTruthy());
+    finishLogout();
   });
 });

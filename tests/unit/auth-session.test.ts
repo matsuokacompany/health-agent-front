@@ -36,6 +36,7 @@ describe('backend auth client', () => {
       'http://localhost/api/auth/forgot-password',
       'http://localhost/api/auth/change-password',
       'http://localhost/api/auth/recovery/exchange',
+      'http://localhost/api/auth/csrf',
       'http://localhost/api/auth/logout',
     ]);
     expect(localStorage.getItem('health-agent.supabase.session')).toBeNull();

@@ -100,3 +100,39 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
 .sidebar-brand-main{display:flex;align-items:center;gap:10px;min-width:0}.sidebar-logo-slot{display:block;flex:0 0 76px;width:76px;height:58px}.sidebar-logo-slot img{display:block;width:100%;height:100%;object-fit:contain}.platform-search{position:relative;display:flex;gap:8px}.platform-search input{min-width:0}.platform-search-submit{min-height:40px;padding:8px 14px}.professional-patients-actions{justify-content:flex-end;margin-bottom:18px}
 @media (max-width:767px){.mobile-platform-search{display:none}.header-mobile.is-search-open .mobile-platform-search{display:flex}.platform-search-submit{width:auto;flex:0 0 auto}.sidebar-logo-slot{flex-basis:72px}}
 .ai-pdf-download{display:grid;gap:6px}.ai-pdf-download .notice{margin:0}.clinical-gallery{grid-template-columns:repeat(auto-fill,minmax(180px,260px));justify-content:start}.clinical-thumbnail{height:110px}
+
+/* Compact professional record, AI reports and clinical-image workflows. */
+.sidebar-logo-slot{display:block;flex:0 0 72px;width:72px;height:44px;overflow:visible;border:0;border-radius:0;background:transparent}
+.sidebar-logo-slot img{display:block;width:100%;height:100%;object-fit:contain}
+.professional-clinical-content{grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);align-items:start;gap:14px}
+.professional-clinical-content .clinical-images-section{position:sticky;top:88px}
+.clinical-images-section{gap:12px;margin-top:0;padding:16px}
+.clinical-images-section h2,.clinical-images-section p{margin-bottom:4px}
+.clinical-uploader{gap:10px;padding:12px}
+.clinical-file-picker{gap:3px;padding:12px;border-width:1px}
+.clinical-file-picker input{margin-top:4px;padding:8px}
+.clinical-privacy{font-size:.8rem;line-height:1.45}
+.clinical-preview-grid{grid-template-columns:repeat(auto-fill,minmax(130px,180px));gap:8px}
+.clinical-preview img{height:96px}
+.clinical-empty{padding:18px}
+.clinical-empty>span{font-size:2rem}
+.ai-reports-section{gap:12px;font-size:.94rem}
+.ai-reports-section>article.card{gap:12px;padding:16px}
+.ai-reports-section .ai-steps li{padding:9px;font-size:.86rem}
+.ai-reports-section .ai-mode label{padding:11px;border-width:1px}
+.ai-reports-section .ai-requirements,.ai-reports-section .ai-summary{padding:12px}
+.ai-reports-section .ai-result{gap:13px;padding:16px}
+.ai-reports-section .ai-friendly-report{gap:16px}
+.ai-reports-section .ai-scenarios article,.ai-reports-section .ai-recommendations>div,.ai-reports-section .ai-clinical-grid>div{padding:11px}
+.ai-history-filters button{min-height:36px;padding:7px 12px;border-color:var(--line);transition:transform .15s ease,background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease}
+.ai-history-filters button:hover{transform:translateY(-1px);border-color:var(--brand);background:var(--brand-soft);color:var(--brand-dark)}
+.ai-history-filters button:active{transform:translateY(0) scale(.98);background:color-mix(in srgb,var(--brand-soft) 72%,var(--brand));box-shadow:inset 0 1px 3px rgb(15 23 42 / 14%)}
+.ai-history-filters button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand);color:#fff;box-shadow:0 3px 9px rgb(15 118 110 / 18%)}
+.clinical-images-section.is-checkin{gap:10px;padding:12px;background:var(--surface-soft)}
+.clinical-images-section.is-checkin .clinical-uploader{background:var(--surface)}
+.clinical-images-section.is-checkin .clinical-gallery{grid-template-columns:minmax(0,220px)}
+.clinical-images-section.is-checkin .clinical-image-card{gap:8px;padding:10px}
+.clinical-images-section.is-checkin .clinical-thumbnail,.clinical-images-section.is-checkin .clinical-placeholder{height:96px}
+.checkin-edit-content{gap:12px}.checkin-edit-actions{padding-top:2px}
+@media(max-width:980px){.professional-clinical-content{grid-template-columns:1fr}.professional-clinical-content .clinical-images-section{position:static}}
+@media(max-width:767px){.sidebar-logo-slot{flex-basis:68px;width:68px;height:42px}.clinical-images-section{padding:13px}.ai-reports-section>article.card{padding:13px}}

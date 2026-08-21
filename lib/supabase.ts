@@ -1,5 +1,5 @@
 import type { UserRead } from '@/lib/types';
-import { clearCsrfToken, refreshCsrfToken } from '@/infrastructure/http/ApiClient';
+import { beginLogout, clearCsrfToken, refreshCsrfToken, resetAuthLifecycle } from '@/infrastructure/http/ApiClient';
 import { api } from '@/services/api';
 
 export const LEGACY_SUPABASE_SESSION_KEY = 'health-agent.supabase.session';
@@ -10,6 +10,7 @@ export function clearLegacySupabaseSession() {
 }
 
 export function signInWithPassword(email: string, password: string) {
+  resetAuthLifecycle();
   return api<UserRead>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
@@ -17,6 +18,7 @@ export function signInWithPassword(email: string, password: string) {
 }
 
 export async function signOut() {
+  beginLogout();
   try {
     await api<void>('/api/auth/logout', { method: 'POST' });
   } finally {

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { RoleName, UserRead } from '@/lib/types';
 import { clearLegacySupabaseSession, getCurrentUser, refreshSession, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
-import { UnauthorizedError } from '@/infrastructure/http/ApiClient';
+import { setUnauthorizedHandler, UnauthorizedError } from '@/infrastructure/http/ApiClient';
 import { useOptionalQueryClient } from '@/lib/tanstack-react-query';
 
 export type AccessContext = 'admin' | 'professional' | 'patient';
@@ -70,6 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     setActiveAccessContext(null);
   }, [queryClient, setActiveAccessContext]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(clearAuthState);
+    return () => setUnauthorizedHandler(null);
+  }, [clearAuthState]);
 
   const refreshMe = useCallback(async () => {
     try {
@@ -149,10 +154,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [setActiveAccessContext]);
 
   const signOut = useCallback(async () => {
+    // Clear immediately: a refresh that was already in flight must never make
+    // protected UI visible again while the logout request is completing.
+    clearAuthState();
     try {
       await backendSignOut();
-    } finally {
-      clearAuthState();
+    } catch {
+      // Local logout succeeds even if the server session has already expired.
     }
   }, [clearAuthState]);
 

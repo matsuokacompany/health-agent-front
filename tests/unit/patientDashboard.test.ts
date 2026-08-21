@@ -47,7 +47,7 @@ describe('patientDashboardApi', () => {
     expect(dashboard.timeline).toHaveLength(1);
   });
 
-  it('uses plan fields, derives followed days from dates, and limits timeline to 7 days', async () => {
+  it('uses plan fields, derives followed days, and excludes today and future dates from the timeline', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-03T12:00:00Z'));
     apiMock.mockResolvedValueOnce({
@@ -69,8 +69,8 @@ describe('patientDashboardApi', () => {
     expect(dashboard.endDate).toBe('2026-07-10');
     expect(dashboard.daysTotal).toBe(11);
     expect(dashboard.daysElapsed).toBe(4);
-    expect(dashboard.timeline).toHaveLength(7);
-    expect(dashboard.timeline[0].date).toBe('2026-07-04');
+    expect(dashboard.timeline.map((day) => day.date)).toEqual(['2026-07-01', '2026-07-02']);
+    expect(dashboard.timeline.every((day) => day.date < '2026-07-03')).toBe(true);
   });
 
   it('normalizes nested active plan details when aggregate fields are missing', async () => {
