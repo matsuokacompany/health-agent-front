@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiClient, ApiError, beginLogout, clearCsrfToken, ConflictError, ForbiddenError, NotFoundError, resetAuthLifecycle, shouldRedirectToLogin, UnauthorizedError } from '@/infrastructure/http/ApiClient';
+import { ApiClient, ApiError, beginLogout, clearCsrfToken, ConflictError, ForbiddenError, InvalidCredentialsError, NotFoundError, resetAuthLifecycle, shouldRedirectToLogin, UnauthorizedError } from '@/infrastructure/http/ApiClient';
 
 describe('ApiClient', () => {
   afterEach(() => {
@@ -241,6 +241,15 @@ describe('ApiClient', () => {
 
     vi.stubGlobal('fetch', async () => new Response('{}', { status: 409 }));
     await expect(new ApiClient({ baseUrl: 'http://api.test' }).request('/api/auth/me')).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('identifies invalid login credentials without treating them as an expired session', async () => {
+    vi.stubGlobal('fetch', async () => new Response('{}', { status: 401 }));
+
+    const request = new ApiClient({ baseUrl: 'http://api.test' }).request('/api/auth/login', { method: 'POST', body: '{}' });
+
+    await expect(request).rejects.toBeInstanceOf(InvalidCredentialsError);
+    await expect(request).rejects.toMatchObject({ message: 'E-mail ou senha não estão corretos.', status: 401 });
   });
 
   it('does not redirect authentication failures back to login', () => {

@@ -21,6 +21,15 @@ export class UnauthorizedError extends ApiError {
   }
 }
 
+export class InvalidCredentialsError extends ApiError {
+  constructor(payload?: unknown) {
+    // Login failures deliberately use the same message for an unknown e-mail
+    // and a wrong password, so the UI does not disclose which one is valid.
+    super('E-mail ou senha não estão corretos.', 401, payload);
+    this.name = 'InvalidCredentialsError';
+  }
+}
+
 export class ForbiddenError extends ApiError {
   constructor(payload?: unknown) {
     super('Permissão insuficiente para acessar este recurso.', 403, payload);
@@ -231,6 +240,8 @@ export class ApiClient {
     const payload = await readErrorPayload(response);
 
     if (response.status === 401) {
+      if (path === '/api/auth/login') throw new InvalidCredentialsError(payload);
+
       if (shouldRedirectToLogin(path) && !logoutInProgress && !unauthorizedHandled) {
         unauthorizedHandled = true;
         const handleUnauthorized = this.onUnauthorized ?? unauthorizedHandler;
