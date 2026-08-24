@@ -9,11 +9,11 @@ import { createPatientAnamnese } from '@/services/professional';
 import { Button } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
-import { formatBrazilianPhone } from '@/lib/phone';
+import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
 type FormValues = Record<keyof CreateProfessionalPatientRequest, string>;
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
-const initialValues: FormValues = { name: '', email: '', phone: '', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
+const initialValues: FormValues = { name: '', email: '', phone: '+55', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
 const fieldNames = new Set(Object.keys(initialValues));
 
 function apiMessage(payload: unknown) {
@@ -38,7 +38,7 @@ function validationErrors(payload: unknown): FieldErrors {
 }
 
 export function toCreatePatientPayload(values: FormValues): CreateProfessionalPatientRequest {
-  return Object.fromEntries(Object.entries(values).filter(([, value]) => value.trim()).map(([key, value]) => [key, value.trim()])) as CreateProfessionalPatientRequest;
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, key === 'phone' ? toBrazilianPhoneDigits(value) : value.trim()]).filter(([, value]) => value)) as CreateProfessionalPatientRequest;
 }
 
 export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () => void }) {

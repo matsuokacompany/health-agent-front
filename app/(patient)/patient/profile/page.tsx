@@ -8,7 +8,7 @@ import { Button, Card, PageHeader } from '@/components/ui/design';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { usersApi } from '@/services/users';
-import { formatBrazilianPhone } from '@/lib/phone';
+import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
 type PatientExtraFields = {
   address?: string | null;
@@ -43,7 +43,7 @@ export default function PatientProfile() {
     setError('');
     setMsg('');
     try {
-      await usersApi.update(Number(user.id), { phone: String(f.get('phone') || ''), city: String(f.get('city') || ''), state: String(f.get('state') || '') });
+      await usersApi.update(Number(user.id), { phone: toBrazilianPhoneDigits(String(f.get('phone') || '')), city: String(f.get('city') || ''), state: String(f.get('state') || '') });
       await refreshMe();
       setMsg('Telefone, cidade e estado atualizados.');
     } catch (err) {

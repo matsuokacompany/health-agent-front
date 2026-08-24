@@ -3,7 +3,7 @@ import { FormEvent, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button, PageHeader } from '@/components/ui/design';
 import { usersApi } from '@/services/users';
-import { formatBrazilianPhone } from '@/lib/phone';
+import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
 export default function Page() {
   const { user, refreshMe } = useAuth();
@@ -13,7 +13,7 @@ export default function Page() {
     e.preventDefault();
     if (!user) return;
     const f = new FormData(e.currentTarget);
-    await usersApi.update(Number(user.id), { name: String(f.get('name')), phone: String(f.get('phone') || ''), city: String(f.get('city') || ''), state: String(f.get('state') || '') });
+    await usersApi.update(Number(user.id), { name: String(f.get('name')), phone: toBrazilianPhoneDigits(String(f.get('phone') || '')), city: String(f.get('city') || ''), state: String(f.get('state') || '') });
     await refreshMe();
     setMsg('Perfil atualizado.');
   }
