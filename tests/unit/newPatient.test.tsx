@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { NewPatientModal } from '@/components/professional/NewPatientModal';
+import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 import Patients from '@/app/(professional)/professional/patients/page';
 
 const { mutateAsync, push } = vi.hoisted(() => ({ mutateAsync: vi.fn(), push: vi.fn() }));
@@ -52,10 +53,32 @@ describe('cadastro profissional de pacientes', () => {
   it('envia o payload sem campos opcionais vazios nem roles', async () => {
     mutateAsync.mockResolvedValue({});
     render(<NewPatientModal open onClose={vi.fn()} />); fillRequired();
-    fireEvent.change(screen.getByLabelText('Telefone'), { target: { value: '+55 (11) 99999-9999' } });
+    fireEvent.change(screen.getByLabelText('Telefone'), { target: { value: '43999999999' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ name: 'Maria da Silva', email: 'maria@example.com', phone: '+55 (11) 99999-9999', plan_title: 'Inicial' }));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ name: 'Maria da Silva', email: 'maria@example.com', phone: '5543999999999', plan_title: 'Inicial' }));
     expect(mutateAsync.mock.calls[0][0]).not.toHaveProperty('roles');
+  });
+
+  it('mantém o foco no campo durante a digitação e aplica máscara de telefone', () => {
+    render(<NewPatientModal open onClose={vi.fn()} />);
+    const phone = screen.getByLabelText('Telefone');
+    phone.focus();
+    fireEvent.change(phone, { target: { value: '11999999999' } });
+
+    expect(document.activeElement).toBe(phone);
+    expect((phone as HTMLInputElement).value).toBe('+55 (11) 99999-9999');
+  });
+
+  it.each([
+    ['11987654321', '+55 (11) 98765-4321'],
+    ['+5511987654321', '+55 (11) 98765-4321'],
+    ['1133334444', '+55 (11) 3333-4444'],
+  ])('formata o telefone %s', (input, expected) => {
+    expect(formatBrazilianPhone(input)).toBe(expected);
+  });
+
+  it('envia o telefone somente com dígitos, incluindo o código do país', () => {
+    expect(toBrazilianPhoneDigits('+55 (43) 99999-9999')).toBe('5543999999999');
   });
 
   it('desabilita a submissão durante o loading', () => {

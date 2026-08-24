@@ -9,10 +9,11 @@ import { createPatientAnamnese } from '@/services/professional';
 import { Button } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
+import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
 type FormValues = Record<keyof CreateProfessionalPatientRequest, string>;
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
-const initialValues: FormValues = { name: '', email: '', phone: '', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
+const initialValues: FormValues = { name: '', email: '', phone: '+55', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
 const fieldNames = new Set(Object.keys(initialValues));
 
 function apiMessage(payload: unknown) {
@@ -37,7 +38,7 @@ function validationErrors(payload: unknown): FieldErrors {
 }
 
 export function toCreatePatientPayload(values: FormValues): CreateProfessionalPatientRequest {
-  return Object.fromEntries(Object.entries(values).filter(([, value]) => value.trim()).map(([key, value]) => [key, value.trim()])) as CreateProfessionalPatientRequest;
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, key === 'phone' ? toBrazilianPhoneDigits(value) : value.trim()]).filter(([, value]) => value)) as CreateProfessionalPatientRequest;
 }
 
 export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -108,10 +109,10 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     finally { submitting.current = false; }
   }
 
-  const input = (name: keyof FormValues, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => <label>{label}{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<input {...props} name={name} value={values[name]} onChange={(event) => setValue(name, event.target.value)} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name] ? `${name}-error` : undefined} /></label>;
+  const input = (name: keyof FormValues, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, formatValue = (value: string) => value) => <label>{label}{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<input {...props} name={name} value={values[name]} onChange={(event) => setValue(name, formatValue(event.target.value))} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name] ? `${name}-error` : undefined} /></label>;
   return <Modal open={open} title="Novo paciente" onClose={() => { if (!mutation.isPending && !isSavingAnamnese) onClose(); }}><form onSubmit={submit} noValidate>
     <p className="muted">Cadastre o paciente e crie seu plano inicial de acompanhamento.</p>
-    <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true, maxLength: INPUT_LIMITS.name })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', maxLength: INPUT_LIMITS.phone, placeholder: '+55 (11) 99999-9999' })}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: INPUT_LIMITS.cpf })}{input('birth_date', 'Data de nascimento', { type: 'date' })}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2', maxLength: INPUT_LIMITS.city })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: INPUT_LIMITS.state, placeholder: 'Estado' })}</div>
+    <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true, maxLength: INPUT_LIMITS.name })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', maxLength: INPUT_LIMITS.phone, placeholder: '+55 (11) 99999-9999' }, formatBrazilianPhone)}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: INPUT_LIMITS.cpf })}{input('birth_date', 'Data de nascimento', { type: 'date' })}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2', maxLength: INPUT_LIMITS.city })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: INPUT_LIMITS.state, placeholder: 'Estado' })}</div>
     <h3 className="new-patient-section-title">Plano de acompanhamento</h3>{input('plan_title', 'Título do plano *', { required: true, maxLength: INPUT_LIMITS.planTitle })}<label>Descrição do plano<textarea name="plan_description" rows={3} maxLength={INPUT_LIMITS.planDescription} value={values.plan_description} onChange={(event) => setValue('plan_description', event.target.value)} /><small className="muted">{values.plan_description.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.planDescription.toLocaleString('pt-BR')} caracteres</small></label>
     <div className="new-patient-grid">{input('plan_start_date', 'Data inicial do plano', { type: 'date' })}{input('plan_end_date', 'Data final do plano', { type: 'date', min: values.plan_start_date || undefined })}</div>
     <h3 className="new-patient-section-title">Anamnese</h3><label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
