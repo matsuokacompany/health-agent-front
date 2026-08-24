@@ -23,7 +23,7 @@ vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ isProfessio
 function fillRequired() {
   fireEvent.change(screen.getByLabelText(/Nome completo/), { target: { value: ' Maria da Silva ' } });
   fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: 'maria@example.com' } });
-  fireEvent.change(screen.getByLabelText(/Título do plano/), { target: { value: ' Inicial ' } });
+  fireEvent.change(screen.getByLabelText(/Finalidade do acompanhamento/), { target: { value: ' Inicial ' } });
 }
 
 describe('cadastro profissional de pacientes', () => {
@@ -35,7 +35,7 @@ describe('cadastro profissional de pacientes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
     expect(screen.getByText('Informe o nome completo.')).toBeTruthy();
     expect(screen.getByText('Informe o e-mail.')).toBeTruthy();
-    expect(screen.getByText('Informe o título do plano.')).toBeTruthy();
+    expect(screen.getByText('Informe a finalidade do acompanhamento.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: 'inválido' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
     expect(screen.getByText('Informe um e-mail válido.')).toBeTruthy();
@@ -44,8 +44,8 @@ describe('cadastro profissional de pacientes', () => {
 
   it('impede uma data final anterior à inicial', () => {
     render(<NewPatientModal open onClose={vi.fn()} />); fillRequired();
-    fireEvent.change(screen.getByLabelText('Data inicial do plano'), { target: { value: '2026-09-13' } });
-    fireEvent.change(screen.getByLabelText('Data final do plano'), { target: { value: '2026-08-13' } });
+    fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: '2026-09-13' } });
+    fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-08-13' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
     expect(screen.getByText('A data final não pode ser anterior à data inicial.')).toBeTruthy();
   });
@@ -57,6 +57,15 @@ describe('cadastro profissional de pacientes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ name: 'Maria da Silva', email: 'maria@example.com', phone: '5543999999999', plan_title: 'Inicial' }));
     expect(mutateAsync.mock.calls[0][0]).not.toHaveProperty('roles');
+  });
+
+  it('apresenta o contexto clínico com contador, aviso e associação acessível', () => {
+    render(<NewPatientModal open onClose={vi.fn()} />);
+    const context = screen.getByLabelText(/Contexto clínico e pontos a acompanhar/);
+    fireEvent.change(context, { target: { value: 'Acompanhar dor e inchaço.' } });
+    expect(screen.getByText('25/2000')).toBeTruthy();
+    expect(context.getAttribute('aria-describedby')).toContain('plan-description-help');
+    expect(screen.getByText(/As informações deste plano organizam/)).toBeTruthy();
   });
 
   it('mantém o foco no campo durante a digitação e aplica máscara de telefone', () => {
