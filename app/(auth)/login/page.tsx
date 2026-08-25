@@ -53,6 +53,7 @@ export default function Login() {
             <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
             <Link href="/forgot-password">Esqueci minha senha</Link>
           </div>
+          <p className="muted login-signup-hint">Não tem conta? <Link href="/signup">Criar conta</Link></p>
         </form>
       </aside>
     </main>

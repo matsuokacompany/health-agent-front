@@ -59,6 +59,7 @@ export type MonitoringPlan = {
   created_at?: string;
   updated_at?: string;
   professionals?: ProfessionalProfile[];
+  origin?: 'PROFESSIONAL' | 'SELF_SERVICE';
   [key: string]: unknown;
 };
 
@@ -83,6 +84,38 @@ export type DailyReport = {
 
 export type ReportPeriod = 'diario' | 'semanal' | 'mensal';
 export type GeneratedReport = { user_id: number; periodo: string; relatorio: string | object };
+
+export type SubscriptionStatus = 'PENDING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
+export type Subscription = { status: SubscriptionStatus; current_period_end?: string | null };
+export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus };
+
+export type EvolutionSymptomOccurrence = { description: string; occurrences: number; last_occurred_on?: string | null };
+export type EvolutionTimelineGroup = { period_label: string; completed_checkins: number; checkins_with_symptoms: number };
+export type EvolutionMetrics = {
+  total_checkins: number;
+  completed_checkins: number;
+  pending_checkins: number;
+  checkins_with_symptoms: number;
+  checkins_without_symptoms: number;
+  days_with_checkins: number;
+  adherence_percentage: number;
+  symptom_rate_percentage: number;
+  calendar_coverage_percentage: number;
+};
+export type EvolutionReport = {
+  patient_id: number;
+  start_date: string;
+  end_date: string;
+  period_days: number;
+  aggregation: 'weekly' | 'monthly' | 'yearly';
+  minimum_completed_checkins: number;
+  sufficient_data: boolean;
+  metrics: EvolutionMetrics;
+  symptom_trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data';
+  longest_gap_days: number;
+  symptoms: EvolutionSymptomOccurrence[];
+  timeline: EvolutionTimelineGroup[];
+};
 
 export type InsightPreventiveResponse = Record<string, unknown>;
 export type InsightClinicalResponse = Record<string, unknown>;

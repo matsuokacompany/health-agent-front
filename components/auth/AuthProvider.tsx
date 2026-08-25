@@ -2,7 +2,16 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { RoleName, UserRead } from '@/lib/types';
-import { clearLegacySupabaseSession, getCurrentUser, refreshSession, signInWithPassword, signOut as backendSignOut } from '@/lib/supabase';
+import {
+  clearLegacySupabaseSession,
+  getCurrentUser,
+  refreshSession,
+  signInWithPassword,
+  signOut as backendSignOut,
+  signUpWithPassword,
+  type SignupPayload,
+  type SignupResult,
+} from '@/lib/supabase';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { setUnauthorizedHandler, UnauthorizedError } from '@/infrastructure/http/ApiClient';
 import { useOptionalQueryClient } from '@/lib/tanstack-react-query';
@@ -37,6 +46,7 @@ export type AuthContextValue = {
   isProfessional: boolean;
   isPatient: boolean;
   signIn(email: string, password: string): Promise<UserRead>;
+  signUp(payload: SignupPayload): Promise<SignupResult>;
   signOut(): Promise<void>;
   refreshMe(): Promise<UserRead | null>;
   clearAuthState(): void;
@@ -163,6 +173,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [setActiveAccessContext]);
 
+  const signUp = useCallback(async (payload: SignupPayload) => {
+    setLoading(true);
+    setActiveAccessContext(null);
+    const generation = authGeneration.current;
+    try {
+      const result = await signUpWithPassword(payload);
+      if (result.status === 'authenticated' && generation === authGeneration.current) {
+        setUser(result.user);
+        setError(null);
+      }
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  }, [setActiveAccessContext]);
+
   const signOut = useCallback(async () => {
     // Clear immediately: a refresh that was already in flight must never make
     // protected UI visible again while the logout request is completing.
@@ -188,10 +214,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isProfessional: roles.includes('professional'),
     isPatient: roles.includes('patient'),
     signIn,
+    signUp,
     signOut,
     refreshMe,
     clearAuthState,
-  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, setActiveAccessContext, signIn, signOut, user]);
+  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, setActiveAccessContext, signIn, signUp, signOut, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
