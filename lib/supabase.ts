@@ -17,6 +17,32 @@ export function signInWithPassword(email: string, password: string) {
   });
 }
 
+export type SignupPayload = {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+  terms_accepted: boolean;
+  terms_version: string;
+};
+
+export type SignupResult =
+  | { status: 'authenticated'; user: UserRead }
+  | { status: 'confirmation_pending' };
+
+export async function signUpWithPassword(payload: SignupPayload): Promise<SignupResult> {
+  resetAuthLifecycle();
+  // The backend returns 200 + UserRead when the Supabase project auto-confirms
+  // new accounts, or 202 + {message} when it requires e-mail confirmation
+  // first (no session cookie is set in that case).
+  const result = await api<UserRead | { message: string }>('/api/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (result && typeof result === 'object' && 'message' in result) return { status: 'confirmation_pending' };
+  return { status: 'authenticated', user: result as UserRead };
+}
+
 export async function signOut() {
   beginLogout();
   try {

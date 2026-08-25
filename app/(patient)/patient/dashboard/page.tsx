@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import type { DailyReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
+import { selfMonitoringApi } from '@/services/selfMonitoring';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
 function formatDate(value?: string | null) {
   if (!value) return 'Não informado';
@@ -91,8 +94,33 @@ function LoadingDashboard() {
   return <section className="patient-dashboard-v2"><Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card></section>;
 }
 
-function EmptyDashboard() {
-  return <Card className="patient-dashboard-empty"><span className="patient-empty-icon">🌱</span><h2>Nenhum acompanhamento ativo por enquanto</h2><p className="muted">Assim que um profissional iniciar seu acompanhamento, você verá aqui o plano, a evolução, os registros recentes e a próxima mensagem automática.</p><Button href="/patient/monitoring" variant="secondary">Ver área de acompanhamento</Button></Card>;
+function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Promise<void> }) {
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleStart() {
+    setStarting(true);
+    setError(null);
+    try {
+      await onStartSelfMonitoring();
+    } catch (err) {
+      setError(toFriendlyErrorMessage(err));
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  return <Card className="patient-dashboard-empty">
+    <span className="patient-empty-icon">🌱</span>
+    <h2>Nenhum acompanhamento ativo por enquanto</h2>
+    <p className="muted">Assim que um profissional iniciar seu acompanhamento, você verá aqui o plano, a evolução, os registros recentes e a próxima mensagem automática.</p>
+    <p className="muted">Prefere acompanhar seus próprios sintomas por conta própria, sem um profissional vinculado?</p>
+    {error ? <p className="notice danger">{error}</p> : null}
+    <div className="patient-empty-actions">
+      <Button href="/patient/monitoring" variant="secondary">Ver área de acompanhamento</Button>
+      <Button disabled={starting} loading={starting} loadingLabel="Iniciando..." onClick={handleStart}>Começar automonitoramento</Button>
+    </div>
+  </Card>;
 }
 
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
@@ -132,11 +160,17 @@ function LastResponseCard({ data }: { data: PatientDashboardAggregate }) {
 }
 
 export default function PatientDashboard() {
-  const { reports, plans, loading: patientDataLoading } = usePatientData();
+  const { reports, plans, loading: patientDataLoading, refresh } = usePatientData();
   const dashboard = buildFallbackDashboard(plans, reports);
+  const isSelfService = plans.length > 0 && !plans.some((plan) => plan.origin === 'PROFESSIONAL');
 
   if (patientDataLoading) return <LoadingDashboard />;
-  if (!dashboard?.hasActiveMonitoring) return <EmptyDashboard />;
+  if (!dashboard?.hasActiveMonitoring) {
+    return <EmptyDashboard onStartSelfMonitoring={async () => {
+      await selfMonitoringApi.createPlan();
+      await refresh(true);
+    }} />;
+  }
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
       <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
@@ -144,5 +178,6 @@ export default function PatientDashboard() {
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
       <Timeline days={dashboard.timeline} />
+      {isSelfService ? <Card className="patient-dashboard-self-service-card"><span className="eyebrow">Automonitoramento</span><p className="muted">Acompanhe sua evolução e gerencie sua assinatura.</p><Button href="/patient/automonitoramento" variant="secondary">Ver evolução e assinatura</Button></Card> : null}
     </section>;
 }
