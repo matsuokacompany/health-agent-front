@@ -3,6 +3,7 @@ import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import Link from 'next/link';
 
 import { FormEvent, useState } from 'react';
+import { AuthLogo } from '@/components/ui/AuthLogo';
 import { resetPasswordForEmail } from '@/lib/supabase';
 
 export default function ForgotPasswordPage() {
@@ -30,6 +31,7 @@ export default function ForgotPasswordPage() {
   return (
     <main className="hero">
       <section>
+        <AuthLogo />
         <span className="badge">Recuperação de acesso</span>
         <h1>Esqueci minha senha</h1>
         <p className="muted">Informe seu e-mail para receber o link seguro de redefinição de senha.</p>
