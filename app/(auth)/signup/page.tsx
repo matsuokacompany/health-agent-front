@@ -20,6 +20,11 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState(formatBrazilianPhone(''));
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [gender, setGender] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [cpf, setCpf] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -36,6 +41,11 @@ export default function Signup() {
         email,
         password,
         phone: toBrazilianPhoneDigits(phone),
+        city,
+        state,
+        gender,
+        birth_date: birthDate,
+        cpf,
         terms_accepted: termsAccepted,
         terms_version: TERMS_VERSION,
       });
@@ -91,6 +101,63 @@ export default function Signup() {
                 required
                 type="tel"
                 value={phone}
+              />
+            </label>
+            <label>
+              CPF
+              <input
+                inputMode="numeric"
+                name="cpf"
+                onChange={(event) => setCpf(event.target.value)}
+                placeholder="000.000.000-00"
+                required
+                type="text"
+                value={cpf}
+              />
+            </label>
+            <label>
+              Data de nascimento
+              <input
+                name="birth_date"
+                onChange={(event) => setBirthDate(event.target.value)}
+                required
+                type="date"
+                value={birthDate}
+              />
+            </label>
+            <label>
+              Gênero
+              <select name="gender" onChange={(event) => setGender(event.target.value)} required value={gender}>
+                <option value="" disabled>
+                  Selecione
+                </option>
+                <option value="feminino">Feminino</option>
+                <option value="masculino">Masculino</option>
+                <option value="nao_binario">Não binário</option>
+                <option value="outro">Outro</option>
+              </select>
+            </label>
+            <label>
+              Cidade
+              <input
+                autoComplete="address-level2"
+                name="city"
+                onChange={(event) => setCity(event.target.value)}
+                required
+                type="text"
+                value={city}
+              />
+            </label>
+            <label>
+              Estado
+              <input
+                autoComplete="address-level1"
+                name="state"
+                onChange={(event) => setState(event.target.value)}
+                placeholder="Estado"
+                required
+                type="text"
+                value={state}
               />
             </label>
             <label className="checkbox-field">

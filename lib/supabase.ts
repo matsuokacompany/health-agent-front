@@ -22,6 +22,11 @@ export type SignupPayload = {
   email: string;
   password: string;
   phone: string;
+  city: string;
+  state: string;
+  gender: string;
+  birth_date: string;
+  cpf: string;
   terms_accepted: boolean;
   terms_version: string;
 };
