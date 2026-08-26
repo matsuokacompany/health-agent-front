@@ -8,7 +8,9 @@ import {
   refreshSession,
   signInWithPassword,
   signOut as backendSignOut,
+  signUpProfessionalWithPassword,
   signUpWithPassword,
+  type ProfessionalSignupPayload,
   type SignupPayload,
   type SignupResult,
 } from '@/lib/supabase';
@@ -47,6 +49,7 @@ export type AuthContextValue = {
   isPatient: boolean;
   signIn(email: string, password: string): Promise<UserRead>;
   signUp(payload: SignupPayload): Promise<SignupResult>;
+  signUpProfessional(payload: ProfessionalSignupPayload): Promise<SignupResult>;
   signOut(): Promise<void>;
   refreshMe(): Promise<UserRead | null>;
   clearAuthState(): void;
@@ -189,6 +192,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [setActiveAccessContext]);
 
+  const signUpProfessional = useCallback(async (payload: ProfessionalSignupPayload) => {
+    setLoading(true);
+    setActiveAccessContext(null);
+    const generation = authGeneration.current;
+    try {
+      const result = await signUpProfessionalWithPassword(payload);
+      if (result.status === 'authenticated' && generation === authGeneration.current) {
+        setUser(result.user);
+        setError(null);
+      }
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  }, [setActiveAccessContext]);
+
   const signOut = useCallback(async () => {
     // Clear immediately: a refresh that was already in flight must never make
     // protected UI visible again while the logout request is completing.
@@ -215,10 +234,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isPatient: roles.includes('patient'),
     signIn,
     signUp,
+    signUpProfessional,
     signOut,
     refreshMe,
     clearAuthState,
-  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, setActiveAccessContext, signIn, signUp, signOut, user]);
+  }), [activeAccessContextState, clearAuthState, error, loading, refreshMe, roles, setActiveAccessContext, signIn, signUp, signUpProfessional, signOut, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

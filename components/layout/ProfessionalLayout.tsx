@@ -3,7 +3,10 @@
 import { RequireAccessContext } from '@/components/auth/guards';
 import { ResponsiveAppShell } from './ResponsiveAppShell';
 
-const links = [['/professional/patients', 'Pacientes']];
+const links = [
+  ['/professional/patients', 'Pacientes'],
+  ['/professional/assinatura', 'Assinatura'],
+];
 
 export function ProfessionalLayout({ children }: { children: React.ReactNode }) {
   return (

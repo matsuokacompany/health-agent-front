@@ -43,6 +43,7 @@ const errors: Record<string, AiReportUserError> = {
   AI_GENERATION_FAILED: { title: 'Não foi possível concluir a análise', message: 'Ocorreu uma falha durante a geração. A tentativa não consumiu a disponibilidade do paciente.', action: 'Tentar novamente' },
   PREVIEW_TOKEN_EXPIRED: { title: 'A revisão expirou', message: 'Atualize os dados para continuar com segurança.', action: 'Atualizar revisão' },
   PREVIEW_TOKEN_MISMATCH: { title: 'A revisão expirou', message: 'Atualize os dados para continuar com segurança.', action: 'Atualizar revisão' },
+  PROFESSIONAL_SUBSCRIPTION_REQUIRED: { title: 'Assinatura necessária', message: 'Sua assinatura não está ativa. Assine em "Assinatura" no menu para gerar novos relatórios de IA.', action: 'Ir para Assinatura' },
 };
 export function eligibilityMessage(reason: string | null) { return reason ? errors[reason]?.message ?? 'A geração não está disponível neste momento.' : null; }
 function errorCode(payload: unknown): string | null { if (!payload || typeof payload !== 'object') return null; const value = payload as Record<string, unknown>; const detail = value.detail; if (typeof value.code === 'string') return value.code; if (typeof detail === 'string') return detail; if (detail && typeof detail === 'object' && typeof (detail as Record<string, unknown>).code === 'string') return (detail as Record<string, unknown>).code as string; return null; }
