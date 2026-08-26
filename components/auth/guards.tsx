@@ -37,8 +37,9 @@ export function RequireAccessContext({ context, children }: { context: AccessCon
 
   if (auth.loading && !auth.isAuthenticated) return <Loading />;
   if (!auth.isAuthenticated) return null;
-  if (auth.isSuperAdmin) return <>{children}</>;
-  if (context === 'admin') return <Forbidden />;
+  // super_admin is scoped to the administration platform only — it does not
+  // grant the patient/professional portal experiences.
+  if (context === 'admin') return auth.isSuperAdmin ? <>{children}</> : <Forbidden />;
   if (context === 'professional' && !auth.isProfessional) return <Forbidden />;
   if (context === 'patient' && !auth.isPatient) return <Forbidden />;
   return <>{children}</>;

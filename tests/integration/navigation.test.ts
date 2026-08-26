@@ -7,7 +7,7 @@ describe('role navigation', () => {
     expect(roleHome.professional).toBe('/professional');
   });
 
-  it('routes super_admin to context selection instead of a direct workspace', () => {
-    expect(roleHome.super_admin).toBe('/choose-context');
+  it('routes super_admin straight to the administration platform', () => {
+    expect(roleHome.super_admin).toBe('/admin');
   });
 });

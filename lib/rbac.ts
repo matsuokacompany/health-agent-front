@@ -4,7 +4,7 @@ export const roleHome: Record<RoleName, string> = {
   patient: '/patient',
   professional: '/professional',
   admin: '/login',
-  super_admin: '/choose-context',
+  super_admin: '/admin',
 };
 
 export function hasRole(user: User | null | undefined, role: RoleName) {
@@ -33,10 +33,12 @@ export function hasActiveConsent(user?: User | null) {
 
 export function canAccessRoute(user: User | null | undefined, path: string) {
   if (!user) return path.startsWith('/login');
+  // super_admin is scoped to the administration platform only — it does not
+  // grant the patient/professional portal experiences.
   if (path.startsWith('/choose-context')) return isSuperAdmin(user);
   if (path.startsWith('/admin')) return isSuperAdmin(user);
-  if (path.startsWith('/patient')) return isSuperAdmin(user) || isPatient(user);
-  if (path.startsWith('/professional')) return isSuperAdmin(user) || isProfessional(user);
+  if (path.startsWith('/patient')) return isPatient(user);
+  if (path.startsWith('/professional')) return isProfessional(user);
   if (path.startsWith('/app')) return false;
   return true;
 }
