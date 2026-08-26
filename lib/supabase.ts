@@ -21,6 +21,7 @@ export type SignupPayload = {
   name: string;
   email: string;
   password: string;
+  password_confirmation: string;
   phone: string;
   city: string;
   state: string;
@@ -52,6 +53,7 @@ export type ProfessionalSignupPayload = {
   name: string;
   email: string;
   password: string;
+  password_confirmation: string;
   phone: string;
   cpf: string;
   specialty: string;
