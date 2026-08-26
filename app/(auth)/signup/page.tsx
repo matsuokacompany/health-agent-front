@@ -19,6 +19,7 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [phone, setPhone] = useState(formatBrazilianPhone(''));
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -32,14 +33,19 @@ export default function Signup() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
     setFormError(null);
+    if (password !== passwordConfirmation) {
+      setFormError('As senhas não coincidem.');
+      return;
+    }
+    setSubmitting(true);
 
     try {
       const result = await signUp({
         name,
         email,
         password,
+        password_confirmation: passwordConfirmation,
         phone: toBrazilianPhoneDigits(phone),
         city,
         state,
@@ -90,6 +96,7 @@ export default function Signup() {
               <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" required type="email" value={email} />
             </label>
             <PasswordInput autoComplete="new-password" label="Senha" minLength={8} name="password" onChange={(event) => setPassword(event.target.value)} placeholder="Mínimo de 8 caracteres" required value={password} />
+            <PasswordInput autoComplete="new-password" label="Confirmar senha" minLength={8} name="password_confirmation" onChange={(event) => setPasswordConfirmation(event.target.value)} placeholder="Repita a senha" required value={passwordConfirmation} />
             <div className="signup-fields-grid">
               <label>
                 Telefone (WhatsApp)
