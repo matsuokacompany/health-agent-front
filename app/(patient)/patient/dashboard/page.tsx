@@ -29,6 +29,20 @@ function truncate(text?: string | null) {
   return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
 }
 
+function firstCheckinDate(startDate?: string | null) {
+  if (!startDate) return null;
+  // The scheduler creates each day's check-in for the *previous* calendar
+  // day, run every morning — so the first one a brand-new plan is eligible
+  // for lands the day after start_date, not on start_date itself. Format in
+  // UTC since start_date arrives as a date-only string (parsed as UTC
+  // midnight); formatting in the viewer's local timezone could shift it back
+  // a day for negative UTC offsets like America/Sao_Paulo.
+  const date = new Date(startDate.length <= 10 ? `${startDate}T00:00:00Z` : startDate);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + 1);
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeZone: 'UTC' }).format(date);
+}
+
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -172,8 +186,12 @@ export default function PatientDashboard() {
     }} />;
   }
 
+  const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
+
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
-      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
+      <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
+        {upcomingFirstCheckin ? <p className="notice">📅 Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
+      </Card>
       <LastResponseCard data={dashboard} />
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
