@@ -18,6 +18,23 @@ export type AdminUsersFilter = {
   search?: string;
 };
 
+export type AdminCostEntry = {
+  id: number;
+  description: string;
+  category?: string | null;
+  amount_cents: number;
+  incurred_on: string;
+  created_by_user_id: number;
+  created_at: string;
+};
+
+export type AdminCostEntryPayload = {
+  description: string;
+  category?: string;
+  amount_cents: number;
+  incurred_on: string;
+};
+
 export type AdminCostSummary = {
   start_date: string;
   end_date: string;
@@ -26,6 +43,8 @@ export type AdminCostSummary = {
   whatsapp_message_count: number;
   whatsapp_cost_per_message_cents: number | null;
   whatsapp_cost_cents: number | null;
+  manual_cost_entries: AdminCostEntry[];
+  manual_cost_total_cents: number;
 };
 
 export type AdminWhatsappDailyPoint = { date: string; sent_count: number };
@@ -51,4 +70,9 @@ export const adminReportingApi = {
   listUsers: (filters: AdminUsersFilter = {}) => api<AdminUser[]>(withQuery('/api/admin/users', filters)),
   getCosts: (params: { start_date?: string; end_date?: string } = {}) => api<AdminCostSummary>(withQuery('/api/admin/costs', params)),
   getWhatsappStats: (days = 30) => api<AdminWhatsappStats>(withQuery('/api/admin/whatsapp/stats', { days })),
+  listCostEntries: (params: { start_date?: string; end_date?: string } = {}) =>
+    api<AdminCostEntry[]>(withQuery('/api/admin/costs/entries', params)),
+  createCostEntry: (payload: AdminCostEntryPayload) =>
+    api<AdminCostEntry>('/api/admin/costs/entries', { method: 'POST', body: JSON.stringify(payload) }),
+  deleteCostEntry: (entryId: number) => api<void>(`/api/admin/costs/entries/${entryId}`, { method: 'DELETE' }),
 };

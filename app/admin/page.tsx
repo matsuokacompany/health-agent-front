@@ -1,65 +1,93 @@
-import Link from 'next/link';
+'use client';
 
-const metrics = [
-  { label: 'Receita mensal estimada', value: 'R$ 24,8 mil', hint: '+12% vs. mês anterior' },
-  { label: 'Custo operacional', value: 'R$ 7,4 mil', hint: '29,8% da receita' },
-  { label: 'Pacientes ativos', value: '186', hint: '42 em acompanhamento intenso' },
-  { label: 'Alertas administrativos', value: '8', hint: '3 exigem decisão nesta semana' },
-];
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { ErrorState, LoadingState } from '@/components/ui/states';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { adminReportingApi, type AdminCostSummary, type AdminUser, type AdminWhatsappStats } from '@/services/adminReporting';
+
+function formatUsd(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+}
+
+function formatBrlFromCents(cents: number) {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
 const shortcuts = [
+  { title: 'Usuários', description: 'Veja quem está na plataforma, ativos e inativos, com filtros por papel.', href: '/admin/usuarios', cta: 'Ver usuários' },
   { title: 'Pacientes', description: 'Cadastre pacientes, consulte anamneses, planos e relatórios.', href: '/admin/pacientes', cta: 'Abrir pacientes' },
-  { title: 'Custos', description: 'Acompanhe custos com IA, WhatsApp, atendimento e margem operacional.', href: '/admin/custos', cta: 'Ver custos' },
-  { title: 'Parâmetros empresariais', description: 'Revise metas, SLA, limites operacionais e regras de cobrança.', href: '/admin/parametros', cta: 'Configurar' },
-  { title: 'WhatsApp', description: 'Monitore status de envio, templates e falhas operacionais.', href: '/admin/whatsapp', cta: 'Ver operação' },
+  { title: 'Custos', description: 'Custos de IA e WhatsApp calculados automaticamente, mais lançamentos manuais.', href: '/admin/custos', cta: 'Ver custos' },
+  { title: 'WhatsApp', description: 'Volume de mensagens enviadas e custo estimado por período.', href: '/admin/whatsapp', cta: 'Ver operação' },
 ] as const;
 
 export default function Page() {
+  const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [costs, setCosts] = useState<AdminCostSummary | null>(null);
+  const [whatsapp, setWhatsapp] = useState<AdminWhatsappStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [usersResult, costsResult, whatsappResult] = await Promise.all([
+          adminReportingApi.listUsers(),
+          adminReportingApi.getCosts(),
+          adminReportingApi.getWhatsappStats(30),
+        ]);
+        setUsers(usersResult);
+        setCosts(costsResult);
+        setWhatsapp(whatsappResult);
+      } catch (err) {
+        setError(toFriendlyErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    }
+    void load();
+  }, []);
+
+  const activeUsers = users?.filter((user) => user.status === 'ACTIVE').length ?? 0;
+  const totalManualCents = costs?.manual_cost_total_cents ?? 0;
+  const totalWhatsappCents = costs?.whatsapp_cost_cents ?? 0;
+  const totalKnownCostsBrl = totalManualCents + totalWhatsappCents;
+
   return (
     <>
       <div className="page-header">
         <div>
           <span className="eyebrow">Administração</span>
           <h1>Dashboard administrativo</h1>
-          <p className="muted">Visão executiva para acompanhar operação, custos, capacidade e parâmetros empresariais antes de conectar os endpoints definitivos do backend.</p>
+          <p className="muted">Visão geral do mês atual — usuários, custos de IA/WhatsApp e lançamentos manuais.</p>
         </div>
-        <Link className="button" href="/admin/parametros">Revisar parâmetros</Link>
       </div>
 
-      <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos">
-        {metrics.map((metric) => (
-          <article className="card" key={metric.label}>
-            <span className="metric-label">{metric.label}</span>
-            <strong className="metric">{metric.value}</strong>
-            <p className="muted compact">{metric.hint}</p>
-          </article>
-        ))}
-      </section>
+      {loading ? <LoadingState message="Carregando indicadores..." /> : null}
+      {!loading && error ? <ErrorState message={error} /> : null}
 
-      <section className="grid" aria-label="Atalhos administrativos">
-        {shortcuts.map((shortcut) => (
-          <article className="card stack" key={shortcut.href}>
-            <h2>{shortcut.title}</h2>
-            <p className="muted">{shortcut.description}</p>
-            <Link className="button secondary" href={shortcut.href}>{shortcut.cta}</Link>
-          </article>
-        ))}
-      </section>
+      {!loading && !error ? (
+        <>
+          <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos">
+            <article className="card"><span className="metric-label">Usuários ativos</span><strong className="metric">{activeUsers}</strong><p className="muted compact">{users?.length ?? 0} no total</p></article>
+            <article className="card"><span className="metric-label">Relatórios de IA (mês)</span><strong className="metric">{costs?.ai_report_count ?? 0}</strong><p className="muted compact">{costs ? formatUsd(costs.ai_report_cost_usd) : '—'}</p></article>
+            <article className="card"><span className="metric-label">Mensagens WhatsApp (30 dias)</span><strong className="metric">{whatsapp?.total_sent ?? 0}</strong><p className="muted compact">{whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'}</p></article>
+            <article className="card"><span className="metric-label">Custos conhecidos (mês)</span><strong className="metric">{formatBrlFromCents(totalKnownCostsBrl)}</strong><p className="muted compact">WhatsApp + lançamentos manuais</p></article>
+          </section>
 
-      <section className="split">
-        <article className="card stack">
-          <h2>Próximas integrações recomendadas</h2>
-          <ul className="admin-check-list">
-            <li>Endpoint consolidado de métricas financeiras e operacionais.</li>
-            <li>Logs auditáveis para mudanças em parâmetros críticos.</li>
-            <li>Alertas de custo quando consumo de IA ou WhatsApp ultrapassar limites.</li>
-          </ul>
-        </article>
-        <article className="card stack">
-          <h2>Governança</h2>
-          <p className="muted">Mantenha esta área restrita a super administradores, com MFA, trilha de auditoria e aprovação dupla para mudanças que alterem cobrança, SLA ou limites clínicos.</p>
-        </article>
-      </section>
+          <section className="grid" aria-label="Atalhos administrativos">
+            {shortcuts.map((shortcut) => (
+              <article className="card stack" key={shortcut.href}>
+                <h2>{shortcut.title}</h2>
+                <p className="muted">{shortcut.description}</p>
+                <Link className="button secondary" href={shortcut.href as never}>{shortcut.cta}</Link>
+              </article>
+            ))}
+          </section>
+        </>
+      ) : null}
     </>
   );
 }
