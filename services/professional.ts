@@ -93,6 +93,26 @@ export function createProfessionalPatient(payload: CreateProfessionalPatientRequ
   return api<CreateProfessionalPatientResponse>('/api/professional/patients', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export type PatientLinkRequestStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+
+export type PatientLinkRequestSent = {
+  id: number;
+  status: PatientLinkRequestStatus;
+  created_at: string;
+  expires_at: string;
+  responded_at?: string | null;
+  patient_name: string;
+  patient_email: string;
+};
+
+export function createPatientLinkRequest(email: string) {
+  return api<PatientLinkRequestSent>('/api/professional/patient-links', { method: 'POST', body: JSON.stringify({ email }) });
+}
+
+export function listPatientLinkRequests() {
+  return api<PatientLinkRequestSent[]>('/api/professional/patient-links');
+}
+
 export type ProfessionalDashboard = {
   user?: { id?: number | string; name?: string; first_name?: string; avatar?: string | null };
   monitoring?: { id?: number | string; active?: boolean; title?: string | null; start_date?: string | null; end_date?: string | null; days_active?: number | null; days_remaining?: number | null } | null;
@@ -170,6 +190,8 @@ function withQuery(path: string, params: Record<string, string | number | boolea
 export const professionalApi = {
   listPatients: () => api<ProfessionalPatient[]>('/api/professional/patients'),
   createPatient: createProfessionalPatient,
+  createPatientLinkRequest,
+  listPatientLinkRequests,
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
   getAnamnese: getPatientAnamnese,

@@ -3,9 +3,10 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '@/infrastructure/http/ApiClient';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { useCreateProfessionalPatient } from '@/hooks/useProfessional';
 import type { CreateProfessionalPatientRequest } from '@/services/professional';
-import { createPatientAnamnese } from '@/services/professional';
+import { createPatientAnamnese, createPatientLinkRequest } from '@/services/professional';
 import { Button } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
@@ -49,11 +50,19 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   const [errorMessage, setErrorMessage] = useState('');
   const [anamnese, setAnamnese] = useState('');
   const [isSavingAnamnese, setIsSavingAnamnese] = useState(false);
+  const [emailConflict, setEmailConflict] = useState(false);
+  const [linkRequestStatus, setLinkRequestStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const mutation = useCreateProfessionalPatient({
     onError: (error) => {
+      setEmailConflict(false);
+      setLinkRequestStatus('idle');
       if (!(error instanceof ApiError)) return setErrorMessage('Não foi possível cadastrar o paciente. Tente novamente.');
       if (error.status === 403) return setErrorMessage('É necessário possuir um perfil profissional ativo para cadastrar pacientes.');
-      if (error.status === 409) return setErrorMessage(apiMessage(error.payload) ?? error.message);
+      if (error.status === 409) {
+        const message = apiMessage(error.payload) ?? error.message;
+        if (message === 'Email already registered') setEmailConflict(true);
+        return setErrorMessage(message);
+      }
       if (error.status === 422) {
         const mapped = validationErrors(error.payload);
         setErrors(mapped);
@@ -68,6 +77,18 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   function setValue(name: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
+    if (name === 'email') { setEmailConflict(false); setLinkRequestStatus('idle'); }
+  }
+
+  async function sendLinkRequest() {
+    setLinkRequestStatus('sending');
+    try {
+      await createPatientLinkRequest(values.email.trim());
+      setLinkRequestStatus('sent');
+    } catch (err) {
+      setLinkRequestStatus('error');
+      setErrorMessage(toFriendlyErrorMessage(err));
+    }
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -119,6 +140,17 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     <p className="notice plan-ai-notice">As informações deste plano organizam o acompanhamento e podem contextualizar relatórios de apoio gerados por IA. Eles não substituem a avaliação do profissional.</p>
     <div className="new-patient-grid">{input('plan_start_date', 'Data inicial', { type: 'date' })}{input('plan_end_date', 'Data final', { type: 'date', min: values.plan_start_date || undefined })}</div>
     <h3 className="new-patient-section-title">Anamnese</h3><label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
-    {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}<div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button><Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button></div>
+    {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}
+    {emailConflict ? (
+      linkRequestStatus === 'sent' ? (
+        <p className="notice success">Pedido de vínculo enviado. O paciente precisa aceitar para o acompanhamento passar a ser seu.</p>
+      ) : (
+        <p className="notice">
+          Já existe uma conta com esse e-mail. Você pode pedir para esse paciente se vincular a você — ele precisa aceitar antes de qualquer dado ser compartilhado.{' '}
+          <Button variant="secondary" type="button" loading={linkRequestStatus === 'sending'} loadingLabel="Enviando..." onClick={sendLinkRequest}>Enviar pedido de vínculo</Button>
+        </p>
+      )
+    ) : null}
+    <div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button><Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button></div>
   </form></Modal>;
 }

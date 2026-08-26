@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import type { DailyReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
+import { patientLinksApi, type PatientLinkRequestIncoming } from '@/services/patientLinks';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
@@ -90,6 +91,53 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
   };
 }
 
+function LinkRequestCard({ request, onResolved }: { request: PatientLinkRequestIncoming; onResolved(): void }) {
+  const [responding, setResponding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function respond(accept: boolean) {
+    setResponding(true);
+    setError(null);
+    try {
+      await patientLinksApi.respond(request.id, accept);
+      onResolved();
+    } catch (err) {
+      setError(toFriendlyErrorMessage(err));
+      setResponding(false);
+    }
+  }
+
+  return <Card className="patient-dashboard-link-request-card">
+    <span className="eyebrow">Pedido de vínculo</span>
+    <h2>{request.professional_name}{request.professional_specialty ? ` · ${request.professional_specialty}` : ''} quer acompanhar você</h2>
+    <p className="muted">Ao aceitar, seu acompanhamento passa a ser feito por esse profissional. Se você tiver uma assinatura própria em andamento, ela será cancelada — o profissional passa a ser responsável pelo acompanhamento.</p>
+    {error ? <p className="notice danger">{error}</p> : null}
+    <div className="modal-actions">
+      <Button variant="secondary" disabled={responding} onClick={() => respond(false)}>Recusar</Button>
+      <Button loading={responding} loadingLabel="Aceitando..." onClick={() => respond(true)}>Aceitar</Button>
+    </div>
+  </Card>;
+}
+
+function LinkRequestsBanner({ onResolved }: { onResolved(): void }) {
+  const [requests, setRequests] = useState<PatientLinkRequestIncoming[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    patientLinksApi.listIncoming().then((result) => { if (!cancelled) setRequests(result); }).catch(() => { if (!cancelled) setRequests([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!requests?.length) return null;
+  return <>{requests.map((request) => (
+    <LinkRequestCard
+      key={request.id}
+      request={request}
+      onResolved={() => { setRequests((current) => current?.filter((item) => item.id !== request.id) ?? null); onResolved(); }}
+    />
+  ))}</>;
+}
+
 function LoadingDashboard() {
   return <section className="patient-dashboard-v2"><Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card></section>;
 }
@@ -165,14 +213,21 @@ export default function PatientDashboard() {
   const isSelfService = plans.length > 0 && !plans.some((plan) => plan.origin === 'PROFESSIONAL');
 
   if (patientDataLoading) return <LoadingDashboard />;
+
+  const linkRequests = <LinkRequestsBanner onResolved={() => void refresh(true)} />;
+
   if (!dashboard?.hasActiveMonitoring) {
-    return <EmptyDashboard onStartSelfMonitoring={async () => {
-      await selfMonitoringApi.createPlan();
-      await refresh(true);
-    }} />;
+    return <>
+      {linkRequests}
+      <EmptyDashboard onStartSelfMonitoring={async () => {
+        await selfMonitoringApi.createPlan();
+        await refresh(true);
+      }} />
+    </>;
   }
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
+      {linkRequests}
       <Card className="patient-dashboard-main-card"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl></Card>
       <LastResponseCard data={dashboard} />
       <SummaryCards data={dashboard} />
