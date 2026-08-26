@@ -1,45 +1,92 @@
-const costLines = [
-  { name: 'IA para relatórios clínicos', current: 'R$ 2.860', forecast: 'R$ 3.420', owner: 'Produto clínico' },
-  { name: 'Mensagens WhatsApp', current: 'R$ 1.280', forecast: 'R$ 1.510', owner: 'Operações' },
-  { name: 'Atendimento profissional', current: 'R$ 2.950', forecast: 'R$ 3.100', owner: 'Rede clínica' },
-  { name: 'Infraestrutura e observabilidade', current: 'R$ 310', forecast: 'R$ 390', owner: 'Tecnologia' },
-];
+'use client';
 
-const guardrails = [
-  'Definir teto mensal por paciente para geração de relatórios de IA.',
-  'Separar custos fixos, variáveis e custos diretamente atribuíveis a cada contrato.',
-  'Criar alerta automático quando margem operacional projetada ficar abaixo da meta.',
-];
+import { useEffect, useState } from 'react';
+import { ErrorState, LoadingState } from '@/components/ui/states';
+import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { adminReportingApi, type AdminCostSummary } from '@/services/adminReporting';
 
-export default function Page() {
+function formatUsd(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+}
+
+function formatBrlFromCents(cents: number) {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('pt-BR').format(new Date(`${value}T00:00:00`));
+}
+
+export default function AdminCostsPage() {
+  const [summary, setSummary] = useState<AdminCostSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      setSummary(await adminReportingApi.getCosts());
+    } catch (err) {
+      setError(toFriendlyErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  if (loading) return <LoadingState message="Carregando custos..." />;
+  if (error || !summary) return <ErrorState message={error ?? 'Não foi possível carregar os custos.'} />;
+
+  const whatsappConfigured = summary.whatsapp_cost_per_message_cents !== null;
+
   return (
     <>
       <div className="page-header">
         <div>
           <span className="eyebrow">Finanças</span>
           <h1>Custos administrativos</h1>
-          <p className="muted">Base inicial para controlar custos empresariais. Os valores abaixo funcionam como estrutura de apresentação até a conexão com o backend financeiro.</p>
+          <p className="muted">
+            Período: {formatDate(summary.start_date)} a {formatDate(summary.end_date)} (mês corrente). Custos reais, calculados a partir do uso — nenhum valor aqui é estimativa genérica.
+          </p>
         </div>
       </div>
 
       <section className="grid admin-metrics-grid">
-        <article className="card"><span className="metric-label">Custo mensal</span><strong className="metric">R$ 7,4 mil</strong><p className="muted compact">Soma operacional estimada</p></article>
-        <article className="card"><span className="metric-label">Custo por paciente</span><strong className="metric">R$ 39,78</strong><p className="muted compact">186 pacientes ativos</p></article>
-        <article className="card"><span className="metric-label">Margem bruta</span><strong className="metric">70,2%</strong><p className="muted compact">Meta mínima: 62%</p></article>
+        <article className="card">
+          <span className="metric-label">Relatórios de IA gerados</span>
+          <strong className="metric">{summary.ai_report_count}</strong>
+          <p className="muted compact">Custo real cobrado pela OpenAI</p>
+        </article>
+        <article className="card">
+          <span className="metric-label">Custo com relatórios de IA</span>
+          <strong className="metric">{formatUsd(summary.ai_report_cost_usd)}</strong>
+          <p className="muted compact">Somado por relatório concluído no período</p>
+        </article>
+        <article className="card">
+          <span className="metric-label">Mensagens de WhatsApp enviadas</span>
+          <strong className="metric">{summary.whatsapp_message_count}</strong>
+          <p className="muted compact">Check-ins diários enviados no período</p>
+        </article>
+        <article className="card">
+          <span className="metric-label">Custo estimado com WhatsApp</span>
+          <strong className="metric">{whatsappConfigured ? formatBrlFromCents(summary.whatsapp_cost_cents ?? 0) : '—'}</strong>
+          <p className="muted compact">
+            {whatsappConfigured
+              ? `${formatBrlFromCents(summary.whatsapp_cost_per_message_cents ?? 0)} por mensagem`
+              : 'Configure WHATSAPP_COST_PER_MESSAGE_CENTS para estimar'}
+          </p>
+        </article>
       </section>
 
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>Centro de custo</th><th>Mês atual</th><th>Projeção</th><th>Responsável</th></tr></thead>
-          <tbody>
-            {costLines.map((line) => <tr key={line.name}><td>{line.name}</td><td>{line.current}</td><td>{line.forecast}</td><td>{line.owner}</td></tr>)}
-          </tbody>
-        </table>
-      </div>
-
       <section className="card stack admin-section-offset">
-        <h2>Como evoluir esta tela</h2>
-        <ul className="admin-check-list">{guardrails.map((item) => <li key={item}>{item}</li>)}</ul>
+        <h2>Sobre estes números</h2>
+        <ul className="admin-check-list">
+          <li>Relatórios de IA: custo real reportado pela OpenAI para cada relatório concluído (dólares).</li>
+          <li>WhatsApp: a contagem de mensagens é real; o custo é uma estimativa (reais), calculada como contagem × valor por mensagem que você configurar — a Meta não expõe o custo exato por mensagem para este app.</li>
+          <li>Os dois custos não são somados em um único total porque estão em moedas diferentes.</li>
+        </ul>
       </section>
     </>
   );
