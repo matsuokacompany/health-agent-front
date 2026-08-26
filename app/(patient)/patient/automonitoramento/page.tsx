@@ -81,6 +81,7 @@ function SubscriptionCard({ subscription, onCheckout }: { subscription: Subscrip
     <h2>{subscriptionStatusLabel[subscription.status]}</h2>
     {subscription.status !== 'ACTIVE' ? (
       <form className="login-form" onSubmit={handleSubscribe}>
+        <p className="muted">Assine para manter os check-ins diários pelo WhatsApp e o acompanhamento da sua evolução.</p>
         {needsCpf ? (
           <label>
             CPF (obrigatório para pagamento)
