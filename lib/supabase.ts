@@ -48,6 +48,27 @@ export async function signUpWithPassword(payload: SignupPayload): Promise<Signup
   return { status: 'authenticated', user: result as UserRead };
 }
 
+export type ProfessionalSignupPayload = {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+  cpf: string;
+  specialty: string;
+  terms_accepted: boolean;
+  terms_version: string;
+};
+
+export async function signUpProfessionalWithPassword(payload: ProfessionalSignupPayload): Promise<SignupResult> {
+  resetAuthLifecycle();
+  const result = await api<UserRead | { message: string }>('/api/auth/signup-professional', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (result && typeof result === 'object' && 'message' in result) return { status: 'confirmation_pending' };
+  return { status: 'authenticated', user: result as UserRead };
+}
+
 export async function signOut() {
   beginLogout();
   try {

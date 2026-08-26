@@ -22,6 +22,7 @@ const icons: Record<string, string> = {
   Paciente: '🏠',
   Resumo: '📌',
   Configurações: '⚙️',
+  Assinatura: '💳',
 };
 
 type AppSidebarProps = {

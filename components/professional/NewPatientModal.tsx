@@ -53,6 +53,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     onError: (error) => {
       if (!(error instanceof ApiError)) return setErrorMessage('Não foi possível cadastrar o paciente. Tente novamente.');
       if (error.status === 403) return setErrorMessage('É necessário possuir um perfil profissional ativo para cadastrar pacientes.');
+      if (error.status === 402) return setErrorMessage('Sua assinatura não está ativa. Assine em "Assinatura" no menu para cadastrar novos pacientes.');
       if (error.status === 409) return setErrorMessage(apiMessage(error.payload) ?? error.message);
       if (error.status === 422) {
         const mapped = validationErrors(error.payload);

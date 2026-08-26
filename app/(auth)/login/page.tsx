@@ -54,6 +54,7 @@ export default function Login() {
             <Link href="/forgot-password">Esqueci minha senha</Link>
           </div>
           <p className="muted login-signup-hint">Não tem conta? <Link href="/signup">Criar conta</Link></p>
+          <p className="muted login-signup-hint">É profissional de saúde? <Link href={"/signup-profissional" as never}>Criar conta de profissional</Link></p>
         </form>
       </aside>
     </main>
