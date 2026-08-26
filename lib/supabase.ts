@@ -55,6 +55,8 @@ export type ProfessionalSignupPayload = {
   phone: string;
   cpf: string;
   specialty: string;
+  license_number: string;
+  license_state: string;
   terms_accepted: boolean;
   terms_version: string;
 };

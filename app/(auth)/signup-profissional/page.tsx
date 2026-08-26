@@ -21,6 +21,8 @@ export default function SignupProfissional() {
   const [phone, setPhone] = useState(formatBrazilianPhone(''));
   const [cpf, setCpf] = useState('');
   const [specialty, setSpecialty] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [licenseState, setLicenseState] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -39,6 +41,8 @@ export default function SignupProfissional() {
         phone: toBrazilianPhoneDigits(phone),
         cpf,
         specialty,
+        license_number: licenseNumber,
+        license_state: licenseState,
         terms_accepted: termsAccepted,
         terms_version: TERMS_VERSION,
       });
@@ -118,6 +122,29 @@ export default function SignupProfissional() {
                   required
                   type="text"
                   value={specialty}
+                />
+              </label>
+              <label>
+                Número do registro profissional
+                <input
+                  name="license_number"
+                  onChange={(event) => setLicenseNumber(event.target.value)}
+                  placeholder="Ex.: CRN-12345"
+                  required
+                  type="text"
+                  value={licenseNumber}
+                />
+              </label>
+              <label>
+                Estado do registro
+                <input
+                  autoComplete="address-level1"
+                  name="license_state"
+                  onChange={(event) => setLicenseState(event.target.value)}
+                  placeholder="Ex.: PR"
+                  required
+                  type="text"
+                  value={licenseState}
                 />
               </label>
             </div>
