@@ -7,7 +7,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { documentKind, formatCpfCnpj, toDocumentDigits } from '@/lib/document';
+import { documentValidationError, formatCpfCnpj, toDocumentDigits } from '@/lib/document';
 import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
 // Keep this in sync with the date at the top of docs/legal/termos-de-uso.md
@@ -52,6 +52,7 @@ export default function SignupProfissional() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmationPending, setConfirmationPending] = useState(false);
+  const documentError = documentValidationError(cpfCnpj);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,6 +61,7 @@ export default function SignupProfissional() {
       setFormError('As senhas não coincidem.');
       return;
     }
+    if (documentError) return;
     setSubmitting(true);
 
     try {
@@ -134,7 +136,9 @@ export default function SignupProfissional() {
               </label>
               <label>
                 CPF ou CNPJ
+                {documentError ? <span className="field-error">{documentError}</span> : null}
                 <input
+                  aria-invalid={Boolean(documentError)}
                   inputMode="numeric"
                   name="cpf_cnpj"
                   onChange={(event) => setCpfCnpj(formatCpfCnpj(event.target.value))}
@@ -143,11 +147,6 @@ export default function SignupProfissional() {
                   type="text"
                   value={cpfCnpj}
                 />
-                <span className="muted compact">
-                  {documentKind(cpfCnpj) === 'cnpj'
-                    ? 'CNPJ — verificamos se está ativo na Receita Federal.'
-                    : 'Informe seu CPF, ou continue digitando para um CNPJ (clínica/consultório).'}
-                </span>
               </label>
               <label>
                 Especialidade
@@ -163,9 +162,10 @@ export default function SignupProfissional() {
               <label>
                 Número do registro profissional
                 <input
+                  inputMode="numeric"
                   name="license_number"
                   onChange={(event) => setLicenseNumber(event.target.value)}
-                  placeholder="Ex.: CRN-12345"
+                  placeholder="Ex.: 12345"
                   required
                   type="text"
                   value={licenseNumber}

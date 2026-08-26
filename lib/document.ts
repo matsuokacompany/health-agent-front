@@ -40,3 +40,44 @@ export function documentKind(value: string): 'cpf' | 'cnpj' | null {
   if (digits.length === 14) return 'cnpj';
   return null;
 }
+
+function isValidCpf(digits: string) {
+  if (digits.length !== 11 || new Set(digits).size === 1) return false;
+  const checkDigit = (base: string) => {
+    let total = 0;
+    for (let i = 0; i < base.length; i += 1) total += Number(base[i]) * (base.length + 1 - i);
+    const remainder = (total * 10) % 11;
+    return remainder === 10 ? '0' : String(remainder);
+  };
+  const first = checkDigit(digits.slice(0, 9));
+  const second = checkDigit(digits.slice(0, 9) + first);
+  return digits.slice(9) === first + second;
+}
+
+function isValidCnpj(digits: string) {
+  if (digits.length !== 14 || new Set(digits).size === 1) return false;
+  const checkDigit = (base: string, weights: number[]) => {
+    let total = 0;
+    for (let i = 0; i < base.length; i += 1) total += Number(base[i]) * weights[i];
+    const remainder = total % 11;
+    return remainder < 2 ? '0' : String(11 - remainder);
+  };
+  const first = checkDigit(digits.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const second = checkDigit(digits.slice(0, 12) + first, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return digits.slice(12) === first + second;
+}
+
+/**
+ * Client-side mirror of the backend's checksum validation (not the CNPJ
+ * existence lookup, which requires a network call) — lets the form show an
+ * inline error before ever submitting. Returns null while the value is
+ * still incomplete (fewer than 11 digits, or 12-13 digits mid-CNPJ) so it
+ * doesn't nag before the professional has finished typing.
+ */
+export function documentValidationError(value: string): string | null {
+  const digits = toDocumentDigits(value);
+  if (digits.length === 0 || digits.length < 11) return null;
+  if (digits.length === 11) return isValidCpf(digits) ? null : 'CPF inválido.';
+  if (digits.length === 14) return isValidCnpj(digits) ? null : 'CNPJ inválido.';
+  return null;
+}
