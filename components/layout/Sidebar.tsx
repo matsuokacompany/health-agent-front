@@ -5,6 +5,7 @@ import { useI18n } from '@/components/i18n/I18nProvider';
 
 const icons: Record<string, string> = {
   Dashboard: '📊',
+  Usuários: '👥',
   Perfil: '👤',
   Anamnese: '📝',
   Anamnesis: '📝',
