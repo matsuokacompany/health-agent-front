@@ -110,7 +110,7 @@ function LinkRequestCard({ request, onResolved }: { request: PatientLinkRequestI
   return <Card className="patient-dashboard-link-request-card">
     <span className="eyebrow">Pedido de vínculo</span>
     <h2>{request.professional_name}{request.professional_specialty ? ` · ${request.professional_specialty}` : ''} quer acompanhar você</h2>
-    <p className="muted">Ao aceitar, seu acompanhamento passa a ser feito por esse profissional. Se você tiver uma assinatura própria em andamento, ela será cancelada — o profissional passa a ser responsável pelo acompanhamento.</p>
+    <p className="muted">Ao aceitar, seu acompanhamento passa a ser feito por esse profissional. Sua assinatura própria, se você tiver uma, continua normalmente — nada muda na cobrança.</p>
     {error ? <p className="notice danger">{error}</p> : null}
     <div className="modal-actions">
       <Button variant="secondary" disabled={responding} onClick={() => respond(false)}>Recusar</Button>
