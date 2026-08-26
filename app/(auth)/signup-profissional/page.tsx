@@ -7,6 +7,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { AuthLogo } from '@/components/ui/AuthLogo';
 import { documentValidationError, formatCpfCnpj, toDocumentDigits } from '@/lib/document';
 import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
@@ -92,6 +93,7 @@ export default function SignupProfissional() {
       <main className="login-hero">
         <aside className="panel login-panel" aria-labelledby="signup-title">
           <div className="login-heading">
+            <AuthLogo />
             <h1 id="signup-title">Verifique seu e-mail</h1>
             <p className="muted">Enviamos um link de confirmação para {email}. Clique nele para ativar sua conta e continuar.</p>
           </div>
@@ -105,6 +107,7 @@ export default function SignupProfissional() {
     <main className="login-hero">
       <aside className="panel login-panel signup-panel-wide" aria-labelledby="signup-title">
         <div className="login-heading">
+          <AuthLogo />
           <h1 id="signup-title">Criar conta de profissional</h1>
           <p className="muted">Cadastre-se para acompanhar seus pacientes na Julha. Contas novas precisam de uma assinatura ativa para cadastrar pacientes e gerar relatórios de IA.</p>
         </div>

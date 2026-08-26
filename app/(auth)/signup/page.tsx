@@ -6,7 +6,8 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
+import { AuthLogo } from '@/components/ui/AuthLogo';
+import { formatBrazilianPhone, phoneValidationError, toBrazilianPhoneDigits } from '@/lib/phone';
 
 // Keep this in sync with the date at the top of docs/legal/termos-de-uso.md
 // in the backend repo — the backend records exactly this string alongside
@@ -30,6 +31,7 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmationPending, setConfirmationPending] = useState(false);
+  const phoneError = phoneValidationError(phone);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,6 +40,7 @@ export default function Signup() {
       setFormError('As senhas não coincidem.');
       return;
     }
+    if (phoneError) return;
     setSubmitting(true);
 
     try {
@@ -69,6 +72,7 @@ export default function Signup() {
       <main className="login-hero">
         <aside className="panel login-panel" aria-labelledby="signup-title">
           <div className="login-heading">
+            <AuthLogo />
             <h1 id="signup-title">Verifique seu e-mail</h1>
             <p className="muted">Enviamos um link de confirmação para {email}. Clique nele para ativar sua conta e continuar.</p>
           </div>
@@ -82,6 +86,7 @@ export default function Signup() {
     <main className="login-hero">
       <aside className="panel login-panel signup-panel-wide" aria-labelledby="signup-title">
         <div className="login-heading">
+          <AuthLogo />
           <h1 id="signup-title">Criar conta</h1>
           <p className="muted">Cadastre-se para acompanhar seus próprios sintomas e sua evolução ao longo do tempo.</p>
         </div>
@@ -100,7 +105,9 @@ export default function Signup() {
             <div className="signup-fields-grid">
               <label>
                 Telefone (WhatsApp)
+                {phoneError ? <span className="field-error">{phoneError}</span> : null}
                 <input
+                  aria-invalid={Boolean(phoneError)}
                   autoComplete="tel"
                   inputMode="tel"
                   name="phone"

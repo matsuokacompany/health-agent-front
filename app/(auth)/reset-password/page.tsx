@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { exchangePasswordRecoveryCode, updatePassword } from '@/lib/supabase';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { AuthLogo } from '@/components/ui/AuthLogo';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -71,6 +72,7 @@ export default function ResetPasswordPage() {
   return (
     <main className="hero">
       <section>
+        <AuthLogo />
         <span className="badge">Nova senha</span>
         <h1>Redefinir senha</h1>
         <p className="muted">Digite uma nova senha para concluir a recuperação do seu acesso.</p>

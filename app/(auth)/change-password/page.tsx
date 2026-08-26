@@ -6,6 +6,7 @@ import { FormEvent, useState } from 'react';
 import { RequireAuth } from '@/components/auth/guards';
 import { updatePassword } from '@/lib/supabase';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { AuthLogo } from '@/components/ui/AuthLogo';
 
 function ChangePasswordForm() {
   const [password, setPassword] = useState('');
@@ -45,6 +46,7 @@ function ChangePasswordForm() {
 
   return (
     <main>
+      <AuthLogo />
       <div className="topbar"><span className="badge">Segurança</span><Link href="/app">Voltar</Link></div>
       <h1>Alterar senha</h1>
       <p className="muted">Cadastre uma nova senha para manter sua conta segura.</p>

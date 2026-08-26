@@ -6,6 +6,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { AuthLogo } from '@/components/ui/AuthLogo';
 
 export default function Login() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function Login() {
     <main className="login-hero">
       <aside className="panel login-panel" aria-labelledby="login-title">
         <div className="login-heading">
+          <AuthLogo />
           <h1 id="login-title">Entrar</h1>
           <p className="muted">Use suas credenciais para acessar a plataforma. O ambiente será definido automaticamente pelo seu perfil.</p>
         </div>
