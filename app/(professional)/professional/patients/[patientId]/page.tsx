@@ -26,6 +26,19 @@ const DAILY_REPORT_STATUS_LABELS: Record<string, string> = {
 };
 
 function fmt(value?: string | null) { return value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: value.includes('T') ? 'short' : undefined }).format(new Date(value)) : '—'; }
+function firstCheckinDate(startDate?: string | null) {
+  if (!startDate) return null;
+  // The scheduler creates each day's check-in for the *previous* calendar
+  // day, run every morning — so the first one a brand-new plan is eligible
+  // for lands the day after start_date, not on start_date itself. Format in
+  // UTC since start_date arrives as a date-only string (parsed as UTC
+  // midnight); formatting in the viewer's local timezone could shift it back
+  // a day for negative UTC offsets like America/Sao_Paulo.
+  const date = new Date(startDate.length <= 10 ? `${startDate}T00:00:00Z` : startDate);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + 1);
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeZone: 'UTC' }).format(date);
+}
 function SensitivePlaceholder({ label = 'Informação sensível oculta' }: { label?: string }) { return <span className="sensitive-placeholder">🔒 {label}</span>; }
 export default function PatientDetail({ params, searchParams }: { params: Promise<{ patientId: string }>; searchParams: Promise<{ created?: string; anamneseError?: string }> }) {
   const { patientId } = use(params);
@@ -48,7 +61,7 @@ export default function PatientDetail({ params, searchParams }: { params: Promis
   const displayName = data?.user?.name ?? 'Prontuário do paciente';
 
   return <div className="professional-patient-detail">
-    {created === '1' ? <p className="notice success" role="status">Paciente cadastrado. O acesso à conta será vinculado pelo fluxo de autenticação/convite da plataforma.</p> : null}
+    {created === '1' ? <p className="notice success" role="status">Paciente cadastrado. O acesso à conta será vinculado pelo fluxo de autenticação/convite da plataforma. {(() => { const label = firstCheckinDate(data?.monitoring?.start_date); return label ? `A primeira mensagem de check-in por WhatsApp chega em ${label}, por volta das 8h.` : null; })()}</p> : null}
     {anamneseError === '1' ? <p className="notice danger" role="alert">Paciente cadastrado com sucesso, mas não foi possível salvar a anamnese. Você poderá adicioná-la posteriormente na edição do paciente.</p> : null}
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/professional/patients">Pacientes</Link><span>/</span><span>{displayName ?? 'Prontuário'}</span></nav>
     <nav className="professional-patient-tabs" aria-label="Seções do prontuário" role="tablist">

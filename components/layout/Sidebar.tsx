@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/components/auth/AuthProvider';
 import { useI18n } from '@/components/i18n/I18nProvider';
 
 const icons: Record<string, string> = {
@@ -37,7 +36,6 @@ type AppSidebarProps = {
 
 export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, mobileOpen = false, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
-  const { isSuperAdmin } = useAuth();
   const { t } = useI18n();
   return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
@@ -51,7 +49,6 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
     </nav>
     <div className="sidebar-actions">
       <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><span aria-hidden="true">👤</span><span className="sidebar-label">{t('nav.profile')}</span></Link>
-      {isSuperAdmin ? <Link className="nav-action" href="/choose-context" onClick={onNavigate} title={t('nav.switchEnvironment')}><span aria-hidden="true">🔁</span><span className="sidebar-label">{t('nav.switchEnvironment')}</span></Link> : null}
       <Link className="nav-action" href={footerHref as never} onClick={onNavigate} title={footerLabel}><span aria-hidden="true">🚪</span><span className="sidebar-label">{footerLabel}</span></Link>
     </div>
   </aside>;
