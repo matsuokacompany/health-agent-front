@@ -85,9 +85,15 @@ export type DailyReport = {
 export type ReportPeriod = 'diario' | 'semanal' | 'mensal';
 export type GeneratedReport = { user_id: number; periodo: string; relatorio: string | object };
 
-export type SubscriptionStatus = 'PENDING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
-export type Subscription = { status: SubscriptionStatus; current_period_end?: string | null };
-export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus };
+export type SubscriptionStatus = 'PENDING' | 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
+export type Subscription = {
+  status: SubscriptionStatus;
+  current_period_end?: string | null;
+  trial_ends_at?: string | null;
+  plan_id?: string | null;
+};
+export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus; plan_id?: string | null };
+export type BillingPlan = { id: string; label: string; cycle: string; months: number; price_cents: number };
 
 export type EvolutionSymptomOccurrence = { description: string; occurrences: number; last_occurred_on?: string | null };
 export type EvolutionTimelineGroup = { period_label: string; completed_checkins: number; checkins_with_symptoms: number };
