@@ -136,17 +136,7 @@ function SubscriptionCard({ subscription, plans, onCheckout }: { subscription: S
     <h2>{subscriptionStatusLabel[subscription.status]}</h2>
     {subscription.status !== 'ACTIVE' ? (
       <form className="login-form" onSubmit={handleSubscribe}>
-        {plans.length ? (
-          <div className="billing-plan-options" role="radiogroup" aria-label="Escolha um plano">
-            {plans.map((plan) => (
-              <label key={plan.id} className={`billing-plan-option${selectedPlanId === plan.id ? ' selected' : ''}`}>
-                <input checked={selectedPlanId === plan.id} name="plan_id" onChange={() => setSelectedPlanId(plan.id)} type="radio" value={plan.id} />
-                <span>{plan.label}</span>
-                <strong>{formatCurrency(plan.price_cents)}</strong>
-              </label>
-            ))}
-          </div>
-        ) : <p className="muted">Nenhum plano disponível no momento.</p>}
+        <p className="muted">Assine para manter os check-ins diários pelo WhatsApp e o acompanhamento da sua evolução.</p>
         {needsCpf ? (
           <label>
             CPF (obrigatório para pagamento)

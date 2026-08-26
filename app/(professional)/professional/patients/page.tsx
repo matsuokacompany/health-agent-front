@@ -8,8 +8,16 @@ import { ErrorState, LoadingState, EmptyState } from '@/components/ui/states';
 import { NewPatientModal } from '@/components/professional/NewPatientModal';
 import { useAuth } from '@/components/auth/AuthProvider';
 
+const DAILY_REPORT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendente',
+  AWAITING_SYMPTOM_DESCRIPTION: 'Aguardando sintomas',
+  AWAITING_CAUSE: 'Aguardando causa (legado)',
+  COMPLETED: 'Concluído',
+  EXPIRED: 'Expirado',
+};
+
 function formatDate(value?: string | null) { return value ? new Intl.DateTimeFormat('pt-BR').format(new Date(value)) : '—'; }
-function statusLabel(status?: string | null) { return status ? status.replace(/_/g, ' ') : 'Sem check-in'; }
+function statusLabel(status?: string | null) { return status ? DAILY_REPORT_STATUS_LABELS[status] ?? status.replace(/_/g, ' ') : 'Sem check-in'; }
 
 export default function Patients() {
   const { isProfessional } = useAuth();

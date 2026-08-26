@@ -74,7 +74,7 @@ export default function Signup() {
 
   return (
     <main className="login-hero">
-      <aside className="panel login-panel" aria-labelledby="signup-title">
+      <aside className="panel login-panel signup-panel-wide" aria-labelledby="signup-title">
         <div className="login-heading">
           <h1 id="signup-title">Criar conta</h1>
           <p className="muted">Cadastre-se para acompanhar seus próprios sintomas e sua evolução ao longo do tempo.</p>
@@ -90,76 +90,78 @@ export default function Signup() {
               <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" required type="email" value={email} />
             </label>
             <PasswordInput autoComplete="new-password" label="Senha" minLength={8} name="password" onChange={(event) => setPassword(event.target.value)} placeholder="Mínimo de 8 caracteres" required value={password} />
-            <label>
-              Telefone (WhatsApp)
-              <input
-                autoComplete="tel"
-                inputMode="tel"
-                name="phone"
-                onChange={(event) => setPhone(formatBrazilianPhone(event.target.value))}
-                placeholder="+55 (11) 91234-5678"
-                required
-                type="tel"
-                value={phone}
-              />
-            </label>
-            <label>
-              CPF
-              <input
-                inputMode="numeric"
-                name="cpf"
-                onChange={(event) => setCpf(event.target.value)}
-                placeholder="000.000.000-00"
-                required
-                type="text"
-                value={cpf}
-              />
-            </label>
-            <label>
-              Data de nascimento
-              <input
-                name="birth_date"
-                onChange={(event) => setBirthDate(event.target.value)}
-                required
-                type="date"
-                value={birthDate}
-              />
-            </label>
-            <label>
-              Gênero
-              <select name="gender" onChange={(event) => setGender(event.target.value)} required value={gender}>
-                <option value="" disabled>
-                  Selecione
-                </option>
-                <option value="feminino">Feminino</option>
-                <option value="masculino">Masculino</option>
-                <option value="nao_binario">Não binário</option>
-                <option value="outro">Outro</option>
-              </select>
-            </label>
-            <label>
-              Cidade
-              <input
-                autoComplete="address-level2"
-                name="city"
-                onChange={(event) => setCity(event.target.value)}
-                required
-                type="text"
-                value={city}
-              />
-            </label>
-            <label>
-              Estado
-              <input
-                autoComplete="address-level1"
-                name="state"
-                onChange={(event) => setState(event.target.value)}
-                placeholder="Estado"
-                required
-                type="text"
-                value={state}
-              />
-            </label>
+            <div className="signup-fields-grid">
+              <label>
+                Telefone (WhatsApp)
+                <input
+                  autoComplete="tel"
+                  inputMode="tel"
+                  name="phone"
+                  onChange={(event) => setPhone(formatBrazilianPhone(event.target.value))}
+                  placeholder="+55 (11) 91234-5678"
+                  required
+                  type="tel"
+                  value={phone}
+                />
+              </label>
+              <label>
+                CPF
+                <input
+                  inputMode="numeric"
+                  name="cpf"
+                  onChange={(event) => setCpf(event.target.value)}
+                  placeholder="000.000.000-00"
+                  required
+                  type="text"
+                  value={cpf}
+                />
+              </label>
+              <label>
+                Data de nascimento
+                <input
+                  name="birth_date"
+                  onChange={(event) => setBirthDate(event.target.value)}
+                  required
+                  type="date"
+                  value={birthDate}
+                />
+              </label>
+              <label>
+                Gênero
+                <select name="gender" onChange={(event) => setGender(event.target.value)} required value={gender}>
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  <option value="feminino">Feminino</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="nao_binario">Não binário</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </label>
+              <label>
+                Cidade
+                <input
+                  autoComplete="address-level2"
+                  name="city"
+                  onChange={(event) => setCity(event.target.value)}
+                  required
+                  type="text"
+                  value={city}
+                />
+              </label>
+              <label>
+                Estado
+                <input
+                  autoComplete="address-level1"
+                  name="state"
+                  onChange={(event) => setState(event.target.value)}
+                  placeholder="Estado"
+                  required
+                  type="text"
+                  value={state}
+                />
+              </label>
+            </div>
             <label className="checkbox-field">
               <input checked={termsAccepted} name="terms_accepted" onChange={(event) => setTermsAccepted(event.target.checked)} required type="checkbox" />
               <span>
