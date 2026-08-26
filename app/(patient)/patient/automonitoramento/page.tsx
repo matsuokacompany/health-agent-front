@@ -4,14 +4,16 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { ApiError } from '@/infrastructure/http/ApiClient';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { billingApi } from '@/services/billing';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { usersApi } from '@/services/users';
-import type { EvolutionReport, Subscription, SubscriptionStatus } from '@/lib/types';
+import type { BillingPlan, EvolutionReport, Subscription, SubscriptionStatus } from '@/lib/types';
 
 const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
   PENDING: '🟡 Aguardando pagamento',
+  TRIALING: '🧪 Em período de teste',
   ACTIVE: '🟢 Assinatura ativa',
   PAST_DUE: '🔴 Pagamento atrasado',
   CANCELED: '⚪ Assinatura cancelada',
@@ -23,6 +25,53 @@ const trendLabel: Record<EvolutionReport['symptom_trend'], string> = {
   stable: '➡️ Estável no período',
   insufficient_data: 'Dados insuficientes para calcular tendência',
 };
+
+function formatCurrency(cents: number) {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date);
+}
+
+function trialDaysRemaining(trialEndsAt?: string | null) {
+  if (!trialEndsAt) return null;
+  const end = new Date(trialEndsAt);
+  if (Number.isNaN(end.getTime())) return null;
+  return Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86_400_000));
+}
+
+function TrialBanner({ subscription }: { subscription: Subscription }) {
+  if (subscription.status !== 'TRIALING') return null;
+  const remaining = trialDaysRemaining(subscription.trial_ends_at);
+  const endLabel = formatDate(subscription.trial_ends_at);
+  if (remaining === null || !endLabel) return null;
+
+  if (remaining <= 0) {
+    return <Card className="patient-dashboard-self-service-card">
+      <span className="eyebrow">Teste gratuito</span>
+      <h2>Seu período de teste acabou</h2>
+      <p className="muted">Assine um plano abaixo para voltar a receber os check-ins pelo WhatsApp e continuar vendo sua evolução.</p>
+    </Card>;
+  }
+
+  return <Card className="patient-dashboard-self-service-card">
+    <span className="eyebrow">Teste gratuito</span>
+    <h2>{remaining} {remaining === 1 ? 'dia restante' : 'dias restantes'}</h2>
+    <p className="muted">Seu período de teste termina em {endLabel}. Aproveite para acompanhar sua evolução antes de assinar.</p>
+  </Card>;
+}
+
+function EvolutionPaywall() {
+  return <Card>
+    <span className="eyebrow">Evolução</span>
+    <h2>Assine para continuar</h2>
+    <p className="muted">Seu período de teste gratuito terminou. Assine um dos planos acima para voltar a receber os check-ins pelo WhatsApp e ver sua evolução.</p>
+  </Card>;
+}
 
 function EvolutionCard({ report }: { report: EvolutionReport }) {
   if (!report.sufficient_data) {
@@ -51,15 +100,21 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   </>;
 }
 
-function SubscriptionCard({ subscription, onCheckout }: { subscription: Subscription; onCheckout(): Promise<void> }) {
+function SubscriptionCard({ subscription, plans, onCheckout }: { subscription: Subscription; plans: BillingPlan[]; onCheckout(planId: string): Promise<void> }) {
   const { user, refreshMe } = useAuth();
   const [cpf, setCpf] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState(subscription.plan_id ?? plans[0]?.id ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const needsCpf = !user?.cpf;
 
+  useEffect(() => {
+    if (!selectedPlanId && plans[0]) setSelectedPlanId(plans[0].id);
+  }, [plans, selectedPlanId]);
+
   async function handleSubscribe(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
+    if (!selectedPlanId) return;
     setError(null);
     setSaving(true);
     try {
@@ -68,7 +123,7 @@ function SubscriptionCard({ subscription, onCheckout }: { subscription: Subscrip
         await usersApi.update(Number(user.id), { cpf });
         await refreshMe();
       }
-      await onCheckout();
+      await onCheckout(selectedPlanId);
     } catch (err) {
       setError(toFriendlyErrorMessage(err));
     } finally {
@@ -81,6 +136,17 @@ function SubscriptionCard({ subscription, onCheckout }: { subscription: Subscrip
     <h2>{subscriptionStatusLabel[subscription.status]}</h2>
     {subscription.status !== 'ACTIVE' ? (
       <form className="login-form" onSubmit={handleSubscribe}>
+        {plans.length ? (
+          <div className="billing-plan-options" role="radiogroup" aria-label="Escolha um plano">
+            {plans.map((plan) => (
+              <label key={plan.id} className={`billing-plan-option${selectedPlanId === plan.id ? ' selected' : ''}`}>
+                <input checked={selectedPlanId === plan.id} name="plan_id" onChange={() => setSelectedPlanId(plan.id)} type="radio" value={plan.id} />
+                <span>{plan.label}</span>
+                <strong>{formatCurrency(plan.price_cents)}</strong>
+              </label>
+            ))}
+          </div>
+        ) : <p className="muted">Nenhum plano disponível no momento.</p>}
         {needsCpf ? (
           <label>
             CPF (obrigatório para pagamento)
@@ -88,7 +154,7 @@ function SubscriptionCard({ subscription, onCheckout }: { subscription: Subscrip
           </label>
         ) : null}
         {error ? <p className="notice danger">{error}</p> : null}
-        <Button disabled={saving} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar</Button>
+        <Button disabled={saving || !plans.length} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar</Button>
       </form>
     ) : null}
   </Card>;
@@ -100,7 +166,9 @@ function LoadingAutomonitoramento() {
 
 export default function Automonitoramento() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [report, setReport] = useState<EvolutionReport | null>(null);
+  const [reportBlocked, setReportBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -108,12 +176,20 @@ export default function Automonitoramento() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [subscriptionResult, reportResult] = await Promise.all([
-        billingApi.getSubscription(),
-        selfMonitoringApi.getEvolutionReport(),
-      ]);
+      const [plansResult, subscriptionResult] = await Promise.all([billingApi.getPlans(), billingApi.getSubscription()]);
+      setPlans(plansResult);
       setSubscription(subscriptionResult);
-      setReport(reportResult);
+      try {
+        setReport(await selfMonitoringApi.getEvolutionReport());
+        setReportBlocked(false);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 402) {
+          setReport(null);
+          setReportBlocked(true);
+        } else {
+          throw err;
+        }
+      }
     } catch (err) {
       setLoadError(toFriendlyErrorMessage(err));
     } finally {
@@ -123,17 +199,18 @@ export default function Automonitoramento() {
 
   useEffect(() => { void load(); }, []);
 
-  async function handleCheckout() {
-    const result = await billingApi.startCheckout();
+  async function handleCheckout(planId: string) {
+    const result = await billingApi.startCheckout(planId);
     if (result.checkout_url && typeof window !== 'undefined') window.open(result.checkout_url, '_blank', 'noopener,noreferrer');
-    setSubscription({ status: result.status });
+    await load();
   }
 
   if (loading) return <LoadingAutomonitoramento />;
   if (loadError) return <Card><p className="notice danger">{loadError}</p><Button onClick={() => void load()}>Tentar novamente</Button></Card>;
 
   return <section className="patient-dashboard-v2" aria-label="Automonitoramento">
-    {subscription ? <SubscriptionCard subscription={subscription} onCheckout={handleCheckout} /> : null}
-    {report ? <EvolutionCard report={report} /> : null}
+    {subscription ? <TrialBanner subscription={subscription} /> : null}
+    {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onCheckout={handleCheckout} /> : null}
+    {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
   </section>;
 }
