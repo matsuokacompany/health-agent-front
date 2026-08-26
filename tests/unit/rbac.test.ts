@@ -31,8 +31,13 @@ describe('rbac', () => {
     expect(canAccessRoute(patientUser, '/admin')).toBe(false);
     expect(canAccessRoute(professionalUser, '/patient/dashboard')).toBe(false);
     expect(canAccessRoute(superAdminUser, '/admin/users/1/roles')).toBe(true);
-    expect(canAccessRoute(superAdminUser, '/professional/patients')).toBe(true);
-    expect(canAccessRoute(superAdminUser, '/patient/dashboard')).toBe(true);
+  });
+
+  it('scopes super_admin to the administration platform only', () => {
+    // super_admin does not grant the patient/professional portal
+    // experiences — it must hold the actual role for those.
+    expect(canAccessRoute(superAdminUser, '/professional/patients')).toBe(false);
+    expect(canAccessRoute(superAdminUser, '/patient/dashboard')).toBe(false);
   });
 
   it('redacts direct identifiers from clinical text', () => {

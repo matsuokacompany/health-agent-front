@@ -22,7 +22,7 @@ export default function Login() {
 
     try {
       const me = await signIn(email, password);
-      if (me.roles.includes('super_admin')) router.replace('/choose-context');
+      if (me.roles.includes('super_admin')) router.replace('/admin');
       else if (me.roles.includes('professional')) router.replace('/professional');
       else if (me.roles.includes('patient')) router.replace('/patient');
       else setFormError('Usuário autenticado, mas sem contexto de acesso configurado.');
