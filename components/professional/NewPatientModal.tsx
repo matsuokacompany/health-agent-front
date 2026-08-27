@@ -23,6 +23,13 @@ function apiMessage(payload: unknown) {
   return typeof (value.detail ?? value.message) === 'string' ? String(value.detail ?? value.message) : null;
 }
 
+function apiCode(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== 'object') return undefined;
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail === 'string') return detail;
+  return (detail as { code?: string } | null)?.code;
+}
+
 function validationErrors(payload: unknown): FieldErrors {
   if (!payload || typeof payload !== 'object') return {};
   const detail = (payload as { detail?: unknown }).detail;
@@ -75,6 +82,9 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
       if (!(error instanceof ApiError)) return setErrorMessage('Não foi possível cadastrar o paciente. Tente novamente.');
       if (error.status === 403) return setErrorMessage('É necessário possuir um perfil profissional ativo para cadastrar pacientes.');
       if (error.status === 402) return setErrorMessage('Sua assinatura não está ativa. Assine em "Assinatura" no menu para cadastrar novos pacientes.');
+      if (error.status === 409 && apiCode(error.payload) === 'PROFESSIONAL_PATIENT_CAP_REACHED') {
+        return setErrorMessage('Você atingiu o limite de pacientes ativos do seu plano atual. Faça upgrade em "Assinatura" para cadastrar mais pacientes.');
+      }
       if (error.status === 409) return setErrorMessage(apiMessage(error.payload) ?? error.message);
       if (error.status === 422) {
         const mapped = validationErrors(error.payload);

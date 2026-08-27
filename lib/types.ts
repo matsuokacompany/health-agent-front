@@ -91,9 +91,14 @@ export type Subscription = {
   current_period_end?: string | null;
   trial_ends_at?: string | null;
   plan_id?: string | null;
+  // Professional-only: the active-patient cap for the current plan tier
+  // (null also means "no cap", e.g. grandfathered) and how many active
+  // patients they currently have. Always null for a patient's own subscription.
+  max_patients?: number | null;
+  active_patient_count?: number | null;
 };
 export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus; plan_id?: string | null };
-export type BillingPlan = { id: string; label: string; cycle: string; months: number; price_cents: number };
+export type BillingPlan = { id: string; label: string; cycle: string; months: number; price_cents: number; max_patients?: number | null };
 
 export type EvolutionSymptomOccurrence = { description: string; occurrences: number; last_occurred_on?: string | null };
 export type EvolutionTimelineGroup = { period_label: string; completed_checkins: number; checkins_with_symptoms: number };
