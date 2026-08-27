@@ -5,6 +5,7 @@ import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
 import { billingApi } from '@/services/billing';
 import { usersApi } from '@/services/users';
 import type { BillingPlan, Subscription, SubscriptionStatus } from '@/lib/types';
@@ -136,6 +137,7 @@ export default function ProfessionalAssinatura() {
         ) : subscription.max_patients === null && (subscription.active_patient_count ?? 0) > 0 ? (
           <p className="muted compact">{subscription.active_patient_count} pacientes ativos · sem limite (acesso cortesia)</p>
         ) : null}
+        <SubscriptionActions subscription={subscription} onChanged={() => void load()} />
       </Card>
 
       {plans.length ? (

@@ -6,6 +6,7 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
 import { billingApi } from '@/services/billing';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { usersApi } from '@/services/users';
@@ -100,7 +101,7 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   </>;
 }
 
-function SubscriptionCard({ subscription, plans, onCheckout }: { subscription: Subscription; plans: BillingPlan[]; onCheckout(planId: string): Promise<void> }) {
+function SubscriptionCard({ subscription, plans, onCheckout, onSubscriptionChanged }: { subscription: Subscription; plans: BillingPlan[]; onCheckout(planId: string): Promise<void>; onSubscriptionChanged(next: Subscription): void }) {
   const { user, refreshMe } = useAuth();
   const [cpf, setCpf] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState(subscription.plan_id ?? plans[0]?.id ?? '');
@@ -147,6 +148,7 @@ function SubscriptionCard({ subscription, plans, onCheckout }: { subscription: S
         <Button disabled={saving || !plans.length} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar</Button>
       </form>
     ) : null}
+    {subscription.status === 'ACTIVE' ? <SubscriptionActions subscription={subscription} onChanged={onSubscriptionChanged} /> : null}
     <p className="muted compact legal-links">
       <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
       {' · '}
@@ -207,7 +209,7 @@ export default function Automonitoramento() {
 
   return <section className="patient-dashboard-v2" aria-label="Automonitoramento">
     {subscription ? <TrialBanner subscription={subscription} /> : null}
-    {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onCheckout={handleCheckout} /> : null}
+    {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onCheckout={handleCheckout} onSubscriptionChanged={() => void load()} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
   </section>;
 }

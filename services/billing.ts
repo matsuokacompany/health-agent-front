@@ -6,4 +6,6 @@ export const billingApi = {
   getPlans: () => api<BillingPlan[]>('/api/billing/plans'),
   startCheckout: (planId: string) =>
     api<CheckoutResponse>('/api/billing/subscription', { method: 'POST', body: JSON.stringify({ plan_id: planId }) }),
+  cancelSubscription: () => api<Subscription>('/api/billing/subscription/cancel', { method: 'POST' }),
+  refundSubscription: () => api<Subscription>('/api/billing/subscription/refund', { method: 'POST' }),
 };
