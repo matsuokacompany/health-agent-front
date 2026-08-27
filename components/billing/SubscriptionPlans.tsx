@@ -143,6 +143,8 @@ export function SubscriptionPlans({
     return <p className="notice">Nenhum plano configurado ainda. Fale com o suporte da Julha.</p>;
   }
 
+  const referenceTierPlans = tiers[0]?.[1] ?? [];
+
   return (
     <>
       <div className="pricing-heading">
@@ -155,11 +157,6 @@ export function SubscriptionPlans({
               : 'Você recebe os check-ins pelo WhatsApp e acompanha sua evolução com relatórios e resumos por IA — cancele quando quiser, sem multa.'}
           </p>
         </div>
-        <div className="pricing-cycle-toggle" role="group" aria-label="Ciclo de cobrança">
-          {CYCLES.filter(([value]) => availableCycles.has(value)).map(([value, label]) => (
-            <button type="button" key={value} aria-pressed={cycle === value} onClick={() => setCycle(value)}>{label}</button>
-          ))}
-        </div>
       </div>
 
       <ul className="pricing-benefits">
@@ -168,39 +165,60 @@ export function SubscriptionPlans({
         ))}
       </ul>
 
-      <div className="pricing-grid">
-        {tiers.map(([maxPatients, tierPlans]) => {
-          const plan = tierPlans.find((candidate) => candidate.cycle === cycle) ?? tierPlans[0];
-          const isCurrent = currentTier === maxPatients;
-          const isSelected = selectedPlanId === plan.id;
-          const heading = maxPatients > 0 ? `Até ${maxPatients} pacientes` : plan.label;
-          const percentOff = savingsPercent(tierPlans, plan);
-          const perPatient = perPatientMonthly(plan);
-          return (
-            <article className={`pricing-card${isCurrent ? ' is-current' : ''}${isSelected && !isActive ? ' is-selected' : ''}`} key={maxPatients}>
-              {maxPatients > 0 && maxPatients === bestValueTier ? <span className="pricing-card-badge">Melhor custo-benefício</span> : null}
-              {isCurrent ? <span className="pricing-card-badge is-current-badge">Seu plano atual</span> : null}
-              <h3>{heading}</h3>
-              <p className="pricing-price">
-                <strong>{formatCurrency(plan.price_cents)}</strong>
-                <span className="muted"> /{plan.cycle === 'MONTHLY' ? 'mês' : plan.cycle === 'SEMIANNUALLY' ? 'semestre' : 'ano'}</span>
-                {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
-              </p>
-              {plan.months > 1 ? <p className="muted compact">equivale a {monthlyEquivalent(plan)}/mês</p> : null}
-              {perPatient ? <p className="muted compact">{perPatient} por paciente/mês</p> : null}
-              {!isActive ? (
-                <label className="pricing-select">
-                  <input type="radio" name="plan" checked={isSelected} onChange={() => setSelectedPlanId(plan.id)} value={plan.id} />
-                  Selecionar
-                </label>
-              ) : isCurrent ? (
-                <p className="muted compact">Plano ativo no momento.</p>
-              ) : (
-                <p className="muted compact">Para trocar de plano com assinatura ativa, fale com o suporte da Julha.</p>
-              )}
-            </article>
-          );
-        })}
+      <div className="pricing-layout">
+        <div className="pricing-cycle-cards" role="group" aria-label="Ciclo de cobrança">
+          {CYCLES.filter(([value]) => availableCycles.has(value)).map(([value, label]) => {
+            const referencePlan = referenceTierPlans.find((candidate) => candidate.cycle === value) ?? referenceTierPlans[0];
+            const percent = referencePlan ? savingsPercent(referenceTierPlans, referencePlan) : null;
+            return (
+              <button
+                type="button"
+                key={value}
+                className={`pricing-cycle-card${cycle === value ? ' is-selected' : ''}`}
+                aria-pressed={cycle === value}
+                onClick={() => setCycle(value)}
+              >
+                <span className="pricing-cycle-card-label">{label}</span>
+                {percent !== null ? <span className="pricing-savings-badge">Economize {percent}%</span> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="pricing-grid">
+          {tiers.map(([maxPatients, tierPlans]) => {
+            const plan = tierPlans.find((candidate) => candidate.cycle === cycle) ?? tierPlans[0];
+            const isCurrent = currentTier === maxPatients;
+            const isSelected = selectedPlanId === plan.id;
+            const heading = maxPatients > 0 ? `Até ${maxPatients} pacientes` : plan.label;
+            const percentOff = savingsPercent(tierPlans, plan);
+            const perPatient = perPatientMonthly(plan);
+            return (
+              <article className={`pricing-card${isCurrent ? ' is-current' : ''}${isSelected && !isActive ? ' is-selected' : ''}`} key={maxPatients}>
+                {maxPatients > 0 && maxPatients === bestValueTier ? <span className="pricing-card-badge">Melhor custo-benefício</span> : null}
+                {isCurrent ? <span className="pricing-card-badge is-current-badge">Seu plano atual</span> : null}
+                <h3>{heading}</h3>
+                <p className="pricing-price">
+                  <strong>{formatCurrency(plan.price_cents)}</strong>
+                  <span className="muted"> /{plan.cycle === 'MONTHLY' ? 'mês' : plan.cycle === 'SEMIANNUALLY' ? 'semestre' : 'ano'}</span>
+                  {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
+                </p>
+                {plan.months > 1 ? <p className="muted compact">equivale a {monthlyEquivalent(plan)}/mês</p> : null}
+                {perPatient ? <p className="muted compact">{perPatient} por paciente/mês</p> : null}
+                {!isActive ? (
+                  <label className="pricing-select">
+                    <input type="radio" name="plan" checked={isSelected} onChange={() => setSelectedPlanId(plan.id)} value={plan.id} />
+                    Selecionar
+                  </label>
+                ) : isCurrent ? (
+                  <p className="muted compact">Plano ativo no momento.</p>
+                ) : (
+                  <p className="muted compact">Para trocar de plano com assinatura ativa, fale com o suporte da Julha.</p>
+                )}
+              </article>
+            );
+          })}
+        </div>
       </div>
 
       {!isActive ? (
