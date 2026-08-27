@@ -12,7 +12,7 @@ import { formatBrazilianPhone, phoneValidationError, toBrazilianPhoneDigits } fr
 // Keep this in sync with the date at the top of docs/legal/termos-de-uso.md
 // in the backend repo — the backend records exactly this string alongside
 // terms_accepted_at, so it must match the version actually being linked here.
-const TERMS_VERSION = '2026-08-25';
+const TERMS_VERSION = '2026-08-27';
 
 export default function Signup() {
   const router = useRouter();
@@ -179,10 +179,6 @@ export default function Signup() {
             <label className="checkbox-field">
               <input checked={termsAccepted} name="terms_accepted" onChange={(event) => setTermsAccepted(event.target.checked)} required type="checkbox" />
               <span>
-                {/* TODO: point these at the real published URLs once the institutional
-                    site (a separate repo) has the Termos de Uso / Política de
-                    Privacidade pages live — plain <a>, not next/link, since these
-                    likely live on a different domain than app.julha.com.br. */}
                 Li e concordo com os{' '}
                 <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a> e a{' '}
                 <a href="/politica-de-privacidade" rel="noopener noreferrer" target="_blank">Política de Privacidade</a>.

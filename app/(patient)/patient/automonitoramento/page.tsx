@@ -147,6 +147,13 @@ function SubscriptionCard({ subscription, plans, onCheckout }: { subscription: S
         <Button disabled={saving || !plans.length} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar</Button>
       </form>
     ) : null}
+    <p className="muted compact legal-links">
+      <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
+      {' · '}
+      <a href="/politica-de-privacidade" rel="noopener noreferrer" target="_blank">Política de Privacidade</a>
+      {' · '}
+      <a href="/politica-de-reembolso" rel="noopener noreferrer" target="_blank">Política de Reembolso</a>
+    </p>
   </Card>;
 }
 
