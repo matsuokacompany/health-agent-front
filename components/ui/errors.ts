@@ -1,4 +1,15 @@
+function errorDetailCode(error: unknown): string | undefined {
+  const payload = (error as { payload?: unknown } | null)?.payload;
+  const detail = (payload as { detail?: unknown } | null)?.detail;
+  if (typeof detail === 'string') return detail;
+  return (detail as { code?: string } | null)?.code;
+}
+
 export function toFriendlyErrorMessage(error: unknown) {
+  if (errorDetailCode(error) === 'PROFESSIONAL_PATIENT_CAP_REACHED') {
+    return 'Você atingiu o limite de pacientes ativos do seu plano atual. Faça upgrade em "Assinatura" para vincular mais pacientes.';
+  }
+
   const raw = error instanceof Error ? error.message : String(error ?? '');
   const message = raw.toLowerCase();
 
