@@ -105,7 +105,15 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
 }
 
 function LoadingDashboard() {
-  return <section className="patient-dashboard-v2"><Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card></section>;
+  return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando dashboard">
+    <Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
+    <Card className="patient-dashboard-last-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <section className="patient-dashboard-summary-grid">
+      {Array.from({ length: 4 }, (_, index) => <Card key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></Card>)}
+    </section>
+    <Card className="patient-dashboard-chart-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-tile" /></Card>
+    <Card className="patient-dashboard-timeline-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+  </section>;
 }
 
 function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Promise<void> }) {

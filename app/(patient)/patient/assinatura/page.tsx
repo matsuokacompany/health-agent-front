@@ -18,7 +18,10 @@ const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
 };
 
 function LoadingAssinatura() {
-  return <Card><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>;
+  return <section className="pricing-page" aria-busy="true" aria-label="Carregando assinatura">
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <Card className="pricing-card-shell"><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card>
+  </section>;
 }
 
 export default function PatientAssinatura() {
