@@ -23,6 +23,8 @@ const icons: Record<string, string> = {
   Resumo: '📌',
   Configurações: '⚙️',
   Assinatura: '💳',
+  Subscription: '💳',
+  Suscripción: '💳',
 };
 
 type AppSidebarProps = {
@@ -42,7 +44,10 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
   return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
       <div className="sidebar-brand-main">
-        <span className="sidebar-logo-slot"><img src="/brand/julha-logo.svg" alt="Julha" /></span>
+        <span className="sidebar-logo-slot">
+          <img className="brand-logo-light" src="/brand/julha-logo-light.png" alt="Julha" />
+          <img className="brand-logo-dark" src="/brand/julha-logo-dark.png" alt="Julha" />
+        </span>
         <span className="sidebar-label">{title}</span>
       </div>
     </div>

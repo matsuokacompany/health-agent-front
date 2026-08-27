@@ -1,15 +1,14 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
-import { useAuth } from '@/components/auth/AuthProvider';
 import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
+import { SubscriptionPlans } from '@/components/billing/SubscriptionPlans';
 import { billingApi } from '@/services/billing';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
-import { usersApi } from '@/services/users';
 import type { BillingPlan, EvolutionReport, Subscription, SubscriptionStatus } from '@/lib/types';
 
 const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
@@ -101,54 +100,15 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   </>;
 }
 
-function SubscriptionCard({ subscription, plans, onCheckout, onSubscriptionChanged }: { subscription: Subscription; plans: BillingPlan[]; onCheckout(planId: string): Promise<void>; onSubscriptionChanged(next: Subscription): void }) {
-  const { user, refreshMe } = useAuth();
-  const [cpf, setCpf] = useState('');
-  const [selectedPlanId, setSelectedPlanId] = useState(subscription.plan_id ?? plans[0]?.id ?? '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const needsCpf = !user?.cpf;
-
-  useEffect(() => {
-    if (!selectedPlanId && plans[0]) setSelectedPlanId(plans[0].id);
-  }, [plans, selectedPlanId]);
-
-  async function handleSubscribe(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault();
-    if (!selectedPlanId) return;
-    setError(null);
-    setSaving(true);
-    try {
-      if (needsCpf) {
-        if (!user) throw new Error('Usuário não autenticado.');
-        await usersApi.update(Number(user.id), { cpf });
-        await refreshMe();
-      }
-      await onCheckout(selectedPlanId);
-    } catch (err) {
-      setError(toFriendlyErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  }
-
+function SubscriptionCard({ subscription, plans, onSubscriptionChanged }: { subscription: Subscription; plans: BillingPlan[]; onSubscriptionChanged(): void | Promise<void> }) {
   return <Card>
     <span className="eyebrow">Assinatura</span>
     <h2>{subscriptionStatusLabel[subscription.status]}</h2>
     {subscription.status !== 'ACTIVE' ? (
-      <form className="login-form" onSubmit={handleSubscribe}>
-        <p className="muted">Assine para manter os check-ins diários pelo WhatsApp e o acompanhamento da sua evolução.</p>
-        {needsCpf ? (
-          <label>
-            CPF (obrigatório para pagamento)
-            <input inputMode="numeric" name="cpf" onChange={(event) => setCpf(event.target.value)} placeholder="000.000.000-00" required value={cpf} />
-          </label>
-        ) : null}
-        {error ? <p className="notice danger">{error}</p> : null}
-        <Button disabled={saving || !plans.length} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar</Button>
-      </form>
+      <p className="muted">Assine para manter os check-ins diários pelo WhatsApp e o acompanhamento da sua evolução.</p>
     ) : null}
-    {subscription.status === 'ACTIVE' ? <SubscriptionActions subscription={subscription} onChanged={onSubscriptionChanged} /> : null}
+    <SubscriptionActions subscription={subscription} onChanged={() => void onSubscriptionChanged()} />
+    {plans.length ? <SubscriptionPlans subscription={subscription} plans={plans} onSubscribed={onSubscriptionChanged} /> : null}
     <p className="muted compact legal-links">
       <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
       {' · '}
@@ -198,18 +158,12 @@ export default function Automonitoramento() {
 
   useEffect(() => { void load(); }, []);
 
-  async function handleCheckout(planId: string) {
-    const result = await billingApi.startCheckout(planId);
-    if (result.checkout_url && typeof window !== 'undefined') window.open(result.checkout_url, '_blank', 'noopener,noreferrer');
-    await load();
-  }
-
   if (loading) return <LoadingAutomonitoramento />;
   if (loadError) return <Card><p className="notice danger">{loadError}</p><Button onClick={() => void load()}>Tentar novamente</Button></Card>;
 
   return <section className="patient-dashboard-v2" aria-label="Automonitoramento">
     {subscription ? <TrialBanner subscription={subscription} /> : null}
-    {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onCheckout={handleCheckout} onSubscriptionChanged={() => void load()} /> : null}
+    {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onSubscriptionChanged={() => void load()} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
   </section>;
 }
