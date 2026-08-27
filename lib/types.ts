@@ -130,6 +130,22 @@ export type EvolutionReport = {
   timeline: EvolutionTimelineGroup[];
 };
 
+export type SelfMonitoringInsightResult = {
+  resumo: string;
+  pontos_positivos: string[];
+  pontos_de_atencao: string[];
+  sugestao: string;
+};
+export type SelfMonitoringInsight = {
+  patient_id: number;
+  start_date: string;
+  end_date: string;
+  sufficient_data: boolean;
+  insight?: SelfMonitoringInsightResult | null;
+  generated_at?: string | null;
+  next_generation_at?: string | null;
+};
+
 export type InsightPreventiveResponse = Record<string, unknown>;
 export type InsightClinicalResponse = Record<string, unknown>;
 export type AuditLog = { user_id: string | number; action: string; resource: string; timestamp: string };

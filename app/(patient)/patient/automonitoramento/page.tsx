@@ -9,7 +9,7 @@ import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
 import { SubscriptionPlans } from '@/components/billing/SubscriptionPlans';
 import { billingApi } from '@/services/billing';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
-import type { BillingPlan, EvolutionReport, Subscription, SubscriptionStatus } from '@/lib/types';
+import type { BillingPlan, EvolutionReport, SelfMonitoringInsight, Subscription, SubscriptionStatus } from '@/lib/types';
 
 const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
   PENDING: '🟡 Aguardando pagamento',
@@ -100,6 +100,85 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   </>;
 }
 
+function insightDaysUntil(nextGenerationAt?: string | null) {
+  if (!nextGenerationAt) return null;
+  const next = new Date(nextGenerationAt);
+  if (Number.isNaN(next.getTime())) return null;
+  return Math.max(0, Math.ceil((next.getTime() - Date.now()) / 86_400_000));
+}
+
+function InsightCard({
+  report,
+  insight,
+  error,
+  generating,
+  onGenerate,
+}: {
+  report: EvolutionReport | null;
+  insight: SelfMonitoringInsight | null;
+  error: string | null;
+  generating: boolean;
+  onGenerate(): void;
+}) {
+  const notEnoughData = Boolean(report && !report.sufficient_data);
+  const result = insight?.insight ?? null;
+  const daysUntilNext = insight ? insightDaysUntil(insight.next_generation_at) : null;
+
+  return <Card>
+    <span className="eyebrow">Resumo por IA</span>
+    <h2>{result ? 'Como você tem passado' : 'Resumo da sua evolução, em linguagem simples'}</h2>
+    {!result ? (
+      <p className="muted">
+        Gere um resumo dos seus check-ins dos últimos 30 dias — o que está indo bem, pontos que vale acompanhar e uma
+        sugestão sobre conversar com um profissional. Sem diagnóstico, é só um apoio para você chegar mais
+        preparado(a) numa consulta.
+      </p>
+    ) : null}
+    {result ? (
+      <>
+        <p className="muted">{result.resumo}</p>
+        {result.pontos_positivos?.length ? (
+          <div>
+            <h3>Pontos positivos</h3>
+            <ul>{result.pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        ) : null}
+        {result.pontos_de_atencao?.length ? (
+          <div>
+            <h3>Pontos de atenção</h3>
+            <ul>{result.pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        ) : null}
+        {result.sugestao ? <p className="muted">{result.sugestao}</p> : null}
+        <p className="notice compact">
+          Este resumo é gerado por IA a partir dos seus check-ins e tem caráter apenas informativo — não é um
+          diagnóstico nem substitui uma avaliação médica. Em caso de dúvida ou piora dos sintomas, procure
+          atendimento profissional.
+        </p>
+      </>
+    ) : null}
+    {notEnoughData ? (
+      <p className="notice">Ainda não há check-ins suficientes para gerar o resumo — continue respondendo ao WhatsApp diariamente.</p>
+    ) : null}
+    {error ? <p className="notice danger">{error}</p> : null}
+    <Button
+      variant={result ? 'secondary' : 'primary'}
+      disabled={generating || notEnoughData}
+      loading={generating}
+      loadingLabel="Gerando resumo..."
+      onClick={onGenerate}
+    >
+      {result ? 'Atualizar resumo' : 'Gerar resumo com IA'}
+    </Button>
+    {daysUntilNext !== null && daysUntilNext > 0 ? (
+      <p className="muted compact">
+        Um novo resumo passa a ser gerado a partir de {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`}; até
+        lá, "Atualizar resumo" só mostra o resultado atual de novo.
+      </p>
+    ) : null}
+  </Card>;
+}
+
 function SubscriptionCard({ subscription, plans, onSubscriptionChanged }: { subscription: Subscription; plans: BillingPlan[]; onSubscriptionChanged(): void | Promise<void> }) {
   return <Card>
     <span className="eyebrow">Assinatura</span>
@@ -128,8 +207,29 @@ export default function Automonitoramento() {
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [report, setReport] = useState<EvolutionReport | null>(null);
   const [reportBlocked, setReportBlocked] = useState(false);
+  const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
+  const [insightError, setInsightError] = useState<string | null>(null);
+  const [generatingInsight, setGeneratingInsight] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  async function generateInsight() {
+    setGeneratingInsight(true);
+    setInsightError(null);
+    try {
+      setInsight(await selfMonitoringApi.getInsight());
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 402) {
+        // The evolution-report paywall above already explains this — no
+        // need for a second error message for the same cause.
+        setInsight(null);
+      } else {
+        setInsightError(toFriendlyErrorMessage(err));
+      }
+    } finally {
+      setGeneratingInsight(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -165,5 +265,8 @@ export default function Automonitoramento() {
     {subscription ? <TrialBanner subscription={subscription} /> : null}
     {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onSubscriptionChanged={() => void load()} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
+    {!reportBlocked ? (
+      <InsightCard report={report} insight={insight} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />
+    ) : null}
   </section>;
 }
