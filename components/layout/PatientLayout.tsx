@@ -16,6 +16,7 @@ function PatientShell({ children }: { children: React.ReactNode }) {
     ['/patient/dashboard', t('nav.dashboard')],
     ['/patient/monitoring', t('nav.monitoring')],
     ...(hasProfessional ? [['/patient/anamnese', t('nav.anamnesis')]] : []),
+    ['/patient/assinatura', t('nav.subscription')],
   ];
   const footer = <footer className="app-footer">{t('app.footer')}</footer>;
 

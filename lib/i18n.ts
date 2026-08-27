@@ -12,7 +12,7 @@ export const defaultLocale: Locale = 'pt-BR';
 export const messages = {
   'pt-BR': {
     app: { name: 'Julha Saúde', patientPortal: 'Portal do paciente', protectedData: 'Seus dados ficam protegidos durante a navegação.', hide: 'Ocultar', footer: 'Julha Saúde • Dados protegidos • Suporte clínico via WhatsApp' },
-    nav: { dashboard: 'Dashboard', monitoring: 'Monitoramento', anamnesis: 'Anamnese', profile: 'Perfil', changePassword: 'Alterar senha', logout: 'Sair', openMenu: 'Abrir menu de navegação', closeMenu: 'Fechar menu de navegação', mainMenu: 'Menu principal', currentMode: 'Modo atual', switchEnvironment: 'Trocar ambiente' },
+    nav: { dashboard: 'Dashboard', monitoring: 'Monitoramento', anamnesis: 'Anamnese', subscription: 'Assinatura', profile: 'Perfil', changePassword: 'Alterar senha', logout: 'Sair', openMenu: 'Abrir menu de navegação', closeMenu: 'Fechar menu de navegação', mainMenu: 'Menu principal', currentMode: 'Modo atual', switchEnvironment: 'Trocar ambiente' },
     header: { searchLabel: 'Buscar na plataforma', searchPlaceholder: '🔎 Buscar pacientes, relatórios, planos...', mobileSearchPlaceholder: 'Buscar...', openSearch: 'Abrir busca', closeSearch: 'Fechar busca', openUserMenu: 'Abrir menu do usuário', userFallback: 'Usuário' },
     theme: { toggle: 'Alternar tema', light: 'Ativar tema claro', dark: 'Ativar tema escuro' },
     language: { change: 'Alterar idioma', portuguese: 'Português - BR', english: 'English', spanish: 'Español' },
@@ -20,7 +20,7 @@ export const messages = {
   },
   en: {
     app: { name: 'Julha Health', patientPortal: 'Patient portal', protectedData: 'Your data stays protected while you browse.', hide: 'Hide', footer: 'Julha Health • Protected data • Clinical support via WhatsApp' },
-    nav: { dashboard: 'Dashboard', monitoring: 'Monitoring', anamnesis: 'Anamnesis', profile: 'Profile', changePassword: 'Change password', logout: 'Sign out', openMenu: 'Open navigation menu', closeMenu: 'Close navigation menu', mainMenu: 'Main menu', currentMode: 'Current mode', switchEnvironment: 'Switch environment' },
+    nav: { dashboard: 'Dashboard', monitoring: 'Monitoring', anamnesis: 'Anamnesis', subscription: 'Subscription', profile: 'Profile', changePassword: 'Change password', logout: 'Sign out', openMenu: 'Open navigation menu', closeMenu: 'Close navigation menu', mainMenu: 'Main menu', currentMode: 'Current mode', switchEnvironment: 'Switch environment' },
     header: { searchLabel: 'Search the platform', searchPlaceholder: '🔎 Search patients, reports, plans...', mobileSearchPlaceholder: 'Search...', openSearch: 'Open search', closeSearch: 'Close search', openUserMenu: 'Open user menu', userFallback: 'User' },
     theme: { toggle: 'Toggle theme', light: 'Activate light theme', dark: 'Activate dark theme' },
     language: { change: 'Change language', portuguese: 'Português - BR', english: 'English', spanish: 'Español' },
@@ -28,7 +28,7 @@ export const messages = {
   },
   es: {
     app: { name: 'Julha Salud', patientPortal: 'Portal del paciente', protectedData: 'Tus datos permanecen protegidos durante la navegación.', hide: 'Ocultar', footer: 'Julha Salud • Datos protegidos • Soporte clínico por WhatsApp' },
-    nav: { dashboard: 'Panel', monitoring: 'Monitoreo', anamnesis: 'Anamnesis', profile: 'Perfil', changePassword: 'Cambiar contraseña', logout: 'Salir', openMenu: 'Abrir menú de navegación', closeMenu: 'Cerrar menú de navegación', mainMenu: 'Menú principal', currentMode: 'Modo actual', switchEnvironment: 'Cambiar entorno' },
+    nav: { dashboard: 'Panel', monitoring: 'Monitoreo', anamnesis: 'Anamnesis', subscription: 'Suscripción', profile: 'Perfil', changePassword: 'Cambiar contraseña', logout: 'Salir', openMenu: 'Abrir menú de navegación', closeMenu: 'Cerrar menú de navegación', mainMenu: 'Menú principal', currentMode: 'Modo actual', switchEnvironment: 'Cambiar entorno' },
     header: { searchLabel: 'Buscar en la plataforma', searchPlaceholder: '🔎 Buscar pacientes, informes, planes...', mobileSearchPlaceholder: 'Buscar...', openSearch: 'Abrir búsqueda', closeSearch: 'Cerrar búsqueda', openUserMenu: 'Abrir menú de usuario', userFallback: 'Usuario' },
     theme: { toggle: 'Alternar tema', light: 'Activar tema claro', dark: 'Activar tema oscuro' },
     language: { change: 'Cambiar idioma', portuguese: 'Português - BR', english: 'English', spanish: 'Español' },
