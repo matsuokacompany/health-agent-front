@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/design';
-import { ListSkeleton } from '@/components/ui/Loading';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { INPUT_LIMITS, validateUserText } from '@/lib/clinicalInput';
 import type { MonitoringPlan } from '@/lib/types';
@@ -16,6 +16,14 @@ const emptyPlan: PlanForm = { title: '', description: '', start_date: '', end_da
 function dateValue(value?: string | null) { return value ? value.slice(0, 10) : ''; }
 function formatDate(value?: string | null) { return value ? new Intl.DateTimeFormat('pt-BR').format(new Date(`${value.slice(0, 10)}T12:00:00`)) : 'Não informado'; }
 function planForm(plan: MonitoringPlan): PlanForm { return { title: plan.title ?? plan.name ?? '', description: plan.description ?? '', start_date: dateValue(plan.start_date ?? plan.starts_at), end_date: dateValue(plan.end_date ?? plan.ends_at), active: plan.active ?? String(plan.status ?? '').toLowerCase() !== 'inactive' }; }
+
+function PlanListSkeleton() {
+  return <section className="stack" aria-busy="true" aria-label="Carregando planos">
+    {Array.from({ length: 2 }, (_, index) => (
+      <article className="card" key={index}><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></article>
+    ))}
+  </section>;
+}
 
 export default function Page() {
   const id = Number(useParams()?.id);
@@ -78,5 +86,5 @@ export default function Page() {
     <div className="new-patient-grid"><label>Período de acompanhamento<input type="date" value={form.start_date} onChange={(event) => setValue('start_date', event.target.value)} /></label><label>Data final<input type="date" min={form.start_date || undefined} value={form.end_date} onChange={(event) => setValue('end_date', event.target.value)} aria-invalid={Boolean(errors.end_date)} aria-describedby={errors.end_date ? 'end_date-error' : undefined} />{errors.end_date ? <span className="field-error" id="end_date-error" role="alert">{errors.end_date}</span> : null}</label></div>
     <label>Situação<select value={form.active ? 'active' : 'inactive'} onChange={(event) => setValue('active', event.target.value === 'active')}><option value="active">Ativo</option><option value="inactive">Inativo</option></select></label>
     {error ? <p className="notice danger" role="alert">{error}</p> : null}<div className="modal-actions">{editingId ? <Button type="button" variant="secondary" onClick={cancelEdit}>Cancelar edição</Button> : null}<Button type="submit" loading={saving} loadingLabel={editingId ? 'Salvando...' : 'Criando...'}>{editingId ? 'Salvar alterações' : 'Criar plano'}</Button></div>
-  </form>{loading ? <ListSkeleton /> : plans.length === 0 ? <p>Nenhum plano encontrado.</p> : <section className="stack" aria-label="Planos de acompanhamento">{plans.map((plan) => <article className="card" key={plan.id}><div className="page-actions"><div><h2>Finalidade do acompanhamento</h2><p>{plan.title ?? plan.name ?? 'Não informada'}</p></div><Button type="button" variant="secondary" onClick={() => edit(plan)}>Editar plano</Button></div><h3>Contexto clínico e pontos a acompanhar</h3><p>{plan.description || 'Não informado'}</p><dl className="patient-info-list"><div><dt>Período</dt><dd>{formatDate(plan.start_date ?? plan.starts_at)} — {formatDate(plan.end_date ?? plan.ends_at)}</dd></div><div><dt>Situação</dt><dd>{plan.active ?? String(plan.status ?? '').toLowerCase() !== 'inactive' ? 'Ativo' : 'Inativo'}</dd></div>{plan.professionals?.length ? <div><dt>Profissional responsável</dt><dd>{plan.professionals.map((professional) => professional.name ?? 'Não informado').join(', ')}</dd></div> : null}</dl></article>)}</section>}</>;
+  </form>{loading ? <PlanListSkeleton /> : plans.length === 0 ? <p>Nenhum plano encontrado.</p> : <section className="stack" aria-label="Planos de acompanhamento">{plans.map((plan) => <article className="card" key={plan.id}><div className="page-actions"><div><h2>Finalidade do acompanhamento</h2><p>{plan.title ?? plan.name ?? 'Não informada'}</p></div><Button type="button" variant="secondary" onClick={() => edit(plan)}>Editar plano</Button></div><h3>Contexto clínico e pontos a acompanhar</h3><p>{plan.description || 'Não informado'}</p><dl className="patient-info-list"><div><dt>Período</dt><dd>{formatDate(plan.start_date ?? plan.starts_at)} — {formatDate(plan.end_date ?? plan.ends_at)}</dd></div><div><dt>Situação</dt><dd>{plan.active ?? String(plan.status ?? '').toLowerCase() !== 'inactive' ? 'Ativo' : 'Inativo'}</dd></div>{plan.professionals?.length ? <div><dt>Profissional responsável</dt><dd>{plan.professionals.map((professional) => professional.name ?? 'Não informado').join(', ')}</dd></div> : null}</dl></article>)}</section>}</>;
 }

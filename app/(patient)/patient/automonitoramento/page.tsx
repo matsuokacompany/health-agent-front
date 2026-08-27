@@ -199,7 +199,14 @@ function SubscriptionCard({ subscription, plans, onSubscriptionChanged }: { subs
 }
 
 function LoadingAutomonitoramento() {
-  return <section className="patient-dashboard-v2"><Card><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card></section>;
+  return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando automonitoramento">
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
+    <section className="patient-dashboard-summary-grid">
+      {Array.from({ length: 4 }, (_, index) => <Card key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></Card>)}
+    </section>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
+  </section>;
 }
 
 export default function Automonitoramento() {
