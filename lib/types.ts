@@ -91,6 +91,8 @@ export type Subscription = {
   current_period_end?: string | null;
   trial_ends_at?: string | null;
   plan_id?: string | null;
+  cancel_at_period_end?: boolean;
+  first_paid_at?: string | null;
   // Professional-only: the active-patient cap for the current plan tier
   // (null also means "no cap", e.g. grandfathered) and how many active
   // patients they currently have. Always null for a patient's own subscription.
