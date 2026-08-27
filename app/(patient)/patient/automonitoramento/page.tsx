@@ -107,44 +107,74 @@ function insightDaysUntil(nextGenerationAt?: string | null) {
   return Math.max(0, Math.ceil((next.getTime() - Date.now()) / 86_400_000));
 }
 
-function InsightCard({ insight, error, onRetry }: { insight: SelfMonitoringInsight | null; error: string | null; onRetry(): void }) {
-  if (error) {
-    return <Card>
-      <span className="eyebrow">Resumo por IA</span>
-      <h2>Não foi possível gerar o resumo agora</h2>
-      <p className="notice danger">{error}</p>
-      <Button variant="secondary" onClick={onRetry}>Tentar novamente</Button>
-    </Card>;
-  }
-  if (!insight || !insight.sufficient_data || !insight.insight) return null;
-
-  const { resumo, pontos_positivos, pontos_de_atencao, sugestao } = insight.insight;
-  const daysUntilNext = insightDaysUntil(insight.next_generation_at);
+function InsightCard({
+  report,
+  insight,
+  error,
+  generating,
+  onGenerate,
+}: {
+  report: EvolutionReport | null;
+  insight: SelfMonitoringInsight | null;
+  error: string | null;
+  generating: boolean;
+  onGenerate(): void;
+}) {
+  const notEnoughData = Boolean(report && !report.sufficient_data);
+  const result = insight?.insight ?? null;
+  const daysUntilNext = insight ? insightDaysUntil(insight.next_generation_at) : null;
 
   return <Card>
     <span className="eyebrow">Resumo por IA</span>
-    <h2>Como você tem passado</h2>
-    <p className="muted">{resumo}</p>
-    {pontos_positivos?.length ? (
-      <div>
-        <h3>Pontos positivos</h3>
-        <ul>{pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
-      </div>
+    <h2>{result ? 'Como você tem passado' : 'Resumo da sua evolução, em linguagem simples'}</h2>
+    {!result ? (
+      <p className="muted">
+        Gere um resumo dos seus check-ins dos últimos 30 dias — o que está indo bem, pontos que vale acompanhar e uma
+        sugestão sobre conversar com um profissional. Sem diagnóstico, é só um apoio para você chegar mais
+        preparado(a) numa consulta.
+      </p>
     ) : null}
-    {pontos_de_atencao?.length ? (
-      <div>
-        <h3>Pontos de atenção</h3>
-        <ul>{pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
-      </div>
+    {result ? (
+      <>
+        <p className="muted">{result.resumo}</p>
+        {result.pontos_positivos?.length ? (
+          <div>
+            <h3>Pontos positivos</h3>
+            <ul>{result.pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        ) : null}
+        {result.pontos_de_atencao?.length ? (
+          <div>
+            <h3>Pontos de atenção</h3>
+            <ul>{result.pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        ) : null}
+        {result.sugestao ? <p className="muted">{result.sugestao}</p> : null}
+        <p className="notice compact">
+          Este resumo é gerado por IA a partir dos seus check-ins e tem caráter apenas informativo — não é um
+          diagnóstico nem substitui uma avaliação médica. Em caso de dúvida ou piora dos sintomas, procure
+          atendimento profissional.
+        </p>
+      </>
     ) : null}
-    {sugestao ? <p className="muted">{sugestao}</p> : null}
-    <p className="notice compact">
-      Este resumo é gerado automaticamente por IA a partir dos seus check-ins e tem caráter apenas informativo — não é
-      um diagnóstico nem substitui uma avaliação médica. Em caso de dúvida ou piora dos sintomas, procure atendimento
-      profissional.
-    </p>
-    {daysUntilNext !== null ? (
-      <p className="muted compact">Próxima atualização do resumo em {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`}.</p>
+    {notEnoughData ? (
+      <p className="notice">Ainda não há check-ins suficientes para gerar o resumo — continue respondendo ao WhatsApp diariamente.</p>
+    ) : null}
+    {error ? <p className="notice danger">{error}</p> : null}
+    <Button
+      variant={result ? 'secondary' : 'primary'}
+      disabled={generating || notEnoughData}
+      loading={generating}
+      loadingLabel="Gerando resumo..."
+      onClick={onGenerate}
+    >
+      {result ? 'Atualizar resumo' : 'Gerar resumo com IA'}
+    </Button>
+    {daysUntilNext !== null && daysUntilNext > 0 ? (
+      <p className="muted compact">
+        Um novo resumo passa a ser gerado a partir de {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`}; até
+        lá, "Atualizar resumo" só mostra o resultado atual de novo.
+      </p>
     ) : null}
   </Card>;
 }
@@ -179,20 +209,25 @@ export default function Automonitoramento() {
   const [reportBlocked, setReportBlocked] = useState(false);
   const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
   const [insightError, setInsightError] = useState<string | null>(null);
+  const [generatingInsight, setGeneratingInsight] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  async function loadInsight() {
+  async function generateInsight() {
+    setGeneratingInsight(true);
     setInsightError(null);
     try {
       setInsight(await selfMonitoringApi.getInsight());
     } catch (err) {
-      setInsight(null);
-      // A 402 here just mirrors the evolution-report paywall already shown
-      // above — no need for a second error message for the same cause.
-      if (!(err instanceof ApiError && err.status === 402)) {
+      if (err instanceof ApiError && err.status === 402) {
+        // The evolution-report paywall above already explains this — no
+        // need for a second error message for the same cause.
+        setInsight(null);
+      } else {
         setInsightError(toFriendlyErrorMessage(err));
       }
+    } finally {
+      setGeneratingInsight(false);
     }
   }
 
@@ -214,7 +249,6 @@ export default function Automonitoramento() {
           throw err;
         }
       }
-      await loadInsight();
     } catch (err) {
       setLoadError(toFriendlyErrorMessage(err));
     } finally {
@@ -231,6 +265,8 @@ export default function Automonitoramento() {
     {subscription ? <TrialBanner subscription={subscription} /> : null}
     {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onSubscriptionChanged={() => void load()} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
-    <InsightCard insight={insight} error={insightError} onRetry={() => void loadInsight()} />
+    {!reportBlocked ? (
+      <InsightCard report={report} insight={insight} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />
+    ) : null}
   </section>;
 }

@@ -15,12 +15,29 @@ const CYCLES = [
 ] as const;
 type Cycle = (typeof CYCLES)[number][0];
 
+const PROFESSIONAL_BENEFITS = [
+  'Cadastre pacientes dentro da faixa do seu plano, sem custo extra por paciente',
+  'Gere relatórios de evolução com apoio de IA para cada paciente, quando precisar',
+  'Envie pedidos de vínculo e receba os check-ins de WhatsApp organizados por paciente',
+  'Cancele quando quiser e peça reembolso em até 7 dias após o primeiro pagamento',
+];
+const PATIENT_BENEFITS = [
+  'Check-ins diários direto no seu WhatsApp, sem precisar abrir nenhum app',
+  'Relatório de evolução com adesão, tendência de sintomas e histórico completo',
+  'Resumo em linguagem simples gerado por IA, sempre que você quiser',
+  'Cancele quando quiser e peça reembolso em até 7 dias após o primeiro pagamento',
+];
+
 function formatCurrency(cents: number) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function monthlyEquivalentCents(plan: BillingPlan) {
+  return plan.price_cents / plan.months;
+}
+
 function monthlyEquivalent(plan: BillingPlan) {
-  return formatCurrency(Math.round(plan.price_cents / plan.months));
+  return formatCurrency(Math.round(monthlyEquivalentCents(plan)));
 }
 
 function tierOf(plan: BillingPlan) {
@@ -34,6 +51,19 @@ function groupByTier(plans: BillingPlan[]) {
     tiers.set(key, [...(tiers.get(key) ?? []), plan]);
   }
   return [...tiers.entries()].sort(([a], [b]) => a - b);
+}
+
+function savingsPercent(tierPlans: BillingPlan[], plan: BillingPlan) {
+  if (plan.cycle === 'MONTHLY') return null;
+  const monthlyPlan = tierPlans.find((candidate) => candidate.cycle === 'MONTHLY');
+  if (!monthlyPlan || !monthlyPlan.price_cents) return null;
+  const percent = Math.round((1 - monthlyEquivalentCents(plan) / monthlyPlan.price_cents) * 100);
+  return percent > 0 ? percent : null;
+}
+
+function perPatientMonthly(plan: BillingPlan) {
+  if (!plan.max_patients) return null;
+  return formatCurrency(Math.round(monthlyEquivalentCents(plan) / plan.max_patients));
 }
 
 /** Plan grid + cycle toggle + subscribe form, shared by the professional and
@@ -56,6 +86,7 @@ export function SubscriptionPlans({
   const [formError, setFormError] = useState<string | null>(null);
   const needsCpf = !user?.cpf;
   const isActive = subscription.status === 'ACTIVE';
+  const isProfessional = useMemo(() => plans.some((plan) => (plan.max_patients ?? 0) > 0), [plans]);
 
   useEffect(() => {
     const currentPlan = plans.find((plan) => plan.id === subscription.plan_id);
@@ -70,6 +101,22 @@ export function SubscriptionPlans({
   );
   const currentTier = currentTierPlans[0] ? tierOf(currentTierPlans[0]) : null;
   const availableCycles = useMemo(() => new Set(plans.map((plan) => plan.cycle)), [plans]);
+
+  const bestValueTier = useMemo(() => {
+    if (!isProfessional) return null;
+    let best: number | null = null;
+    let bestCostCents = Infinity;
+    for (const [maxPatients, tierPlans] of tiers) {
+      if (!maxPatients) continue;
+      const plan = tierPlans.find((candidate) => candidate.cycle === cycle) ?? tierPlans[0];
+      const costCents = monthlyEquivalentCents(plan) / maxPatients;
+      if (costCents < bestCostCents) {
+        bestCostCents = costCents;
+        best = maxPatients;
+      }
+    }
+    return best;
+  }, [tiers, cycle, isProfessional]);
 
   async function handleSubscribe(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,7 +148,12 @@ export function SubscriptionPlans({
       <div className="pricing-heading">
         <div>
           <span className="eyebrow">Planos</span>
-          <h2>Escolha o plano ideal para você</h2>
+          <h2>{isProfessional ? 'Mais pacientes, mais relatórios de IA, mais crescimento' : 'Cuide da sua saúde todos os dias, sem complicação'}</h2>
+          <p className="muted pricing-subheading">
+            {isProfessional
+              ? 'Todo plano ativo já inclui relatórios de IA sem limite de uso — a faixa escolhida só define quantos pacientes você pode acompanhar ao mesmo tempo.'
+              : 'Você recebe os check-ins pelo WhatsApp e acompanha sua evolução com relatórios e resumos por IA — cancele quando quiser, sem multa.'}
+          </p>
         </div>
         <div className="pricing-cycle-toggle" role="group" aria-label="Ciclo de cobrança">
           {CYCLES.filter(([value]) => availableCycles.has(value)).map(([value, label]) => (
@@ -109,19 +161,33 @@ export function SubscriptionPlans({
           ))}
         </div>
       </div>
+
+      <ul className="pricing-benefits">
+        {(isProfessional ? PROFESSIONAL_BENEFITS : PATIENT_BENEFITS).map((benefit) => (
+          <li key={benefit}><span aria-hidden="true">✓</span>{benefit}</li>
+        ))}
+      </ul>
+
       <div className="pricing-grid">
         {tiers.map(([maxPatients, tierPlans]) => {
           const plan = tierPlans.find((candidate) => candidate.cycle === cycle) ?? tierPlans[0];
           const isCurrent = currentTier === maxPatients;
           const isSelected = selectedPlanId === plan.id;
           const heading = maxPatients > 0 ? `Até ${maxPatients} pacientes` : plan.label;
+          const percentOff = savingsPercent(tierPlans, plan);
+          const perPatient = perPatientMonthly(plan);
           return (
             <article className={`pricing-card${isCurrent ? ' is-current' : ''}${isSelected && !isActive ? ' is-selected' : ''}`} key={maxPatients}>
-              {maxPatients === 25 ? <span className="pricing-card-badge">Mais escolhido</span> : null}
+              {maxPatients > 0 && maxPatients === bestValueTier ? <span className="pricing-card-badge">Melhor custo-benefício</span> : null}
               {isCurrent ? <span className="pricing-card-badge is-current-badge">Seu plano atual</span> : null}
               <h3>{heading}</h3>
-              <p className="pricing-price"><strong>{formatCurrency(plan.price_cents)}</strong><span className="muted"> /{plan.cycle === 'MONTHLY' ? 'mês' : plan.cycle === 'SEMIANNUALLY' ? 'semestre' : 'ano'}</span></p>
+              <p className="pricing-price">
+                <strong>{formatCurrency(plan.price_cents)}</strong>
+                <span className="muted"> /{plan.cycle === 'MONTHLY' ? 'mês' : plan.cycle === 'SEMIANNUALLY' ? 'semestre' : 'ano'}</span>
+                {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
+              </p>
               {plan.months > 1 ? <p className="muted compact">equivale a {monthlyEquivalent(plan)}/mês</p> : null}
+              {perPatient ? <p className="muted compact">{perPatient} por paciente/mês</p> : null}
               {!isActive ? (
                 <label className="pricing-select">
                   <input type="radio" name="plan" checked={isSelected} onChange={() => setSelectedPlanId(plan.id)} value={plan.id} />
@@ -146,7 +212,7 @@ export function SubscriptionPlans({
             </label>
           ) : null}
           {formError ? <p className="notice danger">{formError}</p> : null}
-          <Button disabled={saving || !selectedPlanId} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar</Button>
+          <Button disabled={saving || !selectedPlanId} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar agora</Button>
         </form>
       ) : null}
     </>
