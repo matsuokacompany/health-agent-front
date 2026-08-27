@@ -1,4 +1,4 @@
-import type { EvolutionReport, MonitoringPlan } from '@/lib/types';
+import type { EvolutionReport, MonitoringPlan, SelfMonitoringInsight } from '@/lib/types';
 import { api } from './api';
 
 export const selfMonitoringApi = {
@@ -10,4 +10,5 @@ export const selfMonitoringApi = {
     const query = search.toString();
     return api<EvolutionReport>(`/api/self-monitoring/evolution-report${query ? `?${query}` : ''}`);
   },
+  getInsight: () => api<SelfMonitoringInsight>('/api/self-monitoring/insight'),
 };

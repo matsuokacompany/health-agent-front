@@ -9,7 +9,7 @@ import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
 import { SubscriptionPlans } from '@/components/billing/SubscriptionPlans';
 import { billingApi } from '@/services/billing';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
-import type { BillingPlan, EvolutionReport, Subscription, SubscriptionStatus } from '@/lib/types';
+import type { BillingPlan, EvolutionReport, SelfMonitoringInsight, Subscription, SubscriptionStatus } from '@/lib/types';
 
 const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
   PENDING: '🟡 Aguardando pagamento',
@@ -100,6 +100,55 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   </>;
 }
 
+function insightDaysUntil(nextGenerationAt?: string | null) {
+  if (!nextGenerationAt) return null;
+  const next = new Date(nextGenerationAt);
+  if (Number.isNaN(next.getTime())) return null;
+  return Math.max(0, Math.ceil((next.getTime() - Date.now()) / 86_400_000));
+}
+
+function InsightCard({ insight, error, onRetry }: { insight: SelfMonitoringInsight | null; error: string | null; onRetry(): void }) {
+  if (error) {
+    return <Card>
+      <span className="eyebrow">Resumo por IA</span>
+      <h2>Não foi possível gerar o resumo agora</h2>
+      <p className="notice danger">{error}</p>
+      <Button variant="secondary" onClick={onRetry}>Tentar novamente</Button>
+    </Card>;
+  }
+  if (!insight || !insight.sufficient_data || !insight.insight) return null;
+
+  const { resumo, pontos_positivos, pontos_de_atencao, sugestao } = insight.insight;
+  const daysUntilNext = insightDaysUntil(insight.next_generation_at);
+
+  return <Card>
+    <span className="eyebrow">Resumo por IA</span>
+    <h2>Como você tem passado</h2>
+    <p className="muted">{resumo}</p>
+    {pontos_positivos?.length ? (
+      <div>
+        <h3>Pontos positivos</h3>
+        <ul>{pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
+      </div>
+    ) : null}
+    {pontos_de_atencao?.length ? (
+      <div>
+        <h3>Pontos de atenção</h3>
+        <ul>{pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
+      </div>
+    ) : null}
+    {sugestao ? <p className="muted">{sugestao}</p> : null}
+    <p className="notice compact">
+      Este resumo é gerado automaticamente por IA a partir dos seus check-ins e tem caráter apenas informativo — não é
+      um diagnóstico nem substitui uma avaliação médica. Em caso de dúvida ou piora dos sintomas, procure atendimento
+      profissional.
+    </p>
+    {daysUntilNext !== null ? (
+      <p className="muted compact">Próxima atualização do resumo em {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`}.</p>
+    ) : null}
+  </Card>;
+}
+
 function SubscriptionCard({ subscription, plans, onSubscriptionChanged }: { subscription: Subscription; plans: BillingPlan[]; onSubscriptionChanged(): void | Promise<void> }) {
   return <Card>
     <span className="eyebrow">Assinatura</span>
@@ -128,8 +177,24 @@ export default function Automonitoramento() {
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [report, setReport] = useState<EvolutionReport | null>(null);
   const [reportBlocked, setReportBlocked] = useState(false);
+  const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
+  const [insightError, setInsightError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  async function loadInsight() {
+    setInsightError(null);
+    try {
+      setInsight(await selfMonitoringApi.getInsight());
+    } catch (err) {
+      setInsight(null);
+      // A 402 here just mirrors the evolution-report paywall already shown
+      // above — no need for a second error message for the same cause.
+      if (!(err instanceof ApiError && err.status === 402)) {
+        setInsightError(toFriendlyErrorMessage(err));
+      }
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -149,6 +214,7 @@ export default function Automonitoramento() {
           throw err;
         }
       }
+      await loadInsight();
     } catch (err) {
       setLoadError(toFriendlyErrorMessage(err));
     } finally {
@@ -165,5 +231,6 @@ export default function Automonitoramento() {
     {subscription ? <TrialBanner subscription={subscription} /> : null}
     {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onSubscriptionChanged={() => void load()} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
+    <InsightCard insight={insight} error={insightError} onRetry={() => void loadInsight()} />
   </section>;
 }
