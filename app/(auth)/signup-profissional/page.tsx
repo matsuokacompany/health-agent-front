@@ -13,7 +13,7 @@ import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
 // Keep this in sync with the date at the top of docs/legal/termos-de-uso.md
 // in the backend repo, and with app/(auth)/signup/page.tsx's own constant.
-const TERMS_VERSION = '2026-08-25';
+const TERMS_VERSION = '2026-08-27';
 
 const DETAIL_MESSAGES: Record<string, string> = {
   'Email already registered': 'Este e-mail já está cadastrado.',

@@ -191,6 +191,13 @@ export default function ProfessionalAssinatura() {
       ) : (
         <Card><p className="notice">Nenhum plano de profissional configurado ainda. Fale com o suporte da Julha.</p></Card>
       )}
+      <p className="muted compact legal-links">
+        <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
+        {' · '}
+        <a href="/politica-de-privacidade" rel="noopener noreferrer" target="_blank">Política de Privacidade</a>
+        {' · '}
+        <a href="/politica-de-reembolso" rel="noopener noreferrer" target="_blank">Política de Reembolso</a>
+      </p>
     </section>
   );
 }
