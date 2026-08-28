@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { useI18n } from '@/components/i18n/I18nProvider';
-import { Card, MetricCard } from '@/components/ui/design';
+import { Card } from '@/components/ui/design';
 import { EmptyState } from '@/components/ui/states';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarSkeleton } from '@/components/ui/Skeleton';
@@ -198,15 +198,11 @@ export default function PatientMonitoring() {
 
   const monthLabel = visibleMonth.toLocaleDateString(localeMap[locale], { month: 'long', year: 'numeric' });
   const statusLabel = (status: string) => t(`monitoring.statuses.${status}`);
-  const answered = reports.filter((report) => isCompletedReport(report) && (!activePlan || !report.monitoring_plan_id || String(report.monitoring_plan_id) === String(activePlan.id))).length;
   const hasMonitoring = Boolean(activePlan);
   const patientId = resolvePatientRecordId(user?.patient_id, activePlan?.patient_id, selectedReport?.patient_id, selectedReport?.user_id, selectedCheckin?.patient_id, selectedCheckin?.user_id);
 
-  const planStartsAt = activePlan?.starts_at ?? activePlan?.start_date;
-  const planEndsAt = activePlan?.ends_at ?? activePlan?.end_date;
-
   return <div className="patient-monitoring-page">
-    {hasMonitoring ? <section className="dashboard-grid"><Card className="overview-card"><span className="badge">{t('monitoring.activePlan')}</span><h2>{activePlan?.title ?? activePlan?.name ?? t('monitoring.defaultPlanName')}</h2><p className="muted">{t('monitoring.startsAt')}: {formatNullableDate(planStartsAt, locale)} • {t('monitoring.endsAt')}: {formatNullableDate(planEndsAt, locale)}</p></Card><MetricCard label={t('monitoring.startsAt')} value={formatNullableDate(planStartsAt, locale)} /><MetricCard label={t('monitoring.endsAt')} value={formatNullableDate(planEndsAt, locale)} /><MetricCard label={t('monitoring.answered')} value={answered} /></section> : <EmptyState title={t('monitoring.notStarted')} />}
+    {!hasMonitoring ? <EmptyState title={t('monitoring.notStarted')} /> : null}
     {feedback ? <p className={feedback.toLowerCase().includes('não') || feedback.toLowerCase().includes('expirada') ? 'notice danger' : 'notice success'}>{feedback}</p> : null}
     {loading ? <CalendarSkeleton /> : <section className="calendar-layout is-calendar-only"><Card className="calendar-card"><div className="calendar-header"><div><h2>{t('monitoring.monthlyCalendar')}</h2><p className="muted compact">{monthLabel}</p></div><div className="calendar-nav"><button className="button secondary icon-control" type="button" aria-label={t('monitoring.previousMonth')} disabled={!canGoPrevious} onClick={() => setVisibleMonth((current) => addMonths(current, -1))}>‹</button><button className="button secondary icon-control" type="button" aria-label={t('monitoring.nextMonth')} disabled={!canGoNext} onClick={() => setVisibleMonth((current) => addMonths(current, 1))}>›</button></div></div><div className="calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div><div className="calendar">{calendarCells.map((cell) => { if (cell.type === 'empty') return <span className="day calendar-empty-cell" aria-hidden="true" key={cell.key} />; const day = cell.day; const status = getDayStatus(day); return <button className={`day ${getDayClassName(day)} ${selected?.date === day.date ? 'is-active' : ''}`} key={day.date} type="button" aria-label={`${formatDateForLocale(day.date, locale)}: ${statusLabel(status)}`} onClick={() => openDayDetails(day)}><strong>{new Date(`${day.date}T00:00:00`).getDate()}</strong><span>{statusLabel(status)}</span></button>; })}</div><div className="calendar-legend" aria-label={t('monitoring.legend')}><span><i className="legend-complete" />{t('monitoring.legendAnsweredNoSymptoms')}</span><span><i className="legend-symptom" />{t('monitoring.legendAnsweredSymptoms')}</span><span><i className="legend-pending" />{t('monitoring.legendUnanswered')}</span><span><i className="legend-empty" />{t('monitoring.legendNoCheckIn')}</span></div></Card></section>}
 

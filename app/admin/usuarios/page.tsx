@@ -7,8 +7,9 @@ import { Modal } from '@/components/ui/Modal';
 import { ErrorState, LoadingState, EmptyState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { billingApi } from '@/services/billing';
 import { usersApi } from '@/services/users';
-import type { Role } from '@/lib/types';
+import type { Role, Subscription, SubscriptionStatus } from '@/lib/types';
 import { adminReportingApi, type AdminUser, type AdminUserStatus } from '@/services/adminReporting';
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -17,6 +18,14 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: 'admin', label: 'Admin' },
   { value: 'super_admin', label: 'Super admin' },
 ];
+
+const subscriptionStatusLabel: Record<SubscriptionStatus, string> = {
+  PENDING: '🟡 Aguardando pagamento',
+  TRIALING: '🧪 Em período de teste',
+  ACTIVE: '🟢 Assinatura ativa',
+  PAST_DUE: '🔴 Pagamento atrasado',
+  CANCELED: '⚪ Assinatura cancelada',
+};
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR').format(new Date(value));
@@ -70,6 +79,63 @@ function EditRolesModal({ user, isSelf, onClose, onSaved }: { user: AdminUser; i
   );
 }
 
+function GrantTrialModal({ user, onClose }: { user: AdminUser; onClose(): void }) {
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [days, setDays] = useState(30);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    billingApi.adminGetSubscription(user.id)
+      .then((result) => { if (!cancelled) setSubscription(result); })
+      .catch((err) => { if (!cancelled) setLoadError(toFriendlyErrorMessage(err)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  async function grant() {
+    setSaving(true);
+    setError(null);
+    try {
+      setSubscription(await billingApi.adminGrantTrial(user.id, days));
+    } catch (err) {
+      setError(toFriendlyErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal open title={`Assinatura de ${user.name}`} onClose={onClose}>
+      <div className="stack">
+        {loading ? <p className="muted">Carregando assinatura atual...</p> : null}
+        {loadError ? <p className="notice danger">{loadError}</p> : null}
+        {subscription ? (
+          <p className="muted">
+            Status atual: <strong>{subscriptionStatusLabel[subscription.status]}</strong>
+            {subscription.trial_ends_at ? <> · teste até {new Intl.DateTimeFormat('pt-BR').format(new Date(subscription.trial_ends_at))}</> : null}
+          </p>
+        ) : null}
+        <label>
+          Dias de teste a conceder
+          <input type="number" min={1} max={365} value={days} onChange={(event) => setDays(Number(event.target.value))} />
+        </label>
+        <p className="muted compact">Concede acesso de teste sem cobrança — não mexe em nada relacionado ao Asaas.</p>
+        {error ? <p className="notice danger">{error}</p> : null}
+        <div className="page-actions">
+          <Button variant="secondary" disabled={saving} onClick={onClose}>Fechar</Button>
+          <Button disabled={saving || !days} loading={saving} loadingLabel="Concedendo..." onClick={() => void grant()}>Conceder teste</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
@@ -79,6 +145,7 @@ export default function AdminUsersPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [trialUser, setTrialUser] = useState<AdminUser | null>(null);
 
   async function load() {
     setLoading(true);
@@ -161,7 +228,10 @@ export default function AdminUsersPage() {
                   <td>{user.roles.map((userRole) => <RoleBadge key={userRole} role={userRole as Role} />)}</td>
                   <td><StatusBadge status={user.status} /></td>
                   <td>{formatDate(user.created_at)}</td>
-                  <td><Button variant="ghost" onClick={() => setEditingUser(user)}>Editar papéis</Button></td>
+                  <td className="admin-user-actions">
+                    <Button variant="ghost" onClick={() => setEditingUser(user)}>Editar papéis</Button>
+                    <Button variant="ghost" onClick={() => setTrialUser(user)}>Assinatura</Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -180,6 +250,8 @@ export default function AdminUsersPage() {
           }}
         />
       ) : null}
+
+      {trialUser ? <GrantTrialModal user={trialUser} onClose={() => setTrialUser(null)} /> : null}
     </>
   );
 }

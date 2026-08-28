@@ -182,15 +182,18 @@ export function SubscriptionPlans({
                     <p className="pricing-price">
                       <strong>{formatCurrency(plan.price_cents)}</strong>
                       <span className="muted"> /{CYCLE_UNIT[plan.cycle as (typeof CYCLE_ORDER)[number]] ?? 'ciclo'}</span>
+                      {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
                     </p>
-                    {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
                     {plan.months > 1 ? <p className="muted compact">equivale a {monthlyEquivalent(plan)}/mês</p> : null}
                     {perPatient ? <p className="muted compact">{perPatient} por paciente/mês</p> : null}
                     {!isActive ? (
-                      <label className="pricing-select">
-                        <input type="radio" name="plan" checked={isSelected} onChange={() => setSelectedPlanId(plan.id)} value={plan.id} />
-                        Selecionar
-                      </label>
+                      <Button
+                        type="button"
+                        variant={isSelected ? 'primary' : 'secondary'}
+                        onClick={() => setSelectedPlanId(plan.id)}
+                      >
+                        {isSelected ? 'Selecionado ✓' : 'Selecionar este plano'}
+                      </Button>
                     ) : isCurrent ? (
                       <p className="muted compact">Plano ativo no momento.</p>
                     ) : (
