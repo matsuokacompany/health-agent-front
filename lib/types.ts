@@ -136,7 +136,19 @@ export type SelfMonitoringInsightResult = {
   pontos_de_atencao: string[];
   sugestao: string;
 };
+export type SelfMonitoringInsightListItem = {
+  id: number;
+  start_date: string;
+  end_date: string;
+  generated_at: string;
+  next_generation_at?: string | null;
+};
+export type SelfMonitoringInsightListResponse = {
+  items: SelfMonitoringInsightListItem[];
+  pagination: { page: number; per_page: number; total: number; total_pages: number };
+};
 export type SelfMonitoringInsight = {
+  id?: number;
   patient_id: number;
   start_date: string;
   end_date: string;

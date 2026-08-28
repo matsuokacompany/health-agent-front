@@ -12,10 +12,15 @@ function PatientShell({ children }: { children: React.ReactNode }) {
   // a self-service patient with no professional linked has nothing to see
   // there, so the link only shows once a PROFESSIONAL-origin plan exists.
   const hasProfessional = plans.some((plan) => plan.origin === 'PROFESSIONAL');
+  // The AI report history only exists for self-service patients (self-made
+  // insights) — a professional-managed patient has no self-monitoring
+  // reports to look back on.
+  const isSelfService = plans.length > 0 && !hasProfessional;
   const links = [
     ['/patient/dashboard', t('nav.dashboard')],
     ['/patient/monitoring', t('nav.monitoring')],
     ...(hasProfessional ? [['/patient/anamnese', t('nav.anamnesis')]] : []),
+    ...(isSelfService ? [['/patient/relatorios', t('nav.reports')]] : []),
     ['/patient/assinatura', t('nav.subscription')],
   ];
   const footer = <footer className="app-footer">{t('app.footer')}</footer>;
