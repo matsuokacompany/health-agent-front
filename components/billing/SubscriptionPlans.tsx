@@ -24,6 +24,13 @@ const PATIENT_BENEFITS = [
   'Resumo em linguagem simples gerado por IA, sempre que você quiser',
   'Cancele quando quiser e peça reembolso em até 7 dias após o primeiro pagamento',
 ];
+// One line differentiating each professional tier beyond the patient cap —
+// shared PROFESSIONAL_BENEFITS above still cover what every tier includes.
+const TIER_TAGLINE: Record<number, string> = {
+  10: 'Ideal para quem está começando a acompanhar pacientes pela Julha',
+  25: 'Para consultórios em crescimento, com mais pacientes simultâneos',
+  50: 'Para clínicas e equipes com alto volume de pacientes ativos',
+};
 
 function formatCurrency(cents: number) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -66,6 +73,23 @@ function perPatientMonthly(plan: BillingPlan) {
   return formatCurrency(Math.round(monthlyEquivalentCents(plan) / plan.max_patients));
 }
 
+/** Which cycle actually has the lowest monthly-equivalent cost within a
+ * tier — computed from the real prices instead of always assuming the
+ * longest cycle wins, so the "Melhor oferta" badge can't go stale if a
+ * plan's pricing is ever configured to break that assumption. */
+function bestValuePlanId(tierPlans: BillingPlan[]) {
+  let bestId: string | null = null;
+  let bestCostCents = Infinity;
+  for (const plan of tierPlans) {
+    const costCents = monthlyEquivalentCents(plan);
+    if (costCents < bestCostCents) {
+      bestCostCents = costCents;
+      bestId = plan.id;
+    }
+  }
+  return bestId;
+}
+
 /** Plan comparison + subscribe form, shared by the professional and patient
  * "Assinatura" pages. Every billing cycle is shown at once, side by side, so
  * choosing a plan means picking a card directly instead of switching a tab
@@ -84,6 +108,9 @@ export function SubscriptionPlans({
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [changingPlanId, setChangingPlanId] = useState<string | null>(null);
+  const [changeError, setChangeError] = useState<string | null>(null);
+  const [changeNotice, setChangeNotice] = useState<string | null>(null);
   const needsCpf = !user?.cpf;
   const isActive = subscription.status === 'ACTIVE';
   const isProfessional = useMemo(() => plans.some((plan) => (plan.max_patients ?? 0) > 0), [plans]);
@@ -131,6 +158,26 @@ export function SubscriptionPlans({
     }
   }
 
+  async function handleChangePlan(planId: string) {
+    setChangeError(null);
+    setChangeNotice(null);
+    setChangingPlanId(planId);
+    try {
+      const result = await billingApi.changePlan(planId);
+      if (result.checkout_url && typeof window !== 'undefined') {
+        window.open(result.checkout_url, '_blank', 'noopener,noreferrer');
+        setChangeNotice('Plano atualizado agora mesmo. Abrimos a cobrança proporcional do restante deste ciclo em outra aba — finalize o pagamento por lá.');
+      } else {
+        setChangeNotice('Plano atualizado agora mesmo.');
+      }
+      await onSubscribed();
+    } catch (err) {
+      setChangeError(toFriendlyErrorMessage(err));
+    } finally {
+      setChangingPlanId(null);
+    }
+  }
+
   if (!plans.length) {
     return <p className="notice">Nenhum plano configurado ainda. Fale com o suporte da Julha.</p>;
   }
@@ -155,56 +202,72 @@ export function SubscriptionPlans({
         ))}
       </ul>
 
+      {changeNotice ? <p className="notice success">{changeNotice}</p> : null}
+      {changeError ? <p className="notice danger">{changeError}</p> : null}
+
       <div className="pricing-tiers">
-        {tiers.map(([maxPatients, tierPlans]) => (
-          <div className="pricing-tier-group" key={maxPatients}>
-            {isProfessional ? (
-              <div className="pricing-tier-group-heading">
-                <h3>Até {maxPatients} pacientes</h3>
-                {maxPatients === bestValueTier ? <span className="pricing-card-badge">Melhor custo-benefício</span> : null}
+        {tiers.map(([maxPatients, tierPlans]) => {
+          const bestPlanId = bestValuePlanId(tierPlans);
+          return (
+            <div className="pricing-tier-group" key={maxPatients}>
+              {isProfessional ? (
+                <div className="pricing-tier-group-heading">
+                  <h3>Até {maxPatients} pacientes</h3>
+                  {maxPatients === bestValueTier ? <span className="pricing-card-badge">Melhor custo-benefício</span> : null}
+                  {TIER_TAGLINE[maxPatients] ? <p className="muted compact">{TIER_TAGLINE[maxPatients]}</p> : null}
+                </div>
+              ) : null}
+              <div className="pricing-grid">
+                {tierPlans.map((plan) => {
+                  const isCurrent = plan.id === subscription.plan_id;
+                  const isSelected = selectedPlanId === plan.id;
+                  const percentOff = savingsPercent(tierPlans, plan);
+                  const perPatient = perPatientMonthly(plan);
+                  const isBestValue = plan.id === bestPlanId && tierPlans.length > 1;
+                  return (
+                    <article
+                      className={`pricing-card${isCurrent ? ' is-current' : ''}${isSelected && !isActive ? ' is-selected' : ''}${isBestValue ? ' is-highlighted' : ''}`}
+                      key={plan.id}
+                    >
+                      {isBestValue ? <span className="pricing-card-badge pricing-card-badge-highlight">Melhor oferta</span> : null}
+                      {isCurrent ? <span className="pricing-card-badge is-current-badge">Seu plano atual</span> : null}
+                      <h4>{CYCLE_LABEL[plan.cycle as (typeof CYCLE_ORDER)[number]] ?? plan.label}</h4>
+                      <p className="pricing-price">
+                        <strong>{formatCurrency(plan.price_cents)}</strong>
+                        <span className="muted"> /{CYCLE_UNIT[plan.cycle as (typeof CYCLE_ORDER)[number]] ?? 'ciclo'}</span>
+                        {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
+                      </p>
+                      {plan.months > 1 ? <p className="muted compact">equivale a {monthlyEquivalent(plan)}/mês</p> : null}
+                      {perPatient ? <p className="muted compact">{perPatient} por paciente/mês</p> : null}
+                      {!isActive ? (
+                        <Button
+                          type="button"
+                          variant={isSelected ? 'primary' : 'secondary'}
+                          onClick={() => setSelectedPlanId(plan.id)}
+                        >
+                          {isSelected ? 'Selecionado ✓' : 'Selecionar este plano'}
+                        </Button>
+                      ) : isCurrent ? (
+                        <p className="muted compact">Plano ativo no momento.</p>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          loading={changingPlanId === plan.id}
+                          loadingLabel="Trocando..."
+                          disabled={changingPlanId !== null}
+                          onClick={() => handleChangePlan(plan.id)}
+                        >
+                          Trocar para este plano
+                        </Button>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
-            ) : null}
-            <div className="pricing-grid">
-              {tierPlans.map((plan) => {
-                const isCurrent = plan.id === subscription.plan_id;
-                const isSelected = selectedPlanId === plan.id;
-                const percentOff = savingsPercent(tierPlans, plan);
-                const perPatient = perPatientMonthly(plan);
-                const isYearly = plan.cycle === 'YEARLY';
-                return (
-                  <article
-                    className={`pricing-card${isCurrent ? ' is-current' : ''}${isSelected && !isActive ? ' is-selected' : ''}${isYearly ? ' is-highlighted' : ''}`}
-                    key={plan.id}
-                  >
-                    {isYearly ? <span className="pricing-card-badge pricing-card-badge-highlight">Melhor oferta</span> : null}
-                    {isCurrent ? <span className="pricing-card-badge is-current-badge">Seu plano atual</span> : null}
-                    <h4>{CYCLE_LABEL[plan.cycle as (typeof CYCLE_ORDER)[number]] ?? plan.label}</h4>
-                    <p className="pricing-price">
-                      <strong>{formatCurrency(plan.price_cents)}</strong>
-                      <span className="muted"> /{CYCLE_UNIT[plan.cycle as (typeof CYCLE_ORDER)[number]] ?? 'ciclo'}</span>
-                      {percentOff !== null ? <span className="pricing-savings-badge">Economize {percentOff}%</span> : null}
-                    </p>
-                    {plan.months > 1 ? <p className="muted compact">equivale a {monthlyEquivalent(plan)}/mês</p> : null}
-                    {perPatient ? <p className="muted compact">{perPatient} por paciente/mês</p> : null}
-                    {!isActive ? (
-                      <Button
-                        type="button"
-                        variant={isSelected ? 'primary' : 'secondary'}
-                        onClick={() => setSelectedPlanId(plan.id)}
-                      >
-                        {isSelected ? 'Selecionado ✓' : 'Selecionar este plano'}
-                      </Button>
-                    ) : isCurrent ? (
-                      <p className="muted compact">Plano ativo no momento.</p>
-                    ) : (
-                      <p className="muted compact">Para trocar de plano com assinatura ativa, fale com o suporte da Julha.</p>
-                    )}
-                  </article>
-                );
-              })}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {!isActive ? (
