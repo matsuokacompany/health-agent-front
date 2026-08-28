@@ -13,6 +13,7 @@ const icons: Record<string, string> = {
   Monitoring: '📡',
   Monitoreo: '📡',
   Relatórios: '📄',
+  Reports: '📄',
   Insights: '✨',
   Pacientes: '🧑‍🤝‍🧑',
   'Novo paciente': '➕',
@@ -25,6 +26,7 @@ const icons: Record<string, string> = {
   Assinatura: '💳',
   Subscription: '💳',
   Suscripción: '💳',
+  Informes: '📄',
 };
 
 type AppSidebarProps = {

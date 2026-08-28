@@ -1,4 +1,4 @@
-import type { EvolutionReport, MonitoringPlan, SelfMonitoringInsight } from '@/lib/types';
+import type { EvolutionReport, MonitoringPlan, SelfMonitoringInsight, SelfMonitoringInsightListResponse } from '@/lib/types';
 import { api } from './api';
 
 export const selfMonitoringApi = {
@@ -11,4 +11,7 @@ export const selfMonitoringApi = {
     return api<EvolutionReport>(`/api/self-monitoring/evolution-report${query ? `?${query}` : ''}`);
   },
   getInsight: () => api<SelfMonitoringInsight>('/api/self-monitoring/insight'),
+  listInsights: (page = 1, perPage = 20) =>
+    api<SelfMonitoringInsightListResponse>(`/api/self-monitoring/insights?${new URLSearchParams({ page: String(page), per_page: String(perPage) })}`),
+  getInsightDetail: (id: number) => api<SelfMonitoringInsight>(`/api/self-monitoring/insights/${id}`),
 };

@@ -7,6 +7,7 @@ import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
 import { SubscriptionPlans } from '@/components/billing/SubscriptionPlans';
+import { InsightResultBody } from '@/components/patient/InsightResultBody';
 import { billingApi } from '@/services/billing';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import type { BillingPlan, EvolutionReport, SelfMonitoringInsight, Subscription, SubscriptionStatus } from '@/lib/types';
@@ -134,29 +135,7 @@ function InsightCard({
         preparado(a) numa consulta.
       </p>
     ) : null}
-    {result ? (
-      <>
-        <p className="muted">{result.resumo}</p>
-        {result.pontos_positivos?.length ? (
-          <div>
-            <h3>Pontos positivos</h3>
-            <ul>{result.pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
-          </div>
-        ) : null}
-        {result.pontos_de_atencao?.length ? (
-          <div>
-            <h3>Pontos de atenção</h3>
-            <ul>{result.pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
-          </div>
-        ) : null}
-        {result.sugestao ? <p className="muted">{result.sugestao}</p> : null}
-        <p className="notice compact">
-          Este resumo é gerado por IA a partir dos seus check-ins e tem caráter apenas informativo — não é um
-          diagnóstico nem substitui uma avaliação médica. Em caso de dúvida ou piora dos sintomas, procure
-          atendimento profissional.
-        </p>
-      </>
-    ) : null}
+    {result ? <InsightResultBody result={result} /> : null}
     {notEnoughData ? (
       <p className="notice">Ainda não há check-ins suficientes para gerar o resumo — continue respondendo ao WhatsApp diariamente.</p>
     ) : null}
@@ -176,6 +155,7 @@ function InsightCard({
         lá, "Atualizar resumo" só mostra o resultado atual de novo.
       </p>
     ) : null}
+    {result ? <p className="muted compact"><a href="/patient/relatorios">Ver histórico completo de resumos →</a></p> : null}
   </Card>;
 }
 
