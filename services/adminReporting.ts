@@ -59,6 +59,15 @@ export type AdminWhatsappStats = {
   estimated_cost_cents: number | null;
 };
 
+export type AdminBillingSummary = {
+  mrr_cents: number;
+  active_subscriptions: number;
+  trialing_subscriptions: number;
+  past_due_subscriptions: number;
+  canceled_last_30d: number;
+  churn_rate: number;
+};
+
 function withQuery(path: string, params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== '') search.set(key, String(value)); });
@@ -69,6 +78,7 @@ function withQuery(path: string, params: Record<string, string | number | undefi
 export const adminReportingApi = {
   listUsers: (filters: AdminUsersFilter = {}) => api<AdminUser[]>(withQuery('/api/admin/users', filters)),
   getCosts: (params: { start_date?: string; end_date?: string } = {}) => api<AdminCostSummary>(withQuery('/api/admin/costs', params)),
+  getBillingSummary: () => api<AdminBillingSummary>('/api/admin/billing/summary'),
   getWhatsappStats: (days = 30) => api<AdminWhatsappStats>(withQuery('/api/admin/whatsapp/stats', { days })),
   listCostEntries: (params: { start_date?: string; end_date?: string } = {}) =>
     api<AdminCostEntry[]>(withQuery('/api/admin/costs/entries', params)),

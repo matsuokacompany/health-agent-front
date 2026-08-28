@@ -101,6 +101,25 @@ export type Subscription = {
 };
 export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus; plan_id?: string | null };
 export type BillingPlan = { id: string; label: string; cycle: string; months: number; price_cents: number; max_patients?: number | null };
+export type Invoice = {
+  id: string;
+  value: number;
+  status: string;
+  due_date?: string | null;
+  payment_date?: string | null;
+  invoice_url?: string | null;
+  description?: string | null;
+};
+
+export type NotificationKind = 'PAYMENT_OVERDUE' | 'TRIAL_ENDING' | 'ACCESS_ENDING' | 'PLAN_CHANGED';
+export type AppNotification = {
+  id: number;
+  kind: NotificationKind;
+  message: string;
+  read_at?: string | null;
+  created_at: string;
+};
+export type NotificationListResponse = { items: AppNotification[]; unread_count: number };
 
 export type EvolutionSymptomOccurrence = { description: string; occurrences: number; last_occurred_on?: string | null };
 export type EvolutionTimelineGroup = { period_label: string; completed_checkins: number; checkins_with_symptoms: number };
