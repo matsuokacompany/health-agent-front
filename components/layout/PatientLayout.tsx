@@ -8,9 +8,6 @@ import { ResponsiveAppShell } from './ResponsiveAppShell';
 function PatientShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const { plans } = usePatientData();
-  // Anamnese is meant to be taken and reviewed by a health professional —
-  // a self-service patient with no professional linked has nothing to see
-  // there, so the link only shows once a PROFESSIONAL-origin plan exists.
   const hasProfessional = plans.some((plan) => plan.origin === 'PROFESSIONAL');
   // The AI report history only exists for self-service patients (self-made
   // insights) — a professional-managed patient has no self-monitoring
@@ -19,7 +16,7 @@ function PatientShell({ children }: { children: React.ReactNode }) {
   const links = [
     ['/patient/dashboard', t('nav.dashboard')],
     ['/patient/monitoring', t('nav.monitoring')],
-    ...(hasProfessional ? [['/patient/anamnese', t('nav.anamnesis')]] : []),
+    ['/patient/anamnese', t('nav.anamnesis')],
     ...(isSelfService ? [['/patient/relatorios', t('nav.reports')]] : []),
     ['/patient/assinatura', t('nav.subscription')],
   ];
