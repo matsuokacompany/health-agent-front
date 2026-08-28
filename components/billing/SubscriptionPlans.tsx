@@ -7,10 +7,18 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { billingApi } from '@/services/billing';
 import { usersApi } from '@/services/users';
 import type { BillingPlan, Subscription } from '@/lib/types';
-
-const CYCLE_ORDER = ['MONTHLY', 'SEMIANNUALLY', 'YEARLY'] as const;
-const CYCLE_LABEL: Record<(typeof CYCLE_ORDER)[number], string> = { MONTHLY: 'Mensal', SEMIANNUALLY: 'Semestral', YEARLY: 'Anual' };
-const CYCLE_UNIT: Record<(typeof CYCLE_ORDER)[number], string> = { MONTHLY: 'mês', SEMIANNUALLY: 'semestre', YEARLY: 'ano' };
+import {
+  CYCLE_LABEL,
+  CYCLE_ORDER,
+  CYCLE_UNIT,
+  bestValuePlanId,
+  formatCurrency,
+  groupByTier,
+  monthlyEquivalent,
+  monthlyEquivalentCents,
+  perPatientMonthly,
+  savingsPercent,
+} from '@/lib/pricing';
 
 const PROFESSIONAL_BENEFITS = [
   'Cadastre pacientes dentro da faixa do seu plano, sem custo extra por paciente',
@@ -31,64 +39,6 @@ const TIER_TAGLINE: Record<number, string> = {
   25: 'Para consultórios em crescimento, com mais pacientes simultâneos',
   50: 'Para clínicas e equipes com alto volume de pacientes ativos',
 };
-
-function formatCurrency(cents: number) {
-  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function monthlyEquivalentCents(plan: BillingPlan) {
-  return plan.price_cents / plan.months;
-}
-
-function monthlyEquivalent(plan: BillingPlan) {
-  return formatCurrency(Math.round(monthlyEquivalentCents(plan)));
-}
-
-function tierOf(plan: BillingPlan) {
-  return plan.max_patients ?? 0;
-}
-
-function groupByTier(plans: BillingPlan[]) {
-  const tiers = new Map<number, BillingPlan[]>();
-  for (const plan of plans) {
-    const key = tierOf(plan);
-    tiers.set(key, [...(tiers.get(key) ?? []), plan]);
-  }
-  for (const tierPlans of tiers.values()) {
-    tierPlans.sort((a, b) => CYCLE_ORDER.indexOf(a.cycle as (typeof CYCLE_ORDER)[number]) - CYCLE_ORDER.indexOf(b.cycle as (typeof CYCLE_ORDER)[number]));
-  }
-  return [...tiers.entries()].sort(([a], [b]) => a - b);
-}
-
-function savingsPercent(tierPlans: BillingPlan[], plan: BillingPlan) {
-  if (plan.cycle === 'MONTHLY') return null;
-  const monthlyPlan = tierPlans.find((candidate) => candidate.cycle === 'MONTHLY');
-  if (!monthlyPlan || !monthlyPlan.price_cents) return null;
-  const percent = Math.round((1 - monthlyEquivalentCents(plan) / monthlyPlan.price_cents) * 100);
-  return percent > 0 ? percent : null;
-}
-
-function perPatientMonthly(plan: BillingPlan) {
-  if (!plan.max_patients) return null;
-  return formatCurrency(Math.round(monthlyEquivalentCents(plan) / plan.max_patients));
-}
-
-/** Which cycle actually has the lowest monthly-equivalent cost within a
- * tier — computed from the real prices instead of always assuming the
- * longest cycle wins, so the "Melhor oferta" badge can't go stale if a
- * plan's pricing is ever configured to break that assumption. */
-function bestValuePlanId(tierPlans: BillingPlan[]) {
-  let bestId: string | null = null;
-  let bestCostCents = Infinity;
-  for (const plan of tierPlans) {
-    const costCents = monthlyEquivalentCents(plan);
-    if (costCents < bestCostCents) {
-      bestCostCents = costCents;
-      bestId = plan.id;
-    }
-  }
-  return bestId;
-}
 
 /** Plan comparison + subscribe form, shared by the professional and patient
  * "Assinatura" pages. Every billing cycle is shown at once, side by side, so

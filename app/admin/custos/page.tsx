@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
 import { ErrorState, LoadingState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
-import { adminReportingApi, type AdminCostSummary } from '@/services/adminReporting';
+import { adminReportingApi, type AdminBillingSummary, type AdminCostSummary } from '@/services/adminReporting';
 
 function formatUsd(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
@@ -104,6 +104,7 @@ export default function AdminCostsPage() {
   const [startDate, setStartDate] = useState(isoMonthStart());
   const [endDate, setEndDate] = useState(isoToday());
   const [summary, setSummary] = useState<AdminCostSummary | null>(null);
+  const [billingSummary, setBillingSummary] = useState<AdminBillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -112,7 +113,12 @@ export default function AdminCostsPage() {
     setLoading(true);
     setError(null);
     try {
-      setSummary(await adminReportingApi.getCosts({ start_date: startDate, end_date: endDate }));
+      const [costs, billing] = await Promise.all([
+        adminReportingApi.getCosts({ start_date: startDate, end_date: endDate }),
+        adminReportingApi.getBillingSummary(),
+      ]);
+      setSummary(costs);
+      setBillingSummary(billing);
     } catch (err) {
       setError(toFriendlyErrorMessage(err));
     } finally {
@@ -151,6 +157,26 @@ export default function AdminCostsPage() {
           <p className="muted">Custos calculados automaticamente a partir do uso, mais os lançamentos manuais que você adicionar.</p>
         </div>
       </div>
+
+      {billingSummary ? (
+        <section className="grid admin-metrics-grid">
+          <article className="card">
+            <span className="metric-label">MRR</span>
+            <strong className="metric">{formatBrlFromCents(billingSummary.mrr_cents)}</strong>
+            <p className="muted compact">Receita recorrente mensal, assinaturas ativas</p>
+          </article>
+          <article className="card">
+            <span className="metric-label">Assinaturas ativas</span>
+            <strong className="metric">{billingSummary.active_subscriptions}</strong>
+            <p className="muted compact">{billingSummary.trialing_subscriptions} em teste · {billingSummary.past_due_subscriptions} com pagamento atrasado</p>
+          </article>
+          <article className="card">
+            <span className="metric-label">Churn (30 dias)</span>
+            <strong className="metric">{(billingSummary.churn_rate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</strong>
+            <p className="muted compact">{billingSummary.canceled_last_30d} cancelamento(s) nos últimos 30 dias</p>
+          </article>
+        </section>
+      ) : null}
 
       <Card>
         <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); void load(); }}>

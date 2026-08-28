@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { InvoiceHistory } from '@/components/billing/InvoiceHistory';
 import { SubscriptionActions } from '@/components/billing/SubscriptionActions';
 import { SubscriptionPlans } from '@/components/billing/SubscriptionPlans';
 import { billingApi } from '@/services/billing';
@@ -83,6 +84,7 @@ export default function ProfessionalAssinatura() {
       ) : (
         <Card><p className="notice">Nenhum plano de profissional configurado ainda. Fale com o suporte da Julha.</p></Card>
       )}
+      <InvoiceHistory />
       <p className="muted compact legal-links">
         <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
         {' · '}
