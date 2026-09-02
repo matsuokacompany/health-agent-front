@@ -57,6 +57,20 @@ function shiftIsoDateByDays(value: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+// The scheduler's daily run has already fired for today by the time a
+// professional is registering a patient in practice, so "today" as the first
+// check-in date is never actually reachable — it silently behaves the same
+// as tomorrow. Using the professional's local calendar date (not UTC) keeps
+// this in sync with what the <input type="date"> picker itself shows them.
+function tomorrowIsoDate() {
+  const now = new Date();
+  now.setDate(now.getDate() + 1);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function toCreatePatientPayload(values: FormValues): CreateProfessionalPatientRequest {
   return Object.fromEntries(
     Object.entries(values)
@@ -77,6 +91,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   const [errorMessage, setErrorMessage] = useState('');
   const [anamnese, setAnamnese] = useState('');
   const [isSavingAnamnese, setIsSavingAnamnese] = useState(false);
+  const minStartDate = useRef(tomorrowIsoDate()).current;
   const mutation = useCreateProfessionalPatient({
     onError: (error) => {
       if (!(error instanceof ApiError)) return setErrorMessage('Não foi possível cadastrar o paciente. Tente novamente.');
@@ -120,6 +135,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     const normalizedAnamnese = normalizeUserText(anamnese);
     const anamneseValidationError = validateUserText(normalizedAnamnese, INPUT_LIMITS.anamnesis);
     if (anamneseValidationError) setErrorMessage(`Anamnese: ${anamneseValidationError}`);
+    if (values.plan_start_date && values.plan_start_date < minStartDate) next.plan_start_date = 'Escolha uma data a partir de amanhã — hoje o check-in das 8h já foi enviado.';
     if (values.plan_start_date && values.plan_end_date && values.plan_end_date < values.plan_start_date) next.plan_end_date = 'A data final não pode ser anterior à data inicial.';
     setErrors(next); if (!anamneseValidationError) setErrorMessage('');
     if (Object.keys(next).length || anamneseValidationError) return;
@@ -154,7 +170,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     <div className="new-patient-grid">
       <label htmlFor="plan_start_date">
         Data do 1º check-in por WhatsApp
-        <input id="plan_start_date" name="plan_start_date" type="date" value={values.plan_start_date} onChange={(event) => setValue('plan_start_date', event.target.value)} aria-invalid={Boolean(errors.plan_start_date)} aria-describedby={errors.plan_start_date ? 'plan-start-date-help plan-start-date-error' : 'plan-start-date-help'} />
+        <input id="plan_start_date" name="plan_start_date" type="date" min={minStartDate} value={values.plan_start_date} onChange={(event) => setValue('plan_start_date', event.target.value)} aria-invalid={Boolean(errors.plan_start_date)} aria-describedby={errors.plan_start_date ? 'plan-start-date-help plan-start-date-error' : 'plan-start-date-help'} />
         <small className="muted" id="plan-start-date-help">O paciente recebe a primeira mensagem por volta das 8h desta data.</small>
         {errors.plan_start_date ? <span className="field-error" id="plan-start-date-error" role="alert">{errors.plan_start_date}</span> : null}
       </label>
