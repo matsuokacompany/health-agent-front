@@ -181,13 +181,13 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      <section className="grid admin-metrics-grid">
+      <section className="grid admin-metrics-grid" data-tour="admin-users-metrics">
         <article className="card"><span className="metric-label">Total</span><strong className="metric">{users?.length ?? '—'}</strong></article>
         <article className="card"><span className="metric-label">Ativos</span><strong className="metric">{activeCount}</strong></article>
         <article className="card"><span className="metric-label">Inativos</span><strong className="metric">{inactiveCount}</strong></article>
       </section>
 
-      <Card className="admin-section-offset">
+      <Card className="admin-section-offset" data-tour="admin-users-filters">
         <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); void load(); }}>
           <label>
             Buscar por nome ou e-mail
@@ -219,7 +219,7 @@ export default function AdminUsersPage() {
       {!loading && error ? <ErrorState message={error} /> : null}
       {!loading && !error && users?.length === 0 ? <EmptyState description="Nenhum usuário encontrado com esses filtros." /> : null}
       {!loading && !error && users?.length ? (
-        <div className="table-wrap">
+        <div className="table-wrap" data-tour="admin-users-table">
           <table>
             <thead><tr><th>Usuário</th><th>Papéis</th><th>Status</th><th>Criado em</th><th /></tr></thead>
             <tbody>
