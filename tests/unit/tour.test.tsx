@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TourProvider } from '@/components/tour/TourProvider';
 import { TourButton } from '@/components/tour/TourButton';
@@ -95,6 +95,25 @@ describe('tour guiado', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     expect(screen.getByText('Seu plano')).toBeTruthy();
+  });
+
+  it('posiciona o tooltip ao lado (não em cima) de um alvo alto e estreito como a sidebar', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+    render(<Harness />);
+    const sidebar = screen.getByText('menu');
+    vi.spyOn(sidebar, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 800, left: 0, right: 280, width: 280, height: 800, x: 0, y: 0, toJSON() {} } as DOMRect);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    expect(screen.getByText('Menu de navegação')).toBeTruthy();
+
+    await waitFor(() => {
+      const tooltip = document.querySelector('.tour-tooltip') as HTMLElement;
+      // Anchored just to the right of the sidebar's own right edge (280px),
+      // not centered over it (which is what put the card on top of the
+      // sidebar before this fix).
+      expect(tooltip.style.left).toBe('296px');
+    });
   });
 
   it('não quebra quando localStorage não está disponível', () => {
