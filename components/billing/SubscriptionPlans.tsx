@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/design';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -40,10 +40,9 @@ const TIER_TAGLINE: Record<number, string> = {
   50: 'Para clínicas e equipes com alto volume de pacientes ativos',
 };
 
-/** Plan comparison + subscribe form, shared by the professional and patient
- * "Assinatura" pages. Every billing cycle is shown at once, side by side, so
- * choosing a plan means picking a card directly instead of switching a tab
- * or toggle first. */
+/** Plan comparison, shared by the professional and patient "Assinatura" pages.
+ * Every billing cycle is shown at once, side by side; each card's own button
+ * subscribes to (or switches to) that plan directly, no separate selection step. */
 export function SubscriptionPlans({
   subscription,
   plans,
@@ -55,8 +54,7 @@ export function SubscriptionPlans({
 }) {
   const { user, refreshMe } = useAuth();
   const [cpf, setCpf] = useState('');
-  const [selectedPlanId, setSelectedPlanId] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [subscribingPlanId, setSubscribingPlanId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [changingPlanId, setChangingPlanId] = useState<string | null>(null);
   const [changeError, setChangeError] = useState<string | null>(null);
@@ -64,10 +62,6 @@ export function SubscriptionPlans({
   const needsCpf = !user?.cpf;
   const isActive = subscription.status === 'ACTIVE';
   const isProfessional = useMemo(() => plans.some((plan) => (plan.max_patients ?? 0) > 0), [plans]);
-
-  useEffect(() => {
-    setSelectedPlanId((current) => current || subscription.plan_id || plans[0]?.id || '');
-  }, [plans, subscription.plan_id]);
 
   const tiers = useMemo(() => groupByTier(plans), [plans]);
 
@@ -87,24 +81,26 @@ export function SubscriptionPlans({
     return best;
   }, [tiers, isProfessional]);
 
-  async function handleSubscribe(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selectedPlanId) return;
+  async function handleSubscribeToPlan(planId: string) {
     setFormError(null);
-    setSaving(true);
+    if (needsCpf && !cpf.trim()) {
+      setFormError('Informe seu CPF para continuar.');
+      return;
+    }
+    setSubscribingPlanId(planId);
     try {
       if (needsCpf) {
         if (!user) throw new Error('Usuário não autenticado.');
         await usersApi.update(Number(user.id), { cpf });
         await refreshMe();
       }
-      const result = await billingApi.startCheckout(selectedPlanId);
+      const result = await billingApi.startCheckout(planId);
       if (result.checkout_url && typeof window !== 'undefined') window.open(result.checkout_url, '_blank', 'noopener,noreferrer');
       await onSubscribed();
     } catch (err) {
       setFormError(toFriendlyErrorMessage(err));
     } finally {
-      setSaving(false);
+      setSubscribingPlanId(null);
     }
   }
 
@@ -155,6 +151,14 @@ export function SubscriptionPlans({
       {changeNotice ? <p className="notice success">{changeNotice}</p> : null}
       {changeError ? <p className="notice danger">{changeError}</p> : null}
 
+      {!isActive && needsCpf ? (
+        <label className="pricing-cpf-field">
+          CPF (obrigatório para pagamento)
+          <input inputMode="numeric" name="cpf" onChange={(event) => setCpf(event.target.value)} placeholder="000.000.000-00" required value={cpf} />
+        </label>
+      ) : null}
+      {!isActive && formError ? <p className="notice danger">{formError}</p> : null}
+
       <div className="pricing-tiers">
         {tiers.map(([maxPatients, tierPlans]) => {
           const bestPlanId = bestValuePlanId(tierPlans);
@@ -163,20 +167,19 @@ export function SubscriptionPlans({
               {isProfessional ? (
                 <div className="pricing-tier-group-heading">
                   <h3>Até {maxPatients} pacientes</h3>
-                  {maxPatients === bestValueTier ? <span className="pricing-card-badge">Melhor custo-benefício</span> : null}
+                  {maxPatients === bestValueTier ? <span className="pricing-tier-badge">Melhor custo-benefício</span> : null}
                   {TIER_TAGLINE[maxPatients] ? <p className="muted compact">{TIER_TAGLINE[maxPatients]}</p> : null}
                 </div>
               ) : null}
               <div className="pricing-grid">
                 {tierPlans.map((plan) => {
                   const isCurrent = plan.id === subscription.plan_id;
-                  const isSelected = selectedPlanId === plan.id;
                   const percentOff = savingsPercent(tierPlans, plan);
                   const perPatient = perPatientMonthly(plan);
                   const isBestValue = plan.id === bestPlanId && tierPlans.length > 1;
                   return (
                     <article
-                      className={`pricing-card${isCurrent ? ' is-current' : ''}${isSelected && !isActive ? ' is-selected' : ''}${isBestValue ? ' is-highlighted' : ''}`}
+                      className={`pricing-card${isCurrent ? ' is-current' : ''}${isBestValue ? ' is-highlighted' : ''}`}
                       key={plan.id}
                     >
                       {isBestValue ? <span className="pricing-card-badge pricing-card-badge-highlight">Melhor oferta</span> : null}
@@ -192,10 +195,13 @@ export function SubscriptionPlans({
                       {!isActive ? (
                         <Button
                           type="button"
-                          variant={isSelected ? 'primary' : 'secondary'}
-                          onClick={() => setSelectedPlanId(plan.id)}
+                          variant={isBestValue ? 'primary' : 'secondary'}
+                          loading={subscribingPlanId === plan.id}
+                          loadingLabel="Abrindo pagamento..."
+                          disabled={subscribingPlanId !== null}
+                          onClick={() => handleSubscribeToPlan(plan.id)}
                         >
-                          {isSelected ? 'Selecionado ✓' : 'Selecionar este plano'}
+                          Assinar agora
                         </Button>
                       ) : isCurrent ? (
                         <p className="muted compact">Plano ativo no momento.</p>
@@ -219,19 +225,6 @@ export function SubscriptionPlans({
           );
         })}
       </div>
-
-      {!isActive ? (
-        <form className="login-form" onSubmit={handleSubscribe}>
-          {needsCpf ? (
-            <label>
-              CPF (obrigatório para pagamento)
-              <input inputMode="numeric" name="cpf" onChange={(event) => setCpf(event.target.value)} placeholder="000.000.000-00" required value={cpf} />
-            </label>
-          ) : null}
-          {formError ? <p className="notice danger">{formError}</p> : null}
-          <Button disabled={saving || !selectedPlanId} loading={saving} loadingLabel="Abrindo pagamento..." type="submit">Assinar agora</Button>
-        </form>
-      ) : null}
     </>
   );
 }
