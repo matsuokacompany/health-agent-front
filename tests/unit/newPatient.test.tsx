@@ -44,10 +44,22 @@ describe('cadastro profissional de pacientes', () => {
 
   it('impede uma data final anterior à inicial', () => {
     render(<NewPatientModal open onClose={vi.fn()} />); fillRequired();
-    fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: '2026-09-13' } });
+    fireEvent.change(screen.getByLabelText(/Data do 1º check-in/), { target: { value: '2026-09-13' } });
     fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-08-13' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
     expect(screen.getByText('A data final não pode ser anterior à data inicial.')).toBeTruthy();
+  });
+
+  it('impede escolher hoje (ou uma data passada) como 1º check-in, já que o envio das 8h já passou', () => {
+    render(<NewPatientModal open onClose={vi.fn()} />); fillRequired();
+    const today = new Date();
+    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const startInput = screen.getByLabelText(/Data do 1º check-in/) as HTMLInputElement;
+    expect(startInput.min > todayIso).toBe(true);
+    fireEvent.change(startInput, { target: { value: todayIso } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
+    expect(screen.getByText(/Escolha uma data a partir de amanhã/)).toBeTruthy();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 
   it('envia o payload sem campos opcionais vazios nem roles', async () => {
