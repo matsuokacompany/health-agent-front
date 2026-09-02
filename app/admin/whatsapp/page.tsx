@@ -1,9 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ErrorState, LoadingState } from '@/components/ui/states';
+import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { adminReportingApi, type AdminWhatsappStats } from '@/services/adminReporting';
+
+function LoadingWhatsappStats() {
+  return <div aria-busy="true" aria-label="Carregando estatísticas">
+    <section className="grid admin-metrics-grid">
+      {Array.from({ length: 3 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+    </section>
+    <section className="card admin-section-offset">
+      <SkeletonBlock className="sk-title" />
+      <div className="chart-lines">
+        {Array.from({ length: 6 }, (_, index) => <div className="chart-row" key={index}><SkeletonBlock /><SkeletonBlock /></div>)}
+      </div>
+    </section>
+  </div>;
+}
 
 function formatBrlFromCents(cents: number) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -54,7 +69,7 @@ export default function AdminWhatsappPage() {
         </label>
       </div>
 
-      {loading ? <LoadingState message="Carregando estatísticas..." /> : null}
+      {loading ? <LoadingWhatsappStats /> : null}
       {!loading && (error || !stats) ? <ErrorState message={error ?? 'Não foi possível carregar as estatísticas.'} /> : null}
 
       {!loading && stats ? (

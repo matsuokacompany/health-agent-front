@@ -4,9 +4,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { useProfessionalPatients } from '@/hooks/useProfessional';
-import { ErrorState, LoadingState, EmptyState } from '@/components/ui/states';
+import { ErrorState, EmptyState } from '@/components/ui/states';
 import { NewPatientModal } from '@/components/professional/NewPatientModal';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { TableSkeleton } from '@/components/ui/Loading';
 import { useAuth } from '@/components/auth/AuthProvider';
+
+function LoadingPatients() {
+  return <div aria-busy="true" aria-label="Carregando pacientes monitorados">
+    <section className="grid">
+      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>
+      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>
+      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock /></article>
+    </section>
+    <TableSkeleton rows={6} columns={5} />
+  </div>;
+}
 
 const DAILY_REPORT_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendente',
@@ -30,7 +43,7 @@ export default function Patients() {
   const activeCount = (data ?? []).filter((patient) => patient.active).length;
   const symptomCount = (data ?? []).reduce((sum, patient) => sum + (patient.symptom_reports_count ?? 0), 0);
 
-  if (isLoading) return <LoadingState message="Carregando pacientes monitorados..." />;
+  if (isLoading) return <LoadingPatients />;
   if (error) return <ErrorState message={error.message} />;
 
   return <>

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { RoleBadge } from '@/components/ui/badges';
 import { Button, Card } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
-import { ErrorState, LoadingState, EmptyState } from '@/components/ui/states';
+import { ErrorState, EmptyState } from '@/components/ui/states';
+import { TableSkeleton } from '@/components/ui/Loading';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { billingApi } from '@/services/billing';
@@ -214,7 +215,7 @@ export default function AdminUsersPage() {
         </form>
       </Card>
 
-      {loading ? <LoadingState message="Carregando usuários..." /> : null}
+      {loading ? <TableSkeleton rows={6} columns={5} /> : null}
       {!loading && error ? <ErrorState message={error} /> : null}
       {!loading && !error && users?.length === 0 ? <EmptyState description="Nenhum usuário encontrado com esses filtros." /> : null}
       {!loading && !error && users?.length ? (

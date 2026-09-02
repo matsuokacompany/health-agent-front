@@ -2,9 +2,26 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
-import { ErrorState, LoadingState } from '@/components/ui/states';
+import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { TableSkeleton } from '@/components/ui/Loading';
 import { adminReportingApi, type AdminBillingSummary, type AdminCostSummary } from '@/services/adminReporting';
+
+function LoadingCustos() {
+  return <div aria-busy="true" aria-label="Carregando custos">
+    <div className="page-header"><div className="route-skeleton-header"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-page-title" /><SkeletonBlock className="sk-page-copy" /></div></div>
+    <section className="grid admin-metrics-grid">
+      {Array.from({ length: 3 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+    </section>
+    <Card><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <section className="grid admin-metrics-grid admin-section-offset">
+      {Array.from({ length: 4 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+    </section>
+    <div className="admin-section-offset"><Card><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card></div>
+    <div className="admin-section-offset"><TableSkeleton rows={5} columns={5} /></div>
+  </div>;
+}
 
 function formatUsd(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
@@ -141,7 +158,7 @@ export default function AdminCostsPage() {
     }
   }
 
-  if (loading && !summary) return <LoadingState message="Carregando custos..." />;
+  if (loading && !summary) return <LoadingCustos />;
   if (error && !summary) return <ErrorState message={error} />;
   if (!summary) return null;
 
