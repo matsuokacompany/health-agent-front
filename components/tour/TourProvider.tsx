@@ -19,27 +19,32 @@ function computePosition(rect: DOMRect | null, size: { width: number; height: nu
   const vh = window.innerHeight;
   const maxTop = Math.max(VIEWPORT_MARGIN, vh - size.height - VIEWPORT_MARGIN);
   const maxLeft = Math.max(VIEWPORT_MARGIN, vw - size.width - VIEWPORT_MARGIN);
+  const centered = { top: clamp((vh - size.height) / 2, VIEWPORT_MARGIN, maxTop), left: clamp((vw - size.width) / 2, VIEWPORT_MARGIN, maxLeft) };
 
-  if (!rect) {
-    return { top: clamp((vh - size.height) / 2, VIEWPORT_MARGIN, maxTop), left: clamp((vw - size.width) / 2, VIEWPORT_MARGIN, maxLeft) };
-  }
+  if (!rect) return centered;
 
   const spaceBelow = vh - rect.bottom;
   const spaceAbove = rect.top;
-  let top: number;
-  if (spaceBelow >= size.height + GAP) {
-    top = rect.bottom + GAP;
-  } else if (spaceAbove >= size.height + GAP) {
-    top = rect.top - size.height - GAP;
-  } else {
-    // Neither side has room for the whole card (a tall/short viewport, or a
-    // target that takes up most of the screen) -- center it vertically
-    // rather than risk clipping it off either edge.
-    top = (vh - size.height) / 2;
-  }
+  const spaceRight = vw - rect.right;
+  const spaceLeft = rect.left;
 
-  const left = rect.left + rect.width / 2 - size.width / 2;
-  return { top: clamp(top, VIEWPORT_MARGIN, maxTop), left: clamp(left, VIEWPORT_MARGIN, maxLeft) };
+  // Below/above suits most targets (buttons, cards, table rows). A tall,
+  // narrow target like the sidebar rarely has room on either of those, so
+  // it falls through to beside it instead -- which is also a better fit
+  // there. Centered is the last resort, for whatever's left over.
+  if (spaceBelow >= size.height + GAP) {
+    return { top: clamp(rect.bottom + GAP, VIEWPORT_MARGIN, maxTop), left: clamp(rect.left + rect.width / 2 - size.width / 2, VIEWPORT_MARGIN, maxLeft) };
+  }
+  if (spaceAbove >= size.height + GAP) {
+    return { top: clamp(rect.top - size.height - GAP, VIEWPORT_MARGIN, maxTop), left: clamp(rect.left + rect.width / 2 - size.width / 2, VIEWPORT_MARGIN, maxLeft) };
+  }
+  if (spaceRight >= size.width + GAP) {
+    return { top: clamp(rect.top + rect.height / 2 - size.height / 2, VIEWPORT_MARGIN, maxTop), left: clamp(rect.right + GAP, VIEWPORT_MARGIN, maxLeft) };
+  }
+  if (spaceLeft >= size.width + GAP) {
+    return { top: clamp(rect.top + rect.height / 2 - size.height / 2, VIEWPORT_MARGIN, maxTop), left: clamp(rect.left - size.width - GAP, VIEWPORT_MARGIN, maxLeft) };
+  }
+  return centered;
 }
 
 function clamp(value: number, min: number, max: number) {
