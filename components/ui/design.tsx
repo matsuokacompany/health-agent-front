@@ -13,8 +13,8 @@ export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: 
   return <header className="page-header"><div><span className="eyebrow">{eyebrow ?? 'Julha Saúde'}</span><h1>{title}</h1>{description ? <p className="muted">{description}</p> : null}</div>{action ? <div className="page-actions">{action}</div> : null}</header>;
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <article className={`card ${className}`.trim()}>{children}</article>;
+export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & React.ComponentPropsWithoutRef<'article'>) {
+  return <article className={`card ${className}`.trim()} {...rest}>{children}</article>;
 }
 
 export function MetricCard({ label, value, description }: { label: string; value: ReactNode; description?: string }) {

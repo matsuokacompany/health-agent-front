@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ErrorState, LoadingState } from '@/components/ui/states';
+import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { adminReportingApi, type AdminCostSummary, type AdminUser, type AdminWhatsappStats } from '@/services/adminReporting';
 
 function formatUsd(value: number) {
@@ -65,29 +66,31 @@ export default function Page() {
         </div>
       </div>
 
-      {loading ? <LoadingState message="Carregando indicadores..." /> : null}
-      {!loading && error ? <ErrorState message={error} /> : null}
+      {error ? <ErrorState message={error} /> : null}
 
-      {!loading && !error ? (
-        <>
-          <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos">
-            <article className="card"><span className="metric-label">Usuários ativos</span><strong className="metric">{activeUsers}</strong><p className="muted compact">{users?.length ?? 0} no total</p></article>
-            <article className="card"><span className="metric-label">Relatórios de IA (mês)</span><strong className="metric">{costs?.ai_report_count ?? 0}</strong><p className="muted compact">{costs ? formatUsd(costs.ai_report_cost_usd) : '—'}</p></article>
-            <article className="card"><span className="metric-label">Mensagens WhatsApp (30 dias)</span><strong className="metric">{whatsapp?.total_sent ?? 0}</strong><p className="muted compact">{whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'}</p></article>
-            <article className="card"><span className="metric-label">Custos conhecidos (mês)</span><strong className="metric">{formatBrlFromCents(totalKnownCostsBrl)}</strong><p className="muted compact">WhatsApp + lançamentos manuais</p></article>
-          </section>
-
-          <section className="grid" aria-label="Atalhos administrativos">
-            {shortcuts.map((shortcut) => (
-              <article className="card stack" key={shortcut.href}>
-                <h2>{shortcut.title}</h2>
-                <p className="muted">{shortcut.description}</p>
-                <Link className="button secondary" href={shortcut.href as never}>{shortcut.cta}</Link>
-              </article>
-            ))}
-          </section>
-        </>
+      {loading ? (
+        <section className="grid admin-metrics-grid" aria-label="Carregando indicadores administrativos" aria-busy="true">
+          {Array.from({ length: 4 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+        </section>
+      ) : !error ? (
+        <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos" data-tour="admin-metrics">
+          <article className="card"><span className="metric-label">Usuários ativos</span><strong className="metric">{activeUsers}</strong><p className="muted compact">{users?.length ?? 0} no total</p></article>
+          <article className="card"><span className="metric-label">Relatórios de IA (mês)</span><strong className="metric">{costs?.ai_report_count ?? 0}</strong><p className="muted compact">{costs ? formatUsd(costs.ai_report_cost_usd) : '—'}</p></article>
+          <article className="card"><span className="metric-label">Mensagens WhatsApp (30 dias)</span><strong className="metric">{whatsapp?.total_sent ?? 0}</strong><p className="muted compact">{whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'}</p></article>
+          <article className="card"><span className="metric-label">Custos conhecidos (mês)</span><strong className="metric">{formatBrlFromCents(totalKnownCostsBrl)}</strong><p className="muted compact">WhatsApp + lançamentos manuais</p></article>
+        </section>
       ) : null}
+
+      {/* Static shortcuts — not tied to the fetched indicators above, so they render immediately instead of waiting behind that loading state. */}
+      <section className="grid" aria-label="Atalhos administrativos" data-tour="admin-shortcuts">
+        {shortcuts.map((shortcut) => (
+          <article className="card stack" key={shortcut.href}>
+            <h2>{shortcut.title}</h2>
+            <p className="muted">{shortcut.description}</p>
+            <Link className="button secondary" href={shortcut.href as never}>{shortcut.cta}</Link>
+          </article>
+        ))}
+      </section>
     </>
   );
 }

@@ -53,7 +53,7 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
         <span className="sidebar-label">{title}</span>
       </div>
     </div>
-    <nav className="menu" aria-label={t('nav.mainMenu')}>
+    <nav className="menu" aria-label={t('nav.mainMenu')} data-tour="sidebar-nav">
       {links.map(([href,label]) => <Link className={pathname === href ? 'is-current' : ''} key={href} href={href as never} onClick={onNavigate} title={label}><span aria-hidden="true">{icons[label] ?? '•'}</span><span className="sidebar-label">{label}</span></Link>)}
     </nav>
     <div className="sidebar-actions">
