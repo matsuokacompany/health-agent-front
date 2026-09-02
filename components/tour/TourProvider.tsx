@@ -16,16 +16,6 @@ function roleFor(auth: AuthContextValue): TourRole | null {
   return null;
 }
 
-const TOOLTIP_WIDTH = 320;
-
-function tooltipStyle(rect: DOMRect | null): React.CSSProperties {
-  if (!rect || typeof window === 'undefined') return {};
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const placeBelow = spaceBelow > 220 || spaceBelow > rect.top;
-  const left = Math.min(Math.max(rect.left, 16), window.innerWidth - TOOLTIP_WIDTH - 16);
-  return placeBelow ? { top: rect.bottom + 16, left } : { bottom: window.innerHeight - rect.top + 16, left };
-}
-
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const pathname = usePathname();
@@ -126,10 +116,12 @@ function TourOverlay({ step, rect, index, total, onNext, onBack, onSkip }: { ste
   return <div className="tour-overlay" role="dialog" aria-modal="true" aria-label={step.title}>
     <div className="tour-click-guard" />
     <div className="tour-spotlight" style={{ top: spotlightRect.top - 8, left: spotlightRect.left - 8, width: spotlightRect.width + 16, height: spotlightRect.height + 16 }} />
-    <div className={`tour-tooltip ${rect ? '' : 'is-centered'}`.trim()} style={tooltipStyle(rect)}>
-      <p className="tour-progress">{index + 1} de {total}</p>
-      <h3>{step.title}</h3>
-      <p>{step.body}</p>
+    <div className={`tour-tooltip ${rect ? '' : 'is-centered'}`.trim()}>
+      <div className="tour-tooltip-body">
+        <p className="tour-progress">{index + 1} de {total}</p>
+        <h3>{step.title}</h3>
+        <p>{step.body}</p>
+      </div>
       <div className="tour-actions">
         <button className="button ghost" type="button" onClick={onSkip}>Pular tour</button>
         <div className="tour-actions-nav">
