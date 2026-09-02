@@ -176,7 +176,7 @@ export default function AdminCostsPage() {
       </div>
 
       {billingSummary ? (
-        <section className="grid admin-metrics-grid">
+        <section className="grid admin-metrics-grid" data-tour="custos-billing">
           <article className="card">
             <span className="metric-label">MRR</span>
             <strong className="metric">{formatBrlFromCents(billingSummary.mrr_cents)}</strong>
@@ -209,7 +209,7 @@ export default function AdminCostsPage() {
         </form>
       </Card>
 
-      <section className="grid admin-metrics-grid admin-section-offset">
+      <section className="grid admin-metrics-grid admin-section-offset" data-tour="custos-metrics">
         <article className="card">
           <span className="metric-label">Total em reais (período)</span>
           <strong className="metric">{formatBrlFromCents(totalBrlCents)}</strong>
@@ -236,9 +236,8 @@ export default function AdminCostsPage() {
         </article>
       </section>
 
-      <div className="admin-section-offset">
-        <NewCostEntryForm onCreated={load} />
-      </div>
+      <div className="admin-section-offset" data-tour="custos-manual">
+      <NewCostEntryForm onCreated={load} />
 
       <div className="table-wrap admin-section-offset">
         <table>
@@ -261,6 +260,7 @@ export default function AdminCostsPage() {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
 
       {error ? <p className="notice danger admin-section-offset">{error}</p> : null}

@@ -56,7 +56,7 @@ export default function ProfessionalAssinatura() {
 
   return (
     <section className="pricing-page" aria-label="Assinatura">
-      <Card>
+      <Card data-tour="assinatura-status">
         <span className="eyebrow">Assinatura</span>
         <h1>{subscriptionStatusLabel[subscription.status]}</h1>
         <p className="muted">
@@ -78,13 +78,13 @@ export default function ProfessionalAssinatura() {
       </Card>
 
       {plans.length ? (
-        <Card className="pricing-card-shell">
+        <Card className="pricing-card-shell" data-tour="assinatura-plans">
           <SubscriptionPlans subscription={subscription} plans={plans} onSubscribed={() => void load()} />
         </Card>
       ) : (
         <Card><p className="notice">Nenhum plano de profissional configurado ainda. Fale com o suporte da Julha.</p></Card>
       )}
-      <InvoiceHistory />
+      <div data-tour="assinatura-invoices"><InvoiceHistory /></div>
       <p className="muted compact legal-links">
         <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
         {' · '}

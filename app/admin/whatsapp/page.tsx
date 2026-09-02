@@ -74,7 +74,7 @@ export default function AdminWhatsappPage() {
 
       {!loading && stats ? (
         <>
-          <section className="grid admin-metrics-grid">
+          <section className="grid admin-metrics-grid" data-tour="whatsapp-metrics">
             <article className="card">
               <span className="metric-label">Mensagens enviadas</span>
               <strong className="metric">{stats.total_sent}</strong>
@@ -96,7 +96,7 @@ export default function AdminWhatsappPage() {
             </article>
           </section>
 
-          <section className="card admin-section-offset">
+          <section className="card admin-section-offset" data-tour="whatsapp-chart">
             <h2>Envios por dia</h2>
             <div className="chart-lines">
               {stats.daily.map((point) => (

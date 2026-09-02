@@ -1,33 +1,60 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAuth, type AuthContextValue } from '@/components/auth/AuthProvider';
-import { TOUR_HOME_FOR_ROLE, TOUR_STEPS, tourStorageKey, type TourRole, type TourStep } from '@/lib/tour';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { TOUR_STEPS, tourStorageKey, type TourStep } from '@/lib/tour';
 
 type TourContextValue = { startTour(): void; available: boolean };
 const TourContext = createContext<TourContextValue>({ startTour() {}, available: false });
 export const useTour = () => useContext(TourContext);
 
-function roleFor(auth: AuthContextValue): TourRole | null {
-  if (auth.isSuperAdmin) return 'admin';
-  if (auth.isProfessional) return 'professional';
-  if (auth.isPatient) return 'patient';
-  return null;
+const VIEWPORT_MARGIN = 16;
+const GAP = 16;
+
+type TooltipPosition = { top: number; left: number };
+
+function computePosition(rect: DOMRect | null, size: { width: number; height: number }): TooltipPosition {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const maxTop = Math.max(VIEWPORT_MARGIN, vh - size.height - VIEWPORT_MARGIN);
+  const maxLeft = Math.max(VIEWPORT_MARGIN, vw - size.width - VIEWPORT_MARGIN);
+
+  if (!rect) {
+    return { top: clamp((vh - size.height) / 2, VIEWPORT_MARGIN, maxTop), left: clamp((vw - size.width) / 2, VIEWPORT_MARGIN, maxLeft) };
+  }
+
+  const spaceBelow = vh - rect.bottom;
+  const spaceAbove = rect.top;
+  let top: number;
+  if (spaceBelow >= size.height + GAP) {
+    top = rect.bottom + GAP;
+  } else if (spaceAbove >= size.height + GAP) {
+    top = rect.top - size.height - GAP;
+  } else {
+    // Neither side has room for the whole card (a tall/short viewport, or a
+    // target that takes up most of the screen) -- center it vertically
+    // rather than risk clipping it off either edge.
+    top = (vh - size.height) / 2;
+  }
+
+  const left = rect.left + rect.width / 2 - size.width / 2;
+  return { top: clamp(top, VIEWPORT_MARGIN, maxTop), left: clamp(left, VIEWPORT_MARGIN, maxLeft) };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
-  const role = roleFor(auth);
-  const steps = useMemo(() => (role ? TOUR_STEPS[role] : []), [role]);
+  const steps = useMemo(() => TOUR_STEPS[pathname] ?? [], [pathname]);
 
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
-  const autoStartedRef = useRef(false);
-  const pendingStartRef = useRef(false);
+  const autoStartedPathRef = useRef<string | null>(null);
 
   const step: TourStep | undefined = steps[stepIndex];
 
@@ -35,6 +62,10 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     const target = step?.target ? document.querySelector(step.target) : null;
     setRect(target ? target.getBoundingClientRect() : null);
   }, [step]);
+
+  // A tour never survives a page change -- its steps target elements that
+  // only exist on the page it was written for.
+  useEffect(() => { setOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (!open || !step) return;
@@ -50,43 +81,26 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     return () => { window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
   }, [open, measure]);
 
-  // Resume a tour requested from a page other than the role's home once
-  // navigation there lands -- steps target elements that only exist on that
-  // page (the professional patients table, the patient's symptom chart...).
   useEffect(() => {
-    if (!pendingStartRef.current || !role) return;
-    if (pathname === TOUR_HOME_FOR_ROLE[role]) {
-      pendingStartRef.current = false;
-      setStepIndex(0);
-      setOpen(true);
-    }
-  }, [pathname, role]);
-
-  useEffect(() => {
-    if (!role || !auth.user || autoStartedRef.current || pathname !== TOUR_HOME_FOR_ROLE[role]) return;
-    autoStartedRef.current = true;
+    if (!auth.user || !steps.length || autoStartedPathRef.current === pathname) return;
+    autoStartedPathRef.current = pathname;
     try {
-      if (!window.localStorage.getItem(tourStorageKey(role, auth.user.id))) {
+      if (!window.localStorage.getItem(tourStorageKey(pathname, auth.user.id))) {
         setStepIndex(0);
         setOpen(true);
       }
     } catch {
       // localStorage unavailable (private mode, etc.) -- skip auto-start, the help button still works
     }
-  }, [role, auth.user, pathname]);
+  }, [pathname, auth.user, steps.length]);
 
   function markSeen() {
-    if (!role || !auth.user) return;
-    try { window.localStorage.setItem(tourStorageKey(role, auth.user.id), '1'); } catch { /* best-effort */ }
+    if (!auth.user) return;
+    try { window.localStorage.setItem(tourStorageKey(pathname, auth.user.id), '1'); } catch { /* best-effort */ }
   }
 
   function startTour() {
-    if (!role || !steps.length) return;
-    if (pathname !== TOUR_HOME_FOR_ROLE[role]) {
-      pendingStartRef.current = true;
-      router.push(TOUR_HOME_FOR_ROLE[role] as never);
-      return;
-    }
+    if (!steps.length) return;
     setStepIndex(0);
     setOpen(true);
   }
@@ -103,6 +117,25 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 }
 
 function TourOverlay({ step, rect, index, total, onNext, onBack, onSkip }: { step: TourStep; rect: DOMRect | null; index: number; total: number; onNext(): void; onBack(): void; onSkip(): void }) {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<TooltipPosition | null>(null);
+
+  const reposition = useCallback(() => {
+    const el = tooltipRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    setPosition(computePosition(rect, { width, height }));
+  }, [rect]);
+
+  // Runs before paint, so the card never flashes at a stale spot when the
+  // step (and therefore its own size) changes.
+  useLayoutEffect(reposition, [reposition, step]);
+
+  useEffect(() => {
+    window.addEventListener('resize', reposition);
+    return () => window.removeEventListener('resize', reposition);
+  }, [reposition]);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) { if (event.key === 'Escape') onSkip(); }
     window.addEventListener('keydown', onKeyDown);
@@ -116,7 +149,7 @@ function TourOverlay({ step, rect, index, total, onNext, onBack, onSkip }: { ste
   return <div className="tour-overlay" role="dialog" aria-modal="true" aria-label={step.title}>
     <div className="tour-click-guard" />
     <div className="tour-spotlight" style={{ top: spotlightRect.top - 8, left: spotlightRect.left - 8, width: spotlightRect.width + 16, height: spotlightRect.height + 16 }} />
-    <div className={`tour-tooltip ${rect ? '' : 'is-centered'}`.trim()}>
+    <div ref={tooltipRef} className="tour-tooltip" style={position ? { top: position.top, left: position.left } : { visibility: 'hidden' }}>
       <div className="tour-tooltip-body">
         <p className="tour-progress">{index + 1} de {total}</p>
         <h3>{step.title}</h3>

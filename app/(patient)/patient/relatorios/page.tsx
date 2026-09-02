@@ -53,7 +53,7 @@ export default function PatientRelatorios() {
         <EmptyState title="Nenhum resumo gerado ainda" description='Gere seu primeiro resumo por IA na página "Automonitoramento".' />
       ) : null}
       {!loading && !error && items?.length ? (
-        <div className="stack">
+        <div className="stack" data-tour="relatorios-list">
           {items.map((item) => (
             <Link key={item.id} href={`/patient/relatorios/${item.id}` as never} className="card report-history-item">
               <div>
