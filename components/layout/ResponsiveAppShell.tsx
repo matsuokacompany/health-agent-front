@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './Sidebar';
+import { TourProvider } from '@/components/tour/TourProvider';
 
 type ResponsiveAppShellProps = {
   children: React.ReactNode;
@@ -49,24 +50,26 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
   }, [isSidebarOpen]);
 
   return (
-    <main className={`app-shell responsive-app-shell ${className}`.trim()}>
-      <button className={`drawer-backdrop ${isSidebarOpen ? 'is-visible' : ''}`} type="button" aria-label="Fechar menu de navegação" onClick={() => setIsSidebarOpen(false)} />
-      <AppSidebar
-        title={sidebarTitle}
-        marker={marker}
-        links={links}
-        profileHref={profileHref}
-        footerHref={footerHref}
-        footerLabel={footerLabel}
-        mobileOpen={isSidebarOpen}
-        onNavigate={() => setIsSidebarOpen(false)}
-      />
-      <section className="content-shell responsive-content-shell">
-        <AppHeader title={title} onMenuClick={() => setIsSidebarOpen(true)} />
-        {notice}
-        <div className="page-outlet responsive-page-outlet">{children}</div>
-        {footer}
-      </section>
-    </main>
+    <TourProvider>
+      <main className={`app-shell responsive-app-shell ${className}`.trim()}>
+        <button className={`drawer-backdrop ${isSidebarOpen ? 'is-visible' : ''}`} type="button" aria-label="Fechar menu de navegação" onClick={() => setIsSidebarOpen(false)} />
+        <AppSidebar
+          title={sidebarTitle}
+          marker={marker}
+          links={links}
+          profileHref={profileHref}
+          footerHref={footerHref}
+          footerLabel={footerLabel}
+          mobileOpen={isSidebarOpen}
+          onNavigate={() => setIsSidebarOpen(false)}
+        />
+        <section className="content-shell responsive-content-shell">
+          <AppHeader title={title} onMenuClick={() => setIsSidebarOpen(true)} />
+          {notice}
+          <div className="page-outlet responsive-page-outlet">{children}</div>
+          {footer}
+        </section>
+      </main>
+    </TourProvider>
   );
 }

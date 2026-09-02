@@ -73,7 +73,7 @@ export default function Page() {
           {Array.from({ length: 4 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
         </section>
       ) : !error ? (
-        <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos">
+        <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos" data-tour="admin-metrics">
           <article className="card"><span className="metric-label">Usuários ativos</span><strong className="metric">{activeUsers}</strong><p className="muted compact">{users?.length ?? 0} no total</p></article>
           <article className="card"><span className="metric-label">Relatórios de IA (mês)</span><strong className="metric">{costs?.ai_report_count ?? 0}</strong><p className="muted compact">{costs ? formatUsd(costs.ai_report_cost_usd) : '—'}</p></article>
           <article className="card"><span className="metric-label">Mensagens WhatsApp (30 dias)</span><strong className="metric">{whatsapp?.total_sent ?? 0}</strong><p className="muted compact">{whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'}</p></article>
@@ -82,7 +82,7 @@ export default function Page() {
       ) : null}
 
       {/* Static shortcuts — not tied to the fetched indicators above, so they render immediately instead of waiting behind that loading state. */}
-      <section className="grid" aria-label="Atalhos administrativos">
+      <section className="grid" aria-label="Atalhos administrativos" data-tour="admin-shortcuts">
         {shortcuts.map((shortcut) => (
           <article className="card stack" key={shortcut.href}>
             <h2>{shortcut.title}</h2>

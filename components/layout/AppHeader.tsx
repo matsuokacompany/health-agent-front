@@ -6,11 +6,12 @@ import { useI18n } from '@/components/i18n/I18nProvider';
 import { LanguageSwitcher } from './switchers/LanguageSwitcher';
 import { NotificationBell } from './switchers/NotificationBell';
 import { ThemeSwitcher } from './switchers/ThemeSwitcher';
+import { TourButton } from '@/components/tour/TourButton';
 
 function getInitialIsDark() { if (typeof document === 'undefined') return false; return document.documentElement.dataset.theme === 'dark'; }
 type HeaderProps = { title?: string; onMenuClick?: () => void };
 type SharedHeaderProps = HeaderProps & { isDark: boolean; toggleTheme: () => void };
-function HeaderControls({ isDark, toggleTheme }: { isDark: boolean; toggleTheme: () => void }) { return <div className="header-icon-actions"><NotificationBell /><ThemeSwitcher isDark={isDark} onToggle={toggleTheme} /><LanguageSwitcher /></div>; }
+function HeaderControls({ isDark, toggleTheme }: { isDark: boolean; toggleTheme: () => void }) { return <div className="header-icon-actions"><TourButton /><NotificationBell /><ThemeSwitcher isDark={isDark} onToggle={toggleTheme} /><LanguageSwitcher /></div>; }
 
 function PlatformSearch({ mobile = false }: { mobile?: boolean }) {
   const { t } = useI18n(); const pathname = usePathname(); const router = useRouter(); const [query, setQuery] = useState('');
