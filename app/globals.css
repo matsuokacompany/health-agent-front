@@ -28,6 +28,11 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
 .modal-card,.notification-menu,.readonly-clinical-text,.table-wrap,.professional-patient-tabs{scrollbar-width:thin;scrollbar-color:var(--brand) var(--surface-soft)}
 .modal-card::-webkit-scrollbar,.notification-menu::-webkit-scrollbar,.readonly-clinical-text::-webkit-scrollbar,.table-wrap::-webkit-scrollbar,.professional-patient-tabs::-webkit-scrollbar{width:10px;height:10px}
 .modal-card::-webkit-scrollbar-track,.notification-menu::-webkit-scrollbar-track,.readonly-clinical-text::-webkit-scrollbar-track,.table-wrap::-webkit-scrollbar-track,.professional-patient-tabs::-webkit-scrollbar-track{margin:12px;border-radius:999px;background:var(--surface-soft)}
+/* The shared 12px inset above clears the corner curve everywhere else (they
+   all use --radius, 12px) but not on the modal card, which is rounded with
+   the bigger --radius-lg -- there the track's straight top/bottom edge still
+   cut into the curve, reading as a sharp corner against the rounded card. */
+.modal-card::-webkit-scrollbar-track{margin-top:var(--radius-lg);margin-bottom:var(--radius-lg)}
 .modal-card::-webkit-scrollbar-thumb,.notification-menu::-webkit-scrollbar-thumb,.readonly-clinical-text::-webkit-scrollbar-thumb,.table-wrap::-webkit-scrollbar-thumb,.professional-patient-tabs::-webkit-scrollbar-thumb{border:2px solid var(--surface-soft);border-radius:999px;background:var(--brand)}
 .modal-card::-webkit-scrollbar-thumb:hover,.notification-menu::-webkit-scrollbar-thumb:hover,.readonly-clinical-text::-webkit-scrollbar-thumb:hover,.table-wrap::-webkit-scrollbar-thumb:hover,.professional-patient-tabs::-webkit-scrollbar-thumb:hover{background:var(--brand-dark)}html,body{overflow-x:hidden}.page-outlet,.responsive-page-outlet,.content-shell,.responsive-content-shell{min-width:0}.page-outlet > *,.responsive-page-outlet > *{max-width:100%}.timeline-row,.patient-checkin-row,.list-row{min-width:0}.timeline-bars,.patient-checkin-row > *,.list-row > *{min-width:0}.chart-legend,.header-actions,.page-actions{min-width:0}.calendar-card,.card{overflow-wrap:anywhere}.card .table-wrap{margin-inline:-1px}
 @media (min-width:992px){.responsive-content-shell{grid-column:2}}
