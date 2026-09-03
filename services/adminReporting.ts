@@ -24,6 +24,7 @@ export type AdminCostEntry = {
   category?: string | null;
   amount_cents: number;
   incurred_on: string;
+  is_recurring: boolean;
   created_by_user_id: number;
   created_at: string;
 };
@@ -33,6 +34,7 @@ export type AdminCostEntryPayload = {
   category?: string;
   amount_cents: number;
   incurred_on: string;
+  is_recurring?: boolean;
 };
 
 export type AdminCostSummary = {
