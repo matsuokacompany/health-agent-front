@@ -1,3 +1,5 @@
+import { ApiError } from '@/infrastructure/http/ApiClient';
+
 function errorDetailCode(error: unknown): string | undefined {
   const payload = (error as { payload?: unknown } | null)?.payload;
   const detail = (payload as { detail?: unknown } | null)?.detail;
@@ -10,15 +12,17 @@ export function toFriendlyErrorMessage(error: unknown) {
     return 'Você atingiu o limite de pacientes ativos do seu plano atual. Faça upgrade em "Assinatura" para vincular mais pacientes.';
   }
 
+  // ApiClient already picks a specific, safe, Portuguese message for every
+  // HTTP failure it throws (wrong login vs. expired session, a duplicate
+  // signup, forbidden, not found, ...) -- trust it instead of re-deriving
+  // intent from the raw text below, which used to overwrite those with a
+  // generic fallback because none of its substring checks matched them.
+  if (error instanceof ApiError) return error.message;
+
   const raw = error instanceof Error ? error.message : String(error ?? '');
   const message = raw.toLowerCase();
 
-  if (message.includes('network') || message.includes('failed to fetch')) return 'Não foi possível conectar ao servidor.';
-  if (message.includes('401') || message.includes('unauthorized') || message.includes('sessão expirada')) return 'Sua sessão expirou. Faça login novamente.';
-  if (message.includes('403') || message.includes('forbidden') || message.includes('permissão')) return 'Você não tem permissão para realizar esta ação.';
-  if (message.includes('404') || message.includes('not found') || message.includes('não foi encontrado')) return 'O recurso solicitado não foi encontrado.';
-  if (message.includes('500') || message.includes('internal server') || message.includes('fastapi')) return 'Ocorreu um erro inesperado.';
-  if (message.includes('supabase') || message.includes('token') || message.includes('bearer') || message.includes('stack')) return 'Não foi possível concluir a operação.';
+  if (message.includes('network') || message.includes('failed to fetch')) return 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
 
   return 'Não foi possível concluir a operação. Tente novamente.';
 }
