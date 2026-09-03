@@ -179,7 +179,7 @@ function SubscriptionCard({ subscription, plans, onSubscriptionChanged }: { subs
 }
 
 function LoadingAutomonitoramento() {
-  return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando automonitoramento">
+  return <section className="stack" aria-busy="true" aria-label="Carregando automonitoramento">
     <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
     <section className="patient-dashboard-summary-grid">
       {Array.from({ length: 4 }, (_, index) => <Card key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></Card>)}
@@ -248,7 +248,7 @@ export default function Automonitoramento() {
   if (loading) return <LoadingAutomonitoramento />;
   if (loadError) return <Card><p className="notice danger">{loadError}</p><Button onClick={() => void load()}>Tentar novamente</Button></Card>;
 
-  return <section className="patient-dashboard-v2" aria-label="Automonitoramento">
+  return <section className="stack" aria-label="Automonitoramento">
     {subscription ? <TrialBanner subscription={subscription} /> : null}
     {subscription ? <SubscriptionCard subscription={subscription} plans={plans} onSubscriptionChanged={() => void load()} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
