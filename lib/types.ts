@@ -111,7 +111,15 @@ export type Invoice = {
   description?: string | null;
 };
 
-export type NotificationKind = 'PAYMENT_OVERDUE' | 'TRIAL_ENDING' | 'ACCESS_ENDING' | 'PLAN_CHANGED';
+export type NotificationKind =
+  | 'PAYMENT_OVERDUE'
+  | 'TRIAL_ENDING'
+  | 'ACCESS_ENDING'
+  | 'PLAN_CHANGED'
+  | 'AI_REPORT_READY'
+  | 'SYMPTOM_REPORTED'
+  | 'PATIENT_ASSIGNED'
+  | 'CHECKIN_PENDING';
 export type AppNotification = {
   id: number;
   kind: NotificationKind;
