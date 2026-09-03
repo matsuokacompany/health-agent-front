@@ -57,6 +57,7 @@ function NewCostEntryForm({ onCreated }: { onCreated(): void }) {
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [incurredOn, setIncurredOn] = useState(isoToday());
+  const [isRecurring, setIsRecurring] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,11 +76,13 @@ function NewCostEntryForm({ onCreated }: { onCreated(): void }) {
         category: category.trim() || undefined,
         amount_cents: amountCents,
         incurred_on: incurredOn,
+        is_recurring: isRecurring,
       });
       setDescription('');
       setCategory('');
       setAmount('');
       setIncurredOn(isoToday());
+      setIsRecurring(false);
       onCreated();
     } catch (err) {
       setError(toFriendlyErrorMessage(err));
@@ -109,6 +112,10 @@ function NewCostEntryForm({ onCreated }: { onCreated(): void }) {
         <label>
           Data
           <input value={incurredOn} onChange={(event) => setIncurredOn(event.target.value)} type="date" required />
+        </label>
+        <label className="checkbox-field">
+          <input checked={isRecurring} onChange={(event) => setIsRecurring(event.target.checked)} type="checkbox" />
+          <span>Custo fixo mensal (ex.: recarga de chip) — conta automaticamente todo mês, sem precisar relançar</span>
         </label>
         <Button disabled={saving} loading={saving} loadingLabel="Salvando..." type="submit">Adicionar</Button>
       </form>
@@ -248,9 +255,9 @@ export default function AdminCostsPage() {
             ) : summary.manual_cost_entries.map((entry) => (
               <tr key={entry.id}>
                 <td>{formatDate(entry.incurred_on)}</td>
-                <td>{entry.description}</td>
+                <td>{entry.description}{entry.is_recurring ? <span className="badge admin-cost-recurring-badge" title="Conta automaticamente todo mês desde esta data"> Fixo mensal</span> : null}</td>
                 <td>{entry.category ?? '—'}</td>
-                <td>{formatBrlFromCents(entry.amount_cents)}</td>
+                <td>{formatBrlFromCents(entry.amount_cents)}{entry.is_recurring ? '/mês' : ''}</td>
                 <td>
                   <button className="button secondary" disabled={deletingId === entry.id} onClick={() => void handleDelete(entry.id)} type="button">
                     {deletingId === entry.id ? 'Removendo...' : 'Remover'}

@@ -70,6 +70,7 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
     { target: '[data-tour="custos-manual"]', title: 'Lançamentos manuais', body: 'Adicione gastos que este painel não calcula sozinho (contratos, ferramentas, suporte) e veja o histórico na tabela abaixo. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],
   '/admin/whatsapp': [
+    { target: '[data-tour="whatsapp-health"]', title: 'Sua aplicação está no ar?', body: 'Veja de relance a última mensagem enviada e recebida, falhas recentes e planos ativos — os sinais mais diretos de que o bot parou de funcionar.' },
     { target: '[data-tour="whatsapp-metrics"]', title: 'Indicadores do período', body: 'Mensagens enviadas, custo estimado e média diária — ajuste o período no seletor acima.' },
     { target: '[data-tour="whatsapp-chart"]', title: 'Envios por dia', body: 'Acompanhe o volume de check-ins enviados dia a dia. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],

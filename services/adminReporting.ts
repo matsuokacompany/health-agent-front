@@ -24,6 +24,7 @@ export type AdminCostEntry = {
   category?: string | null;
   amount_cents: number;
   incurred_on: string;
+  is_recurring: boolean;
   created_by_user_id: number;
   created_at: string;
 };
@@ -33,6 +34,7 @@ export type AdminCostEntryPayload = {
   category?: string;
   amount_cents: number;
   incurred_on: string;
+  is_recurring?: boolean;
 };
 
 export type AdminCostSummary = {
@@ -68,6 +70,15 @@ export type AdminBillingSummary = {
   churn_rate: number;
 };
 
+export type AdminSystemHealth = {
+  checked_at: string;
+  last_inbound_message_at: string | null;
+  last_outbound_message_at: string | null;
+  processed_messages_last_24h: number;
+  failed_messages_last_24h: number;
+  active_monitoring_plans: number;
+};
+
 function withQuery(path: string, params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== '') search.set(key, String(value)); });
@@ -80,6 +91,7 @@ export const adminReportingApi = {
   getCosts: (params: { start_date?: string; end_date?: string } = {}) => api<AdminCostSummary>(withQuery('/api/admin/costs', params)),
   getBillingSummary: () => api<AdminBillingSummary>('/api/admin/billing/summary'),
   getWhatsappStats: (days = 30) => api<AdminWhatsappStats>(withQuery('/api/admin/whatsapp/stats', { days })),
+  getSystemHealth: () => api<AdminSystemHealth>('/api/admin/system/health'),
   listCostEntries: (params: { start_date?: string; end_date?: string } = {}) =>
     api<AdminCostEntry[]>(withQuery('/api/admin/costs/entries', params)),
   createCostEntry: (payload: AdminCostEntryPayload) =>

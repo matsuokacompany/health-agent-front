@@ -20,3 +20,7 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
 export function MetricCard({ label, value, description }: { label: string; value: ReactNode; description?: string }) {
   return <Card><span className="metric-label">{label}</span><div className="metric">{value}</div>{description ? <p className="muted compact">{description}</p> : null}</Card>;
 }
+
+export function ReadOnlyField({ label, value }: { label: string; value?: string | number | null }) {
+  return <label>{label}<input readOnly value={value ? String(value) : 'Não informado'} /></label>;
+}

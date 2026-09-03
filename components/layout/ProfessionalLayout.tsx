@@ -11,7 +11,7 @@ const links = [
 export function ProfessionalLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireAccessContext context="professional">
-      <ResponsiveAppShell title="Painel médico" sidebarTitle="Profissional" marker="⚕" links={links} profileHref="/professional" footerHref="/logout" footerLabel="Sair">
+      <ResponsiveAppShell title="Painel médico" sidebarTitle="Profissional" marker="⚕" links={links} profileHref="/professional/profile" footerHref="/logout" footerLabel="Sair">
         {children}
       </ResponsiveAppShell>
     </RequireAccessContext>
