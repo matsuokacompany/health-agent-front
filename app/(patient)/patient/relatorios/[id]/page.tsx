@@ -43,7 +43,10 @@ export default function PatientRelatorioDetail() {
       <PageHeader
         eyebrow="Relatórios"
         title="Resumo por IA"
-        action={<Button href="/patient/relatorios" variant="secondary">Voltar ao histórico</Button>}
+        action={<>
+          {insight?.insight ? <Button variant="secondary" onClick={() => window.print()}>Baixar PDF</Button> : null}
+          <Button href="/patient/relatorios" variant="secondary">Voltar ao histórico</Button>
+        </>}
       />
       {loading ? <LoadingRelatorio /> : null}
       {!loading && error ? <ErrorState message={error} /> : null}
