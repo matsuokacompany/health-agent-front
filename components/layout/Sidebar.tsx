@@ -27,6 +27,9 @@ const icons: Record<string, string> = {
   Subscription: '💳',
   Suscripción: '💳',
   Informes: '📄',
+  Automonitoramento: '🩺',
+  'Self-monitoring': '🩺',
+  Automonitoreo: '🩺',
 };
 
 type AppSidebarProps = {

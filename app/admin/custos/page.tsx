@@ -16,7 +16,7 @@ function LoadingCustos() {
     </section>
     <Card><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
     <section className="grid admin-metrics-grid admin-section-offset">
-      {Array.from({ length: 4 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+      {Array.from({ length: 5 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
     </section>
     <div className="admin-section-offset"><Card><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card></div>
     <div className="admin-section-offset"><TableSkeleton rows={5} columns={5} /></div>
@@ -226,6 +226,11 @@ export default function AdminCostsPage() {
           <span className="metric-label">Relatórios de IA gerados</span>
           <strong className="metric">{summary.ai_report_count}</strong>
           <p className="muted compact">{formatUsd(summary.ai_report_cost_usd)} — custo real cobrado pela OpenAI</p>
+        </article>
+        <article className="card">
+          <span className="metric-label">Resumos de automonitoramento gerados</span>
+          <strong className="metric">{summary.self_monitoring_report_count}</strong>
+          <p className="muted compact">{formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Resumo por IA")</p>
         </article>
         <article className="card">
           <span className="metric-label">Mensagens de WhatsApp enviadas</span>
