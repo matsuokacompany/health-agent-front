@@ -1,8 +1,9 @@
+import { createRef } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiClient, ApiError, clearCsrfToken } from '@/infrastructure/http/ApiClient';
 import { clinicalAttachmentError, clinicalAttachmentsApi } from '@/services/clinicalAttachments';
-import { ClinicalImagesSection, sourceLabels } from '@/components/clinical-images/ClinicalImagesSection';
+import { ClinicalImagesSection, sourceLabels, type ClinicalImagesSectionHandle } from '@/components/clinical-images/ClinicalImagesSection';
 
 const { list, upload, remove, view } = vi.hoisted(() => ({ list: vi.fn(), upload: vi.fn(), remove: vi.fn(), view: vi.fn() }));
 vi.mock('@/services/clinicalAttachments', async (original) => ({ ...(await original<typeof import('@/services/clinicalAttachments')>()), clinicalAttachmentsApi: { list, upload, remove, view } }));
@@ -19,6 +20,22 @@ describe('imagens clínicas', () => {
   it('aceita JPEG, PNG e WebP, bloqueia o quarto e remove/revoga preview', async () => { render(<ClinicalImagesSection patientId={7} />); await screen.findByText('Nenhuma imagem disponível'); const input = screen.getByLabelText('Adicionar imagens'); const files = [new File(['a'], 'a.jpg', { type: 'image/jpeg' }), new File(['b'], 'b.png', { type: 'image/png' }), new File(['c'], 'c.webp', { type: 'image/webp' }), new File(['d'], 'd.jpg', { type: 'image/jpeg' })]; fireEvent.change(input, { target: { files } }); expect(screen.getByText('3 de 3 imagens')).toBeTruthy(); expect(screen.getByText('Você pode enviar no máximo 3 imagens por vez.')).toBeTruthy(); fireEvent.click(screen.getAllByText('Remover')[0]); expect(screen.getByText('2 de 3 imagens')).toBeTruthy(); expect(URL.revokeObjectURL).toHaveBeenCalled(); });
   it.each([[new File(['x'], 'x.gif', { type: 'image/gif' }), 'Use uma imagem JPEG'], [new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'x.jpg', { type: 'image/jpeg' }), 'Cada imagem deve ter']])('rejeita arquivo inválido', async (file, message) => { render(<ClinicalImagesSection patientId={7} />); fireEvent.change(screen.getByLabelText('Adicionar imagens'), { target: { files: [file] } }); expect(screen.getByText(new RegExp(message))).toBeTruthy(); expect(screen.getByText('0 de 3 imagens')).toBeTruthy(); });
   it('faz upload, limpa object URLs e recarrega', async () => { render(<ClinicalImagesSection patientId={7} />); fireEvent.change(screen.getByLabelText('Adicionar imagens'), { target: { files: [new File(['a'], 'a.jpg', { type: 'image/jpeg' })] } }); fireEvent.change(screen.getByLabelText(/Descrição opcional/), { target: { value: ' local ' } }); fireEvent.click(screen.getByRole('button', { name: 'Enviar imagens' })); await screen.findByText('Imagens enviadas com sucesso.'); expect(upload).toHaveBeenCalledWith(7, [expect.any(File)], ' local ', undefined); expect(URL.revokeObjectURL).toHaveBeenCalled(); expect(list).toHaveBeenCalledTimes(2); });
+  it('com hideSubmitButton não renderiza botão próprio e envia a imagem quando o formulário pai chama a ref (um único clique de salvar)', async () => {
+    const ref = createRef<ClinicalImagesSectionHandle>();
+    render(<ClinicalImagesSection ref={ref} hideSubmitButton patientId={7} dailyReportId={9} />);
+    await screen.findByText('Nenhuma imagem enviada neste dia');
+    fireEvent.change(screen.getByLabelText('Adicionar imagem'), { target: { files: [new File(['a'], 'a.jpg', { type: 'image/jpeg' })] } });
+    expect(screen.queryByRole('button', { name: 'Adicionar imagem' })).toBeNull();
+    await ref.current?.submitPending();
+    expect(upload).toHaveBeenCalledWith(7, [expect.any(File)], '', 9);
+  });
+  it('submitPending não faz nada quando não há imagem pendente', async () => {
+    const ref = createRef<ClinicalImagesSectionHandle>();
+    render(<ClinicalImagesSection ref={ref} hideSubmitButton patientId={7} dailyReportId={9} />);
+    await screen.findByText('Nenhuma imagem enviada neste dia');
+    await ref.current?.submitPending();
+    expect(upload).not.toHaveBeenCalled();
+  });
   it('carrega a miniatura, abre uma URL nova ao visualizar e renova após erro', async () => { list.mockResolvedValue([attachment()]); render(<ClinicalImagesSection patientId={7} />); expect((await screen.findByAltText('Região inferior')).getAttribute('src')).toBe('https://signed.test/image'); expect(view).toHaveBeenCalledTimes(1); fireEvent.click(screen.getByRole('button', { name: 'Visualizar imagem clínica' })); await screen.findByAltText('Imagem clínica do acompanhamento'); expect(view).toHaveBeenCalledTimes(2); fireEvent.error(screen.getByAltText('Imagem clínica do acompanhamento')); await waitFor(() => expect(view).toHaveBeenCalledTimes(3)); });
   it('confirma exclusão e trata 403 sem remover o item', async () => { list.mockResolvedValue([attachment()]); remove.mockRejectedValue(new ApiError('x', 403)); render(<ClinicalImagesSection patientId={7} />); fireEvent.click(await screen.findByText('Excluir')); expect(screen.getByText(/Tem certeza/)).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: 'Excluir imagem' })); expect(await screen.findByText(/Somente o paciente/)).toBeTruthy(); });
   it('recarrega a lista após excluir uma imagem', async () => { list.mockResolvedValue([attachment()]); render(<ClinicalImagesSection patientId={7} />); fireEvent.click(await screen.findByText('Excluir')); fireEvent.click(screen.getByRole('button', { name: 'Excluir imagem' })); await waitFor(() => expect(list).toHaveBeenCalledTimes(2)); });
