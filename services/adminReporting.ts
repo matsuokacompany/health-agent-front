@@ -42,6 +42,8 @@ export type AdminCostSummary = {
   end_date: string;
   ai_report_count: number;
   ai_report_cost_usd: number;
+  self_monitoring_report_count: number;
+  self_monitoring_cost_usd: number;
   whatsapp_message_count: number;
   whatsapp_cost_per_message_cents: number | null;
   whatsapp_cost_cents: number | null;

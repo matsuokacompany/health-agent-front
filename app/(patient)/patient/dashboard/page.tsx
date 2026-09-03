@@ -184,7 +184,6 @@ function LastResponseCard({ data }: { data: PatientDashboardAggregate }) {
 export default function PatientDashboard() {
   const { reports, plans, loading: patientDataLoading, refresh } = usePatientData();
   const dashboard = buildFallbackDashboard(plans, reports);
-  const isSelfService = plans.length > 0 && !plans.some((plan) => plan.origin === 'PROFESSIONAL');
 
   if (patientDataLoading) return <LoadingDashboard />;
   if (!dashboard?.hasActiveMonitoring) {
@@ -204,6 +203,6 @@ export default function PatientDashboard() {
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
       <Timeline days={dashboard.timeline} />
-      {isSelfService ? <Card className="patient-dashboard-self-service-card"><span className="eyebrow">Automonitoramento</span><p className="muted">Acompanhe sua evolução e gerencie sua assinatura.</p><Button href="/patient/automonitoramento" variant="secondary">Ver evolução e assinatura</Button></Card> : null}
+      <Card className="patient-dashboard-self-service-card"><span className="eyebrow">Automonitoramento</span><p className="muted">Acompanhe sua evolução e gerencie sua assinatura.</p><Button href="/patient/automonitoramento" variant="secondary">Ver evolução e assinatura</Button></Card>
     </section>;
 }

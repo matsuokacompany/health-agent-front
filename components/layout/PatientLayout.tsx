@@ -7,17 +7,17 @@ import { ResponsiveAppShell } from './ResponsiveAppShell';
 
 function PatientShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
-  const { plans } = usePatientData();
-  const hasProfessional = plans.some((plan) => plan.origin === 'PROFESSIONAL');
-  // The AI report history only exists for self-service patients (self-made
-  // insights) — a professional-managed patient has no self-monitoring
-  // reports to look back on.
-  const isSelfService = plans.length > 0 && !hasProfessional;
+  // Self-monitoring (automonitoramento + relatorios) is billed and gated
+  // server-side by the patient's own subscription record — every patient
+  // gets one lazily created on first access, regardless of whether they're
+  // also linked to a professional's monitoring plan — so these links must
+  // always be reachable, not conditioned on plan origin.
   const links = [
     ['/patient/dashboard', t('nav.dashboard')],
     ['/patient/monitoring', t('nav.monitoring')],
     ['/patient/anamnese', t('nav.anamnesis')],
-    ...(isSelfService ? [['/patient/relatorios', t('nav.reports')]] : []),
+    ['/patient/automonitoramento', t('nav.selfMonitoring')],
+    ['/patient/relatorios', t('nav.reports')],
     ['/patient/assinatura', t('nav.subscription')],
   ];
   const footer = <footer className="app-footer">{t('app.footer')}</footer>;
