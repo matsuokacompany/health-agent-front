@@ -12,7 +12,10 @@ vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: authU
 function Harness() {
   return <TourProvider>
     <TourButton />
-    <nav data-tour="sidebar-nav">menu</nav>
+    <aside className="sidebar">
+      <nav data-tour="sidebar-nav">menu</nav>
+      <a href="/patient/profile">Perfil</a>
+    </aside>
     <button type="button" data-tour="new-patient">Novo paciente</button>
     <section data-tour="patients-metrics">metrics</section>
     <div data-tour="patients-table">table</div>
@@ -114,6 +117,23 @@ describe('tour guiado', () => {
       // sidebar before this fix).
       expect(tooltip.style.left).toBe('296px');
     });
+  });
+
+  it('nunca bloqueia a coluna da sidebar (ex.: o link Perfil) enquanto a tour está aberta', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+    render(<Harness />);
+    const sidebar = document.querySelector('.sidebar') as HTMLElement;
+    vi.spyOn(sidebar, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 800, left: 0, right: 280, width: 280, height: 800, x: 0, y: 0, toJSON() {} } as DOMRect);
+    fireEvent(window, new Event('resize'));
+
+    await waitFor(() => {
+      const guards = Array.from(document.querySelectorAll('.tour-click-guard')) as HTMLElement[];
+      expect(guards.length).toBeGreaterThan(0);
+      guards.forEach((guard) => expect(parseFloat(guard.style.left)).toBeGreaterThanOrEqual(280));
+    });
+
+    expect(screen.getByRole('link', { name: 'Perfil' })).toBeTruthy();
   });
 
   it('não quebra quando localStorage não está disponível', () => {

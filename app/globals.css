@@ -258,7 +258,7 @@ img.brand-logo-dark{display:none}
 
 /* Guided product tour */
 .tour-overlay{position:fixed;inset:0;z-index:70}
-.tour-click-guard{position:fixed;inset:0}
+.tour-click-guard{position:fixed}
 .tour-spotlight{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgb(2 6 23 / 60%),0 0 0 3px var(--brand);pointer-events:none;transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease}
 /* Position (top/left) is computed in JS from the tooltip's own measured
    size, the highlighted element's rect, and the viewport -- always clamped

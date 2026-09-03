@@ -59,6 +59,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [sidebarRect, setSidebarRect] = useState<DOMRect | null>(null);
   const autoStartedPathRef = useRef<string | null>(null);
 
   const step: TourStep | undefined = steps[stepIndex];
@@ -85,6 +86,19 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('scroll', measure, true);
     return () => { window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
   }, [open, measure]);
+
+  // Measured independently of the step's own target: the sidebar must stay
+  // reachable through every step (including the ones with no target at all),
+  // not just while it happens to be the thing being spotlighted -- otherwise
+  // the full-viewport click-guard traps the user on the current page for the
+  // whole tour, unable to navigate away via the sidebar (e.g. to Perfil).
+  useEffect(() => {
+    if (!open) return;
+    const measureSidebar = () => setSidebarRect(document.querySelector('.sidebar')?.getBoundingClientRect() ?? null);
+    measureSidebar();
+    window.addEventListener('resize', measureSidebar);
+    return () => window.removeEventListener('resize', measureSidebar);
+  }, [open]);
 
   useEffect(() => {
     if (!auth.user || !steps.length || autoStartedPathRef.current === pathname) return;
@@ -117,11 +131,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
   return <TourContext.Provider value={value}>
     {children}
-    {open && step ? <TourOverlay step={step} rect={rect} index={stepIndex} total={steps.length} onNext={next} onBack={back} onSkip={close} /> : null}
+    {open && step ? <TourOverlay step={step} rect={rect} sidebarRect={sidebarRect} index={stepIndex} total={steps.length} onNext={next} onBack={back} onSkip={close} /> : null}
   </TourContext.Provider>;
 }
 
-function TourOverlay({ step, rect, index, total, onNext, onBack, onSkip }: { step: TourStep; rect: DOMRect | null; index: number; total: number; onNext(): void; onBack(): void; onSkip(): void }) {
+function TourOverlay({ step, rect, sidebarRect, index, total, onNext, onBack, onSkip }: { step: TourStep; rect: DOMRect | null; sidebarRect: DOMRect | null; index: number; total: number; onNext(): void; onBack(): void; onSkip(): void }) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
 
@@ -152,7 +166,7 @@ function TourOverlay({ step, rect, index, total, onNext, onBack, onSkip }: { ste
   const spotlightRect = rect ?? { top: window.innerHeight / 2, left: window.innerWidth / 2, width: 0, height: 0 };
 
   return <div className="tour-overlay" role="dialog" aria-modal="true" aria-label={step.title}>
-    <div className="tour-click-guard" />
+    <TourClickGuard rect={rect} sidebarRect={sidebarRect} />
     <div className="tour-spotlight" style={{ top: spotlightRect.top - 8, left: spotlightRect.left - 8, width: spotlightRect.width + 16, height: spotlightRect.height + 16 }} />
     <div ref={tooltipRef} className="tour-tooltip" style={position ? { top: position.top, left: position.left } : { visibility: 'hidden' }}>
       <div className="tour-tooltip-body">
@@ -169,4 +183,31 @@ function TourOverlay({ step, rect, index, total, onNext, onBack, onSkip }: { ste
       </div>
     </div>
   </div>;
+}
+
+// The sidebar sits at a lower z-index than the overlay, so without this the
+// guard's full-viewport div would sit on top of it and block every click --
+// including the "Perfil" link -- for as long as any tour is open. Carving
+// out the sidebar's own column (and, within the rest of the page, the
+// current step's target rect) as a handful of rectangular bands keeps both
+// always clickable without giving up the modal backdrop everywhere else.
+function TourClickGuard({ rect, sidebarRect }: { rect: DOMRect | null; sidebarRect: DOMRect | null }) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const guardLeft = sidebarRect ? clamp(sidebarRect.right, 0, vw) : 0;
+
+  if (!rect || rect.right <= guardLeft) {
+    return <div className="tour-click-guard" style={{ top: 0, left: guardLeft, right: 0, bottom: 0 }} />;
+  }
+
+  const top = clamp(rect.top, 0, vh);
+  const bottom = clamp(rect.bottom, 0, vh);
+  const left = clamp(rect.left, guardLeft, vw);
+  const right = clamp(rect.right, guardLeft, vw);
+  return <>
+    <div className="tour-click-guard" style={{ top: 0, left: guardLeft, right: 0, bottom: vh - top }} />
+    <div className="tour-click-guard" style={{ top: bottom, left: guardLeft, right: 0, bottom: 0 }} />
+    <div className="tour-click-guard" style={{ top, left: guardLeft, right: vw - left, bottom: vh - bottom }} />
+    <div className="tour-click-guard" style={{ top, left: right, right: 0, bottom: vh - bottom }} />
+  </>;
 }
