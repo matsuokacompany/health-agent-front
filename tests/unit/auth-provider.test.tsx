@@ -35,7 +35,7 @@ describe('AuthProvider session restoration', () => {
 
     render(<AuthProvider><AuthStatus /></AuthProvider>);
 
-    await waitFor(() => expect(screen.getByText('Não foi possível conectar ao servidor.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.')).toBeTruthy());
   });
 
   it('renews an authenticated session periodically while the page is visible', async () => {
