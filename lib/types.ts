@@ -129,8 +129,8 @@ export type AppNotification = {
 };
 export type NotificationListResponse = { items: AppNotification[]; unread_count: number };
 
-export type EvolutionSymptomOccurrence = { description: string; occurrences: number; last_occurred_on?: string | null };
-export type EvolutionTimelineGroup = { period_label: string; completed_checkins: number; checkins_with_symptoms: number };
+export type EvolutionSymptomOccurrence = { description: string; occurrences: number; first_reported_at: string; last_reported_at: string };
+export type EvolutionTimelineGroup = { start_date: string; end_date: string; metrics: EvolutionMetrics };
 export type EvolutionMetrics = {
   total_checkins: number;
   completed_checkins: number;
@@ -162,6 +162,8 @@ export type SelfMonitoringInsightResult = {
   pontos_positivos: string[];
   pontos_de_atencao: string[];
   sugestao: string;
+  especialidade_sugerida?: string | null;
+  urgencia_consulta?: 'baixa' | 'moderada' | 'alta' | null;
 };
 export type SelfMonitoringInsightListItem = {
   id: number;
