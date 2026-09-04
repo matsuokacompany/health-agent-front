@@ -76,6 +76,7 @@ export type DailyReport = {
   suspected_cause?: string | null;
   cause?: string | null;
   had_symptoms?: boolean | null;
+  diet_adherence?: boolean | null;
   medication_adherence?: boolean | null;
   completed?: boolean;
   created_at?: string;
