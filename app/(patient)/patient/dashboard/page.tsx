@@ -203,6 +203,6 @@ export default function PatientDashboard() {
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
       <Timeline days={dashboard.timeline} />
-      <Card className="patient-dashboard-self-service-card"><span className="eyebrow">Automonitoramento</span><p className="muted">Acompanhe sua evolução e gerencie sua assinatura.</p><Button href="/patient/automonitoramento" variant="secondary">Ver evolução e assinatura</Button></Card>
+      <Card className="patient-dashboard-self-service-card"><span className="eyebrow">Automonitoramento</span><p className="muted">Acompanhe sua evolução.</p><Button href="/patient/automonitoramento" variant="secondary">Ver evolução e gerar relatório de IA</Button></Card>
     </section>;
 }
