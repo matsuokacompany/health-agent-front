@@ -14,6 +14,7 @@ export type ProfessionalPatient = {
   last_checkin_at?: string | null;
   last_status?: string | null;
   symptom_reports_count: number;
+  has_own_subscription: boolean;
 };
 
 export type CreateProfessionalPatientRequest = {
