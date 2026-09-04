@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
+import { SupplementsList } from '@/components/patient/SupplementsList';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { anamnesesApi } from '@/services/anamnese';
 
@@ -13,5 +14,10 @@ export default function PatientAnamnese() {
 
   useEffect(() => { anamnesesApi.me().then((a) => setInfo(String(a.info ?? ''))).catch(() => setInfo('')).finally(() => setLoading(false)); }, []);
 
-  return <section className="stack" data-tour="anamnese-card"><ReadOnlyAnamnese info={info} loading={loading} hasProfessional={hasProfessional} /></section>;
+  return (
+    <section className="stack" data-tour="anamnese-card">
+      <ReadOnlyAnamnese info={info} loading={loading} hasProfessional={hasProfessional} />
+      <SupplementsList />
+    </section>
+  );
 }

@@ -31,6 +31,8 @@ export type Anamnese = {
   [key: string]: unknown;
 };
 
+export type Supplement = { id: number; name: string; created_at: string };
+
 export type ProfessionalProfile = {
   id: number;
   user_id?: number | null;
@@ -63,7 +65,15 @@ export type MonitoringPlan = {
   [key: string]: unknown;
 };
 
-export type DailyReportStatus = 'PENDING' | 'AWAITING_SYMPTOM_DESCRIPTION' | 'AWAITING_CAUSE' | 'COMPLETED' | 'EXPIRED';
+export type DailyReportStatus =
+  | 'PENDING'
+  | 'AWAITING_SYMPTOM_DESCRIPTION'
+  | 'AWAITING_CAUSE'
+  | 'AWAITING_DIET_ADHERENCE'
+  | 'AWAITING_DIET_DEVIATION_DESCRIPTION'
+  | 'AWAITING_MEDICATION_ADHERENCE'
+  | 'COMPLETED'
+  | 'EXPIRED';
 
 export type DailyReport = {
   id: number;
@@ -76,6 +86,8 @@ export type DailyReport = {
   suspected_cause?: string | null;
   cause?: string | null;
   had_symptoms?: boolean | null;
+  diet_adherence?: boolean | null;
+  medication_adherence?: boolean | null;
   completed?: boolean;
   created_at?: string;
   updated_at?: string;
