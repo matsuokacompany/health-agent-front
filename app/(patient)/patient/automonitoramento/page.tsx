@@ -1,13 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { InsightResultBody } from '@/components/patient/InsightResultBody';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
+import { shortcutPeriod } from '@/services/aiReports';
 import type { EvolutionReport, EvolutionSymptomOccurrence, SelfMonitoringInsight } from '@/lib/types';
+
+const PERIOD_PRESETS = [
+  [30, 'Últimos 30 dias'],
+  [90, 'Últimos 90 dias'],
+  [180, 'Últimos 6 meses'],
+  [365, 'Último ano'],
+] as const;
+type PeriodDays = (typeof PERIOD_PRESETS)[number][0];
 
 const trendLabel: Record<EvolutionReport['symptom_trend'], string> = {
   increasing: '📈 Sintomas em alta no período',
@@ -53,6 +62,23 @@ function SymptomsCard({ symptoms }: { symptoms: EvolutionSymptomOccurrence[] }) 
   </Card>;
 }
 
+function PeriodSelector({ selected, onChange, disabled }: { selected: PeriodDays; onChange(days: PeriodDays): void; disabled?: boolean }) {
+  return <div className="ai-shortcuts" aria-label="Período do relatório">
+    {PERIOD_PRESETS.map(([days, label]) => (
+      <button
+        key={days}
+        type="button"
+        className="button secondary"
+        aria-pressed={selected === days}
+        disabled={disabled}
+        onClick={() => onChange(days)}
+      >
+        {label}
+      </button>
+    ))}
+  </div>;
+}
+
 function EvolutionCard({ report }: { report: EvolutionReport }) {
   if (!report.sufficient_data) {
     return <Card>
@@ -91,12 +117,14 @@ function insightDaysUntil(nextGenerationAt?: string | null) {
 function InsightCard({
   report,
   insight,
+  periodLabel,
   error,
   generating,
   onGenerate,
 }: {
   report: EvolutionReport | null;
   insight: SelfMonitoringInsight | null;
+  periodLabel: string;
   error: string | null;
   generating: boolean;
   onGenerate(): void;
@@ -104,17 +132,24 @@ function InsightCard({
   const notEnoughData = Boolean(report && !report.sufficient_data);
   const result = insight?.insight ?? null;
   const daysUntilNext = insight ? insightDaysUntil(insight.next_generation_at) : null;
+  // While the 15-day cooldown is active, generating again just returns the
+  // cached insight — which may cover a different period than the one
+  // currently selected above. Showing the period this specific result
+  // actually covers keeps that honest instead of implying it matches the
+  // selector.
+  const resultPeriodLabel = insight ? `${formatDate(insight.start_date)} a ${formatDate(insight.end_date)}` : null;
 
   return <Card>
     <span className="eyebrow">Resumo por IA</span>
     <h2>{result ? 'Como você tem passado' : 'Resumo da sua evolução, em linguagem simples'}</h2>
     {!result ? (
       <p className="muted">
-        Gere um resumo dos seus check-ins e da sua anamnese dos últimos 30 dias — o que está indo bem, pontos que
-        vale acompanhar e, quando fizer sentido, que tipo de especialista procurar. Sem diagnóstico, é só um apoio
-        para você chegar mais preparado(a) numa consulta.
+        Gere um resumo dos seus check-ins e da sua anamnese no período selecionado ({periodLabel}) — o que está indo
+        bem, pontos que vale acompanhar e, quando fizer sentido, que tipo de especialista procurar. Sem diagnóstico,
+        é só um apoio para você chegar mais preparado(a) numa consulta.
       </p>
     ) : null}
+    {result && resultPeriodLabel ? <p className="muted compact">Período considerado: {resultPeriodLabel}.</p> : null}
     {result ? <InsightResultBody result={result} /> : null}
     {notEnoughData ? (
       <p className="notice">Ainda não há check-ins suficientes para gerar o resumo — continue respondendo ao WhatsApp diariamente.</p>
@@ -153,6 +188,8 @@ function LoadingAutomonitoramento() {
 }
 
 export default function Automonitoramento() {
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodDays>(30);
+  const period = useMemo(() => shortcutPeriod(selectedPeriod), [selectedPeriod]);
   const [report, setReport] = useState<EvolutionReport | null>(null);
   const [reportBlocked, setReportBlocked] = useState(false);
   const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
@@ -165,7 +202,7 @@ export default function Automonitoramento() {
     setGeneratingInsight(true);
     setInsightError(null);
     try {
-      setInsight(await selfMonitoringApi.getInsight());
+      setInsight(await selfMonitoringApi.getInsight(period));
     } catch (err) {
       if (err instanceof ApiError && err.status === 402) {
         // The evolution-report paywall above already explains this — no
@@ -179,11 +216,11 @@ export default function Automonitoramento() {
     }
   }
 
-  async function load() {
+  async function load(currentPeriod: { start_date: string; end_date: string }) {
     setLoading(true);
     setLoadError(null);
     try {
-      setReport(await selfMonitoringApi.getEvolutionReport());
+      setReport(await selfMonitoringApi.getEvolutionReport(currentPeriod));
       setReportBlocked(false);
     } catch (err) {
       if (err instanceof ApiError && err.status === 402) {
@@ -197,15 +234,26 @@ export default function Automonitoramento() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    // A summary generated for a different period than the one now selected
+    // would otherwise keep showing under the new selection until the
+    // patient clicks "Gerar resumo com IA" again -- clear it so the card
+    // goes back to prompting a fresh generation for the period just picked.
+    setInsight(null);
+    setInsightError(null);
+    void load(period);
+  }, [period]);
 
   if (loading) return <LoadingAutomonitoramento />;
-  if (loadError) return <Card><p className="notice danger">{loadError}</p><Button onClick={() => void load()}>Tentar novamente</Button></Card>;
+  if (loadError) return <Card><p className="notice danger">{loadError}</p><Button onClick={() => void load(period)}>Tentar novamente</Button></Card>;
+
+  const periodLabel = (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
 
   return <section className="stack" aria-label="Automonitoramento">
+    {!reportBlocked ? <PeriodSelector selected={selectedPeriod} onChange={setSelectedPeriod} disabled={loading} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
     {!reportBlocked ? (
-      <InsightCard report={report} insight={insight} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />
+      <InsightCard report={report} insight={insight} periodLabel={periodLabel} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />
     ) : null}
   </section>;
 }
