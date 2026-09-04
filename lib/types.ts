@@ -63,7 +63,7 @@ export type MonitoringPlan = {
   [key: string]: unknown;
 };
 
-export type DailyReportStatus = 'PENDING' | 'AWAITING_SYMPTOM_DESCRIPTION' | 'AWAITING_CAUSE' | 'COMPLETED' | 'EXPIRED';
+export type DailyReportStatus = 'PENDING' | 'AWAITING_SYMPTOM_DESCRIPTION' | 'AWAITING_CAUSE' | 'AWAITING_MEDICATION_ADHERENCE' | 'COMPLETED' | 'EXPIRED';
 
 export type DailyReport = {
   id: number;
@@ -76,6 +76,7 @@ export type DailyReport = {
   suspected_cause?: string | null;
   cause?: string | null;
   had_symptoms?: boolean | null;
+  medication_adherence?: boolean | null;
   completed?: boolean;
   created_at?: string;
   updated_at?: string;
