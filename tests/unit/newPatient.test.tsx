@@ -67,7 +67,7 @@ describe('cadastro profissional de pacientes', () => {
     render(<NewPatientModal open onClose={vi.fn()} />); fillRequired();
     fireEvent.change(screen.getByLabelText('Telefone'), { target: { value: '43999999999' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar paciente' }));
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ name: 'Maria da Silva', email: 'maria@example.com', phone: '5543999999999', plan_title: 'Inicial' }));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ name: 'Maria da Silva', email: 'maria@example.com', phone: '5543999999999', plan_title: 'Inicial', supplements: [] }));
     expect(mutateAsync.mock.calls[0][0]).not.toHaveProperty('roles');
   });
 

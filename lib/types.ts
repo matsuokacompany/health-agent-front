@@ -31,7 +31,23 @@ export type Anamnese = {
   [key: string]: unknown;
 };
 
-export type Supplement = { id: number; name: string; created_at: string };
+export type SupplementDosagePeriod = 'DAY' | 'WEEK' | 'MONTH';
+export type Supplement = {
+  id: number;
+  name: string;
+  dosage_times: number;
+  dosage_period: SupplementDosagePeriod;
+  started_at: string;
+  /** null = indeterminate/ongoing course. */
+  duration_days: number | null;
+  created_at: string;
+};
+export type SupplementInput = {
+  name: string;
+  dosage_times?: number;
+  dosage_period?: SupplementDosagePeriod;
+  duration_days?: number | null;
+};
 
 export type ProfessionalProfile = {
   id: number;
@@ -88,6 +104,7 @@ export type DailyReport = {
   had_symptoms?: boolean | null;
   diet_adherence?: boolean | null;
   medication_adherence?: boolean | null;
+  lifestyle_notes?: string | null;
   completed?: boolean;
   created_at?: string;
   updated_at?: string;
