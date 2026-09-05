@@ -7,7 +7,7 @@ export type SortDirection = 'asc' | 'desc';
 
 export type DashboardProfessional = { id: number | string; name: string; specialty?: string | null; photo_url?: string | null; avatar_url?: string | null };
 export type DashboardPlan = { id: number | string; name: string; status: string; starts_at?: string | null; ends_at?: string | null; active?: boolean };
-export type DashboardCheckIn = { id: number | string; patient_id?: number; user_id?: number; date?: string; status?: DashboardStatus | string; title?: string; had_symptoms?: boolean | null; symptom_description?: string | null; suspected_cause?: string | null; cause?: string | null; completed?: boolean };
+export type DashboardCheckIn = { id: number | string; patient_id?: number; user_id?: number; date?: string; status?: DashboardStatus | string; title?: string; had_symptoms?: boolean | null; symptom_description?: string | null; suspected_cause?: string | null; cause?: string | null; diet_adherence?: boolean | null; medication_adherence?: boolean | null; lifestyle_notes?: string | null; completed?: boolean };
 export type DashboardAlert = { id: number | string; title: string; description?: string; severity?: 'info' | 'warning' | 'danger' | 'success' | string };
 export type DashboardStatistic = { label: string; value: number | string; description?: string; trend?: number; tone?: 'neutral' | 'success' | 'warning' | 'danger' };
 export type PatientDashboardTimelineDay = { date: string; status: 'without_symptoms' | 'mild_symptoms' | 'with_symptoms' | 'no_response'; label?: string };

@@ -19,7 +19,13 @@ function isCompletedReport(report: DailyReport) {
   return Boolean(report.completed) || String(report.status ?? '').toUpperCase() === 'COMPLETED';
 }
 
-type EditFormState = { had_symptoms: boolean; symptom_description: string };
+type EditFormState = {
+  had_symptoms: boolean;
+  symptom_description: string;
+  diet_adherence: boolean;
+  medication_adherence: boolean;
+  lifestyle_notes: string;
+};
 type CalendarCell = { type: 'empty'; key: string } | { type: 'day'; day: PatientDashboardCalendarDay };
 
 
@@ -59,6 +65,9 @@ function normalizeEditForm(report: DailyReport): EditFormState {
   return {
     had_symptoms: Boolean(report.had_symptoms),
     symptom_description: String(report.symptom_description ?? ''),
+    diet_adherence: Boolean(report.diet_adherence),
+    medication_adherence: Boolean(report.medication_adherence),
+    lifestyle_notes: String(report.lifestyle_notes ?? ''),
   };
 }
 
@@ -77,7 +86,13 @@ export default function PatientMonitoring() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<EditFormState>({ had_symptoms: false, symptom_description: '' });
+  const [editForm, setEditForm] = useState<EditFormState>({
+    had_symptoms: false,
+    symptom_description: '',
+    diet_adherence: false,
+    medication_adherence: false,
+    lifestyle_notes: '',
+  });
   const imagesRef = useRef<ClinicalImagesSectionHandle>(null);
 
   const year = visibleMonth.getFullYear();
@@ -166,9 +181,14 @@ export default function PatientMonitoring() {
     if (!selectedCheckin) return;
     setSaving(true); setFeedback(null);
     try {
-      const payload = editForm.had_symptoms
-        ? { had_symptoms: true, symptom_description: editForm.symptom_description }
-        : { had_symptoms: false };
+      const payload = {
+        ...(editForm.had_symptoms
+          ? { had_symptoms: true, symptom_description: editForm.symptom_description }
+          : { had_symptoms: false }),
+        diet_adherence: editForm.diet_adherence,
+        medication_adherence: editForm.medication_adherence,
+        lifestyle_notes: editForm.diet_adherence ? '' : editForm.lifestyle_notes,
+      };
       await dailyReportsApi.update(reportIdFromCheckIn(selectedCheckin), payload);
       try {
         await imagesRef.current?.submitPending();
@@ -217,8 +237,8 @@ export default function PatientMonitoring() {
     {feedback ? <p className={feedback.toLowerCase().includes('não') || feedback.toLowerCase().includes('expirada') ? 'notice danger' : 'notice success'}>{feedback}</p> : null}
     {loading ? <CalendarSkeleton /> : <section className="calendar-layout is-calendar-only"><Card className="calendar-card" data-tour="monitoring-calendar"><div className="calendar-header"><div><h2>{t('monitoring.monthlyCalendar')}</h2><p className="muted compact">{monthLabel}</p></div><div className="calendar-nav"><button className="button secondary icon-control" type="button" aria-label={t('monitoring.previousMonth')} disabled={!canGoPrevious} onClick={() => setVisibleMonth((current) => addMonths(current, -1))}>‹</button><button className="button secondary icon-control" type="button" aria-label={t('monitoring.nextMonth')} disabled={!canGoNext} onClick={() => setVisibleMonth((current) => addMonths(current, 1))}>›</button></div></div><div className="calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div><div className="calendar">{calendarCells.map((cell) => { if (cell.type === 'empty') return <span className="day calendar-empty-cell" aria-hidden="true" key={cell.key} />; const day = cell.day; const status = getDayStatus(day); return <button className={`day ${getDayClassName(day)} ${selected?.date === day.date ? 'is-active' : ''}`} key={day.date} type="button" aria-label={`${formatDateForLocale(day.date, locale)}: ${statusLabel(status)}`} onClick={() => openDayDetails(day)}><strong>{new Date(`${day.date}T00:00:00`).getDate()}</strong><span>{statusLabel(status)}</span></button>; })}</div><div className="calendar-legend" aria-label={t('monitoring.legend')} data-tour="monitoring-legend"><span><i className="legend-complete" />{t('monitoring.legendAnsweredNoSymptoms')}</span><span><i className="legend-symptom" />{t('monitoring.legendAnsweredSymptoms')}</span><span><i className="legend-pending" />{t('monitoring.legendUnanswered')}</span><span><i className="legend-empty" />{t('monitoring.legendNoCheckIn')}</span></div></Card></section>}
 
-    <Modal open={detailsOpen} title={selected ? formatDateForLocale(selected.date, locale) : t('monitoring.dayActions')} onClose={() => setDetailsOpen(false)}>{selected ? <div className="stack">{selected.checkins.length ? selected.checkins.map((checkin) => { const report = selectedCheckin?.id === checkin.id && selectedReport ? selectedReport : checkin; const completed = Boolean(report.completed) || String(report.status ?? '').toUpperCase() === 'COMPLETED'; return <div className="checkin-detail" key={checkin.id}>{saving && selectedCheckin?.id === checkin.id && !selectedReport ? <p className="muted">{t('monitoring.loadingDetails')}</p> : <><p><strong>{t('monitoring.symptoms')}:</strong> {completed ? (report.had_symptoms ? t('monitoring.yes') : t('monitoring.no')) : t('monitoring.awaitingAnswer')}</p>{completed && report.symptom_description ? <p><strong>{t('monitoring.descriptionLabel')}:</strong> {report.symptom_description}</p> : completed ? <p className="muted">{t('monitoring.noDescription')}</p> : null}{(report.suspected_cause ?? report.cause) ? <p><strong>{t('monitoring.cause')}:</strong> {report.suspected_cause ?? report.cause}</p> : null}</>}<div className="page-actions"><button className="button secondary" disabled={saving} type="button" onClick={() => openEditModal(checkin)}>{completed ? t('monitoring.editAnswer') : t('monitoring.answerCheckIn')}</button>{completed ? <button className="button danger-button" disabled={saving} type="button" onClick={() => { setSelectedCheckin(checkin); setDeleting(true); }}>{t('monitoring.deleteAnswer')}</button> : null}</div></div>; }) : <p className="muted">{t('monitoring.noReportForDay', { status: statusLabel(getDayStatus(selected)) })}</p>}</div> : null}</Modal>
-    <Modal open={editing} title={t('monitoring.editTitle')} onClose={() => setEditing(false)}>{selectedCheckin ? <div className="stack checkin-edit-content"><form id="checkin-edit-form" className="stack" onSubmit={submitEdit}><label>{t('monitoring.symptoms')}<select name="had_symptoms" value={editForm.had_symptoms ? 'yes' : 'no'} onChange={(event) => setEditForm((current) => ({ ...current, had_symptoms: event.target.value === 'yes' }))}><option value="no">{t('monitoring.no')}</option><option value="yes">{t('monitoring.yes')}</option></select></label>{editForm.had_symptoms ? <label>{t('monitoring.descriptionLabel')}<textarea name="symptom_description" rows={4} value={editForm.symptom_description} onChange={(event) => setEditForm((current) => ({ ...current, symptom_description: event.target.value }))} /></label> : null}</form><ClinicalImagesSection ref={imagesRef} hideSubmitButton patientId={patientId} dailyReportId={Number(reportIdFromCheckIn(selectedCheckin))} title="Imagens deste check-in" /><div className="page-actions checkin-edit-actions"><button className="button secondary" type="button" onClick={() => setEditing(false)}>{t('monitoring.cancel')}</button><button className="button" form="checkin-edit-form" disabled={saving} type="submit">{saving ? t('monitoring.saving') : t('monitoring.saveAnswer')}</button></div></div> : null}</Modal>
+    <Modal open={detailsOpen} title={selected ? formatDateForLocale(selected.date, locale) : t('monitoring.dayActions')} onClose={() => setDetailsOpen(false)}>{selected ? <div className="stack">{selected.checkins.length ? selected.checkins.map((checkin) => { const report = selectedCheckin?.id === checkin.id && selectedReport ? selectedReport : checkin; const completed = Boolean(report.completed) || String(report.status ?? '').toUpperCase() === 'COMPLETED'; return <div className="checkin-detail" key={checkin.id}>{saving && selectedCheckin?.id === checkin.id && !selectedReport ? <p className="muted">{t('monitoring.loadingDetails')}</p> : <><p><strong>{t('monitoring.symptoms')}:</strong> {completed ? (report.had_symptoms ? t('monitoring.yes') : t('monitoring.no')) : t('monitoring.awaitingAnswer')}</p>{completed && report.symptom_description ? <p><strong>{t('monitoring.descriptionLabel')}:</strong> {report.symptom_description}</p> : completed ? <p className="muted">{t('monitoring.noDescription')}</p> : null}{(report.suspected_cause ?? report.cause) ? <p><strong>{t('monitoring.cause')}:</strong> {report.suspected_cause ?? report.cause}</p> : null}{completed && report.diet_adherence != null ? <p><strong>{t('monitoring.diet')}:</strong> {report.diet_adherence ? t('monitoring.yes') : t('monitoring.no')}</p> : null}{completed && report.diet_adherence === false ? <p><strong>{t('monitoring.dietDeviationLabel')}:</strong> {report.lifestyle_notes || t('monitoring.noDietDeviation')}</p> : null}{completed && report.medication_adherence != null ? <p><strong>{t('monitoring.medication')}:</strong> {report.medication_adherence ? t('monitoring.yes') : t('monitoring.no')}</p> : null}</>}<div className="page-actions"><button className="button secondary" disabled={saving} type="button" onClick={() => openEditModal(checkin)}>{completed ? t('monitoring.editAnswer') : t('monitoring.answerCheckIn')}</button>{completed ? <button className="button danger-button" disabled={saving} type="button" onClick={() => { setSelectedCheckin(checkin); setDeleting(true); }}>{t('monitoring.deleteAnswer')}</button> : null}</div></div>; }) : <p className="muted">{t('monitoring.noReportForDay', { status: statusLabel(getDayStatus(selected)) })}</p>}</div> : null}</Modal>
+    <Modal open={editing} title={t('monitoring.editTitle')} onClose={() => setEditing(false)}>{selectedCheckin ? <div className="stack checkin-edit-content"><form id="checkin-edit-form" className="stack" onSubmit={submitEdit}><label>{t('monitoring.symptoms')}<select name="had_symptoms" value={editForm.had_symptoms ? 'yes' : 'no'} onChange={(event) => setEditForm((current) => ({ ...current, had_symptoms: event.target.value === 'yes' }))}><option value="no">{t('monitoring.no')}</option><option value="yes">{t('monitoring.yes')}</option></select></label>{editForm.had_symptoms ? <label>{t('monitoring.descriptionLabel')}<textarea name="symptom_description" rows={4} value={editForm.symptom_description} onChange={(event) => setEditForm((current) => ({ ...current, symptom_description: event.target.value }))} /></label> : null}<label>{t('monitoring.diet')}<select name="diet_adherence" value={editForm.diet_adherence ? 'yes' : 'no'} onChange={(event) => setEditForm((current) => ({ ...current, diet_adherence: event.target.value === 'yes' }))}><option value="no">{t('monitoring.no')}</option><option value="yes">{t('monitoring.yes')}</option></select><small className="muted">{t('monitoring.dietHelp')}</small></label>{!editForm.diet_adherence ? <label>{t('monitoring.dietDeviationLabel')}<textarea name="lifestyle_notes" rows={3} value={editForm.lifestyle_notes} onChange={(event) => setEditForm((current) => ({ ...current, lifestyle_notes: event.target.value }))} /></label> : null}<label>{t('monitoring.medication')}<select name="medication_adherence" value={editForm.medication_adherence ? 'yes' : 'no'} onChange={(event) => setEditForm((current) => ({ ...current, medication_adherence: event.target.value === 'yes' }))}><option value="no">{t('monitoring.no')}</option><option value="yes">{t('monitoring.yes')}</option></select><small className="muted">{t('monitoring.medicationHelp')}</small></label></form><ClinicalImagesSection ref={imagesRef} hideSubmitButton patientId={patientId} dailyReportId={Number(reportIdFromCheckIn(selectedCheckin))} title="Imagens deste check-in" /><div className="page-actions checkin-edit-actions"><button className="button secondary" type="button" onClick={() => setEditing(false)}>{t('monitoring.cancel')}</button><button className="button" form="checkin-edit-form" disabled={saving} type="submit">{saving ? t('monitoring.saving') : t('monitoring.saveAnswer')}</button></div></div> : null}</Modal>
     <Modal open={deleting} title={t('monitoring.deleteTitle')} onClose={() => setDeleting(false)}><p className="muted">{t('monitoring.deleteConfirm')}</p><div className="page-actions"><button className="button secondary" type="button" onClick={() => setDeleting(false)}>{t('monitoring.cancel')}</button><button className="button danger-button" disabled={saving} type="button" onClick={deleteResponse}>{saving ? t('monitoring.deleting') : t('monitoring.deleteTitle')}</button></div></Modal>
   </div>;
 }

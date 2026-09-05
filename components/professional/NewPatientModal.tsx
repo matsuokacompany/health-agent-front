@@ -10,8 +10,12 @@ import { Button } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
 import { formatBrazilianPhone, phoneValidationError, toBrazilianPhoneDigits } from '@/lib/phone';
+import type { SupplementDosagePeriod } from '@/lib/types';
 
-type FormValues = Record<keyof CreateProfessionalPatientRequest, string>;
+type SupplementDraft = { name: string; dosageTimes: string; dosagePeriod: SupplementDosagePeriod; indeterminate: boolean; durationDays: string };
+const emptySupplementDraft = (): SupplementDraft => ({ name: '', dosageTimes: '1', dosagePeriod: 'DAY', indeterminate: true, durationDays: '30' });
+
+type FormValues = Record<keyof Omit<CreateProfessionalPatientRequest, 'supplements'>, string>;
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
 const initialValues: FormValues = { name: '', email: '', phone: '+55', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
 const fieldNames = new Set(Object.keys(initialValues));
@@ -91,6 +95,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   const [errorMessage, setErrorMessage] = useState('');
   const [anamnese, setAnamnese] = useState('');
   const [isSavingAnamnese, setIsSavingAnamnese] = useState(false);
+  const [supplements, setSupplements] = useState<SupplementDraft[]>([]);
   const minStartDate = useRef(tomorrowIsoDate()).current;
   const mutation = useCreateProfessionalPatient({
     onError: (error) => {
@@ -117,6 +122,25 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     setErrors((current) => ({ ...current, [name]: undefined }));
   }
 
+  function updateSupplement(index: number, patch: Partial<SupplementDraft>) {
+    setSupplements((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
+  }
+
+  function removeSupplement(index: number) {
+    setSupplements((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function toSupplementsPayload() {
+    return supplements
+      .filter((item) => item.name.trim())
+      .map((item) => ({
+        name: item.name.trim(),
+        dosage_times: Number(item.dosageTimes) || 1,
+        dosage_period: item.dosagePeriod,
+        duration_days: item.indeterminate ? null : Number(item.durationDays) || null,
+      }));
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
@@ -141,7 +165,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     if (Object.keys(next).length || anamneseValidationError) return;
     submitting.current = true;
     try {
-      const response = await mutation.mutateAsync(toCreatePatientPayload(values));
+      const response = await mutation.mutateAsync({ ...toCreatePatientPayload(values), supplements: toSupplementsPayload() });
       const patientId = response.patient.id;
       if (normalizedAnamnese.trim()) {
         setIsSavingAnamnese(true);
@@ -175,6 +199,42 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
         {errors.plan_start_date ? <span className="field-error" id="plan-start-date-error" role="alert">{errors.plan_start_date}</span> : null}
       </label>
       {input('plan_end_date', 'Data final', { type: 'date', min: values.plan_start_date || undefined })}
+    </div>
+    <h3 className="new-patient-section-title">Medicamentos e suplementos</h3>
+    <p className="muted compact">Opcional. O check-in diário do WhatsApp pergunta especificamente sobre cada um, enquanto o tratamento estiver em curso.</p>
+    <div className="stack compact">
+      {supplements.map((supplement, index) => (
+        <div className="new-patient-grid" key={index}>
+          <label>
+            Nome
+            <input type="text" placeholder="Ex.: Amoxicilina" maxLength={120} value={supplement.name} onChange={(event) => updateSupplement(index, { name: event.target.value })} />
+          </label>
+          <label>
+            Quantas vezes
+            <input type="number" min={1} max={99} value={supplement.dosageTimes} onChange={(event) => updateSupplement(index, { dosageTimes: event.target.value })} />
+          </label>
+          <label>
+            Por
+            <select value={supplement.dosagePeriod} onChange={(event) => updateSupplement(index, { dosagePeriod: event.target.value as SupplementDosagePeriod })}>
+              <option value="DAY">Dia</option>
+              <option value="WEEK">Semana</option>
+              <option value="MONTH">Mês</option>
+            </select>
+          </label>
+          <label>
+            <input type="checkbox" checked={supplement.indeterminate} onChange={(event) => updateSupplement(index, { indeterminate: event.target.checked })} />
+            {' '}Uso contínuo
+          </label>
+          {!supplement.indeterminate ? (
+            <label>
+              Por quantos dias
+              <input type="number" min={1} max={3650} value={supplement.durationDays} onChange={(event) => updateSupplement(index, { durationDays: event.target.value })} />
+            </label>
+          ) : null}
+          <Button variant="ghost" type="button" onClick={() => removeSupplement(index)}>Remover</Button>
+        </div>
+      ))}
+      <Button variant="secondary" type="button" onClick={() => setSupplements((current) => [...current, emptySupplementDraft()])}>Adicionar medicamento/suplemento</Button>
     </div>
     <h3 className="new-patient-section-title">Anamnese</h3><label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
     {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}<div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button><Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button></div>

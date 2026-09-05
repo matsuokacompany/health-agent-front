@@ -1,4 +1,5 @@
 import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
+import type { SupplementInput } from '@/lib/types';
 import { api } from './api';
 
 export type ProfessionalPatient = {
@@ -30,6 +31,7 @@ export type CreateProfessionalPatientRequest = {
   plan_description?: string;
   plan_start_date?: string;
   plan_end_date?: string;
+  supplements?: SupplementInput[];
 };
 
 export type CreatedPatient = {
