@@ -148,7 +148,8 @@ export type NotificationKind =
   | 'AI_REPORT_READY'
   | 'SYMPTOM_REPORTED'
   | 'PATIENT_ASSIGNED'
-  | 'CHECKIN_PENDING';
+  | 'CHECKIN_PENDING'
+  | 'SUPPLEMENT_COURSE_ENDED';
 export type AppNotification = {
   id: number;
   kind: NotificationKind;
