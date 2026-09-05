@@ -246,6 +246,8 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
   font-size:.86rem;
 }
 .patient-monitoring-page .calendar-legend i{width:14px;height:14px}
+.day-adherence-icons{display:flex;gap:2px;justify-content:center;line-height:1;font-size:.72rem;margin-top:1px}
+.patient-monitoring-page .day-adherence-icons{font-size:.65rem}
 @media (max-width:575px){
   .patient-monitoring-page .calendar-layout.is-calendar-only .calendar-weekdays,
   .patient-monitoring-page .calendar-layout.is-calendar-only .calendar{max-width:none}

@@ -1,5 +1,5 @@
 import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
-import type { SupplementInput } from '@/lib/types';
+import type { Supplement, SupplementInput } from '@/lib/types';
 import { api } from './api';
 
 export type ProfessionalPatient = {
@@ -90,6 +90,18 @@ export function createPatientAnamnese(patientId: number | string, payload: SaveA
 
 export function updatePatientAnamnese(patientId: number | string, payload: SaveAnamnesePayload) {
   return api<Anamnese>(`/api/professional/patients/${patientId}/anamnese`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export function getPatientSupplements(patientId: number | string) {
+  return api<Supplement[]>(`/api/professional/patients/${patientId}/supplements`);
+}
+
+export function createPatientSupplement(patientId: number | string, payload: SupplementInput) {
+  return api<Supplement>(`/api/professional/patients/${patientId}/supplements`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function deletePatientSupplement(patientId: number | string, supplementId: number) {
+  return api<void>(`/api/professional/patients/${patientId}/supplements/${supplementId}`, { method: 'DELETE' });
 }
 
 export function createProfessionalPatient(payload: CreateProfessionalPatientRequest) {
