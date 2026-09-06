@@ -48,6 +48,7 @@ export type SupplementInput = {
   dosage_period?: SupplementDosagePeriod;
   duration_days?: number | null;
 };
+export type SupplementUpdate = Partial<SupplementInput>;
 
 export type ProfessionalProfile = {
   id: number;
@@ -87,6 +88,7 @@ export type DailyReportStatus =
   | 'AWAITING_CAUSE'
   | 'AWAITING_DIET_ADHERENCE'
   | 'AWAITING_DIET_DEVIATION_DESCRIPTION'
+  | 'AWAITING_EXERCISE_ADHERENCE'
   | 'AWAITING_MEDICATION_ADHERENCE'
   | 'COMPLETED'
   | 'EXPIRED';
@@ -103,6 +105,7 @@ export type DailyReport = {
   cause?: string | null;
   had_symptoms?: boolean | null;
   diet_adherence?: boolean | null;
+  exercise_adherence?: boolean | null;
   medication_adherence?: boolean | null;
   lifestyle_notes?: string | null;
   completed?: boolean;
