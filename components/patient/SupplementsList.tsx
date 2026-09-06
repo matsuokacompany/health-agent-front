@@ -36,54 +36,50 @@ function isSupplementActive(supplement: Supplement) {
 function DosageFields({ values, onChange }: { values: SupplementFormValues; onChange: (values: SupplementFormValues) => void }) {
   return (
     <>
-      <div className="page-actions">
-        <label>
-          Quantas vezes
+      <label className="supplement-field supplement-field-times">
+        Vezes
+        <input
+          type="number"
+          min={1}
+          max={99}
+          value={values.dosageTimes}
+          onChange={(event) => onChange({ ...values, dosageTimes: event.target.value })}
+          aria-label="Quantidade de vezes"
+        />
+      </label>
+      <label className="supplement-field supplement-field-period">
+        Por
+        <select
+          value={values.dosagePeriod}
+          onChange={(event) => onChange({ ...values, dosagePeriod: event.target.value as SupplementDosagePeriod })}
+          aria-label="Período"
+        >
+          <option value="DAY">Dia</option>
+          <option value="WEEK">Semana</option>
+          <option value="MONTH">Mês</option>
+        </select>
+      </label>
+      <label className="checkbox-field supplement-field-continuous">
+        <input
+          type="checkbox"
+          checked={values.indeterminate}
+          onChange={(event) => onChange({ ...values, indeterminate: event.target.checked })}
+        />
+        <span>Uso contínuo</span>
+      </label>
+      {!values.indeterminate ? (
+        <label className="supplement-field supplement-field-days">
+          Por quantos dias
           <input
             type="number"
             min={1}
-            max={99}
-            value={values.dosageTimes}
-            onChange={(event) => onChange({ ...values, dosageTimes: event.target.value })}
-            aria-label="Quantidade de vezes"
+            max={3650}
+            value={values.durationDays}
+            onChange={(event) => onChange({ ...values, durationDays: event.target.value })}
+            aria-label="Duração em dias"
           />
         </label>
-        <label>
-          Por
-          <select
-            value={values.dosagePeriod}
-            onChange={(event) => onChange({ ...values, dosagePeriod: event.target.value as SupplementDosagePeriod })}
-            aria-label="Período"
-          >
-            <option value="DAY">Dia</option>
-            <option value="WEEK">Semana</option>
-            <option value="MONTH">Mês</option>
-          </select>
-        </label>
-      </div>
-      <div className="page-actions">
-        <label>
-          <input
-            type="checkbox"
-            checked={values.indeterminate}
-            onChange={(event) => onChange({ ...values, indeterminate: event.target.checked })}
-          />
-          {' '}Uso contínuo (sem data para parar)
-        </label>
-        {!values.indeterminate ? (
-          <label>
-            Por quantos dias
-            <input
-              type="number"
-              min={1}
-              max={3650}
-              value={values.durationDays}
-              onChange={(event) => onChange({ ...values, durationDays: event.target.value })}
-              aria-label="Duração em dias"
-            />
-          </label>
-        ) : null}
-      </div>
+      ) : null}
     </>
   );
 }
@@ -194,18 +190,21 @@ export function SupplementsList() {
               editingId === supplement.id ? (
                 <form
                   key={supplement.id}
-                  className="supplement-item is-editing"
+                  className="supplement-item is-editing supplement-form-row"
                   onSubmit={(event) => void handleSaveEdit(event, supplement.id)}
                 >
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    maxLength={120}
-                    onChange={(event) => setEditForm({ ...editForm, name: event.target.value })}
-                    aria-label="Nome do suplemento ou remédio"
-                  />
+                  <label className="supplement-field supplement-field-name">
+                    Nome
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      maxLength={120}
+                      onChange={(event) => setEditForm({ ...editForm, name: event.target.value })}
+                      aria-label="Nome do suplemento ou remédio"
+                    />
+                  </label>
                   <DosageFields values={editForm} onChange={setEditForm} />
-                  <div className="page-actions supplement-edit-actions">
+                  <div className="supplement-edit-actions">
                     <Button type="submit" loading={editSaving} loadingLabel="Salvando..." disabled={!editForm.name.trim()}>
                       Salvar
                     </Button>
@@ -247,15 +246,18 @@ export function SupplementsList() {
         </div>
       )}
       {error ? <p className="notice danger">{error}</p> : null}
-      <form className="stack compact" onSubmit={(event) => void handleAdd(event)}>
-        <input
-          type="text"
-          placeholder="Ex.: Vitamina D"
-          value={form.name}
-          maxLength={120}
-          onChange={(event) => setForm({ ...form, name: event.target.value })}
-          aria-label="Nome do suplemento ou remédio"
-        />
+      <form className="supplement-form-row" onSubmit={(event) => void handleAdd(event)}>
+        <label className="supplement-field supplement-field-name">
+          Nome
+          <input
+            type="text"
+            placeholder="Ex.: Vitamina D"
+            value={form.name}
+            maxLength={120}
+            onChange={(event) => setForm({ ...form, name: event.target.value })}
+            aria-label="Nome do suplemento ou remédio"
+          />
+        </label>
         <DosageFields values={form} onChange={setForm} />
         <Button type="submit" loading={saving} loadingLabel="Adicionando..." disabled={!form.name.trim()}>
           Adicionar
