@@ -22,8 +22,7 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
   ],
   '/professional/assinatura': [
     { target: '[data-tour="assinatura-status"]', title: 'Status da assinatura', body: 'Veja o status atual, quantos pacientes você já usa do seu limite e as ações disponíveis (trocar de plano, cancelar).' },
-    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento.' },
-    { target: '[data-tour="assinatura-invoices"]', title: 'Histórico de cobranças', body: 'Suas faturas anteriores ficam aqui. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],
   '/patient/dashboard': [
     { title: 'Bem-vindo à Julha', body: 'Vamos te mostrar rapidamente como acompanhar sua evolução por aqui. Leva menos de um minuto.' },
@@ -35,18 +34,18 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
   ],
   '/patient/monitoring': [
     { target: '[data-tour="monitoring-calendar"]', title: 'Seu calendário', body: 'Cada dia mostra se você respondeu o check-in e se relatou sintomas. Clique em um dia para ver os detalhes ou editar sua resposta.' },
-    { target: '[data-tour="monitoring-legend"]', title: 'Legenda', body: 'As cores indicam o status de cada dia: sem sintomas, com sintomas, pendente ou sem check-in. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="monitoring-legend"]', title: 'Legenda', body: 'A primeira linha mostra o status do dia (sem sintomas, com sintomas, pendente ou sem check-in); a segunda mostra o que você respondeu sobre dieta, treino e remédios/suplementos. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],
   '/patient/anamnese': [
-    { target: '[data-tour="anamnese-card"]', title: 'Sua anamnese', body: 'Aqui fica o histórico clínico registrado pelo seu profissional. É somente leitura — só ele pode editar. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="anamnese-card"]', title: 'Sua anamnese', body: 'Aqui fica o histórico clínico registrado pelo seu profissional. É somente leitura — só ele pode editar.' },
+    { target: '[data-tour="supplements-list"]', title: 'Seus remédios e suplementos', body: 'Cadastre o que você toma regularmente, com a frequência e por quanto tempo. O check-in diário do WhatsApp usa essa lista para perguntar sobre cada um enquanto o tratamento estiver em curso — clique em "Editar" para corrigir algo ou "Remover" para tirar da lista. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],
   '/patient/relatorios': [
     { target: '[data-tour="relatorios-list"]', title: 'Histórico de resumos', body: 'Cada resumo gerado por IA no Automonitoramento fica registrado aqui, para você acompanhar sua evolução ao longo do tempo. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],
   '/patient/assinatura': [
     { target: '[data-tour="assinatura-status"]', title: 'Status da assinatura', body: 'Veja o status atual da sua assinatura e as ações disponíveis (trocar de plano, cancelar).' },
-    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento.' },
-    { target: '[data-tour="assinatura-invoices"]', title: 'Histórico de cobranças', body: 'Suas faturas anteriores ficam aqui. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
   ],
   '/admin': [
     { title: 'Bem-vindo à administração', body: 'Vamos te mostrar rapidamente o painel administrativo. Leva menos de um minuto.' },

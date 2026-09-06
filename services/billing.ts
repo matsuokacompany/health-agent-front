@@ -1,4 +1,4 @@
-import type { BillingPlan, CheckoutResponse, Invoice, Subscription } from '@/lib/types';
+import type { BillingPlan, CheckoutResponse, Subscription } from '@/lib/types';
 import { api } from './api';
 
 export const billingApi = {
@@ -6,7 +6,6 @@ export const billingApi = {
   getPlans: () => api<BillingPlan[]>('/api/billing/plans'),
   getPublicPlans: (audience: 'professional' | 'patient') =>
     api<BillingPlan[]>(`/api/billing/plans/public?${new URLSearchParams({ audience })}`),
-  getInvoices: () => api<Invoice[]>('/api/billing/invoices'),
   startCheckout: (planId: string) =>
     api<CheckoutResponse>('/api/billing/subscription', { method: 'POST', body: JSON.stringify({ plan_id: planId }) }),
   changePlan: (planId: string) =>

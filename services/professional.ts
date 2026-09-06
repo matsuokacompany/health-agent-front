@@ -1,5 +1,5 @@
 import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
-import type { Supplement, SupplementInput } from '@/lib/types';
+import type { Supplement, SupplementInput, SupplementUpdate } from '@/lib/types';
 import { api } from './api';
 
 export type ProfessionalPatient = {
@@ -98,6 +98,10 @@ export function getPatientSupplements(patientId: number | string) {
 
 export function createPatientSupplement(patientId: number | string, payload: SupplementInput) {
   return api<Supplement>(`/api/professional/patients/${patientId}/supplements`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updatePatientSupplement(patientId: number | string, supplementId: number, payload: SupplementUpdate) {
+  return api<Supplement>(`/api/professional/patients/${patientId}/supplements/${supplementId}`, { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
 export function deletePatientSupplement(patientId: number | string, supplementId: number) {

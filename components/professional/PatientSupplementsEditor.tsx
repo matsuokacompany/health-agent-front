@@ -5,7 +5,7 @@ import { ApiError } from '@/infrastructure/http/ApiClient';
 import { Button } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { formatDosageSchedule } from '@/lib/supplementSchedule';
-import { createPatientSupplement, deletePatientSupplement, getPatientSupplements } from '@/services/professional';
+import { createPatientSupplement, deletePatientSupplement, getPatientSupplements, updatePatientSupplement } from '@/services/professional';
 import type { Supplement, SupplementDosagePeriod } from '@/lib/types';
 
 function friendlyError(error: unknown) {
@@ -13,16 +13,77 @@ function friendlyError(error: unknown) {
   return 'Não foi possível salvar. Tente novamente.';
 }
 
+type SupplementFormValues = {
+  name: string;
+  dosageTimes: string;
+  dosagePeriod: SupplementDosagePeriod;
+  indeterminate: boolean;
+  durationDays: string;
+};
+
+const EMPTY_FORM: SupplementFormValues = { name: '', dosageTimes: '1', dosagePeriod: 'DAY', indeterminate: true, durationDays: '30' };
+
+function formValuesFromSupplement(supplement: Supplement): SupplementFormValues {
+  return {
+    name: supplement.name,
+    dosageTimes: String(supplement.dosage_times),
+    dosagePeriod: supplement.dosage_period,
+    indeterminate: supplement.duration_days == null,
+    durationDays: supplement.duration_days ? String(supplement.duration_days) : '30',
+  };
+}
+
+function isSupplementActive(supplement: Supplement) {
+  if (supplement.duration_days == null) return true;
+  const startedAt = new Date(`${supplement.started_at.slice(0, 10)}T00:00:00`);
+  const elapsedDays = Math.floor((Date.now() - startedAt.getTime()) / 86_400_000);
+  return elapsedDays < supplement.duration_days;
+}
+
+function DosageFields({ values, onChange }: { values: SupplementFormValues; onChange: (values: SupplementFormValues) => void }) {
+  return (
+    <>
+      <div className="page-actions">
+        <label>
+          Quantas vezes
+          <input type="number" min={1} max={99} value={values.dosageTimes} onChange={(event) => onChange({ ...values, dosageTimes: event.target.value })} aria-label="Quantidade de vezes" />
+        </label>
+        <label>
+          Por
+          <select value={values.dosagePeriod} onChange={(event) => onChange({ ...values, dosagePeriod: event.target.value as SupplementDosagePeriod })} aria-label="Período">
+            <option value="DAY">Dia</option>
+            <option value="WEEK">Semana</option>
+            <option value="MONTH">Mês</option>
+          </select>
+        </label>
+      </div>
+      <div className="page-actions">
+        <label>
+          <input type="checkbox" checked={values.indeterminate} onChange={(event) => onChange({ ...values, indeterminate: event.target.checked })} />
+          {' '}Uso contínuo (sem data para parar)
+        </label>
+        {!values.indeterminate ? (
+          <label>
+            Por quantos dias
+            <input type="number" min={1} max={3650} value={values.durationDays} onChange={(event) => onChange({ ...values, durationDays: event.target.value })} aria-label="Duração em dias" />
+          </label>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
 export function PatientSupplementsEditor({ patientId }: { patientId: string }) {
   const [supplements, setSupplements] = useState<Supplement[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [dosageTimes, setDosageTimes] = useState('1');
-  const [dosagePeriod, setDosagePeriod] = useState<SupplementDosagePeriod>('DAY');
-  const [indeterminate, setIndeterminate] = useState(true);
-  const [durationDays, setDurationDays] = useState('30');
+  const [form, setForm] = useState<SupplementFormValues>(EMPTY_FORM);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<SupplementFormValues>(EMPTY_FORM);
+  const [editSaving, setEditSaving] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -34,23 +95,19 @@ export function PatientSupplementsEditor({ patientId }: { patientId: string }) {
 
   async function handleAdd(event: FormEvent) {
     event.preventDefault();
-    const trimmed = name.trim();
+    const trimmed = form.name.trim();
     if (!trimmed) return;
     setSaving(true);
     setError(null);
     try {
       const created = await createPatientSupplement(patientId, {
         name: trimmed,
-        dosage_times: Number(dosageTimes) || 1,
-        dosage_period: dosagePeriod,
-        duration_days: indeterminate ? null : Number(durationDays) || null,
+        dosage_times: Number(form.dosageTimes) || 1,
+        dosage_period: form.dosagePeriod,
+        duration_days: form.indeterminate ? null : Number(form.durationDays) || null,
       });
       setSupplements((current) => [...current, created]);
-      setName('');
-      setDosageTimes('1');
-      setDosagePeriod('DAY');
-      setIndeterminate(true);
-      setDurationDays('30');
+      setForm(EMPTY_FORM);
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -58,14 +115,46 @@ export function PatientSupplementsEditor({ patientId }: { patientId: string }) {
     }
   }
 
+  function startEditing(supplement: Supplement) {
+    setError(null);
+    setEditingId(supplement.id);
+    setEditForm(formValuesFromSupplement(supplement));
+  }
+
+  async function handleSaveEdit(event: FormEvent, id: number) {
+    event.preventDefault();
+    const trimmed = editForm.name.trim();
+    if (!trimmed) return;
+    setEditSaving(true);
+    setError(null);
+    try {
+      const updated = await updatePatientSupplement(patientId, id, {
+        name: trimmed,
+        dosage_times: Number(editForm.dosageTimes) || 1,
+        dosage_period: editForm.dosagePeriod,
+        duration_days: editForm.indeterminate ? null : Number(editForm.durationDays) || null,
+      });
+      setSupplements((current) => current.map((item) => (item.id === id ? updated : item)));
+      setEditingId(null);
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   async function handleRemove(id: number) {
     const previous = supplements;
+    setRemovingId(id);
+    setError(null);
     setSupplements((current) => current.filter((item) => item.id !== id));
     try {
       await deletePatientSupplement(patientId, id);
     } catch (err) {
       setSupplements(previous);
       setError(friendlyError(err));
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -83,20 +172,42 @@ export function PatientSupplementsEditor({ patientId }: { patientId: string }) {
           <SkeletonBlock />
         </div>
       ) : (
-        <div className="stack compact">
+        <div className="supplement-list">
           {supplements.length ? (
-            supplements.map((supplement) => (
-              <div key={supplement.id} className="list-row">
-                <span>
-                  {supplement.name}
-                  <br />
-                  <span className="muted compact">
-                    {formatDosageSchedule(supplement.dosage_times, supplement.dosage_period, supplement.duration_days)}
-                  </span>
-                </span>
-                <Button variant="ghost" onClick={() => void handleRemove(supplement.id)}>Remover</Button>
-              </div>
-            ))
+            supplements.map((supplement) =>
+              editingId === supplement.id ? (
+                <form key={supplement.id} className="supplement-item is-editing" onSubmit={(event) => void handleSaveEdit(event, supplement.id)}>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    maxLength={120}
+                    onChange={(event) => setEditForm({ ...editForm, name: event.target.value })}
+                    aria-label="Nome do medicamento ou suplemento"
+                  />
+                  <DosageFields values={editForm} onChange={setEditForm} />
+                  <div className="page-actions supplement-edit-actions">
+                    <Button type="submit" loading={editSaving} loadingLabel="Salvando..." disabled={!editForm.name.trim()}>Salvar</Button>
+                    <Button variant="secondary" onClick={() => setEditingId(null)} disabled={editSaving}>Cancelar</Button>
+                  </div>
+                </form>
+              ) : (
+                <div key={supplement.id} className="supplement-item">
+                  <div className="supplement-item-info">
+                    <strong>{supplement.name}</strong>
+                    <span className="muted compact">
+                      {formatDosageSchedule(supplement.dosage_times, supplement.dosage_period, supplement.duration_days)}
+                    </span>
+                    {!isSupplementActive(supplement) ? (
+                      <span className="badge supplement-badge supplement-badge-ended">Tratamento encerrado</span>
+                    ) : null}
+                  </div>
+                  <div className="page-actions">
+                    <Button variant="secondary" onClick={() => startEditing(supplement)} disabled={removingId === supplement.id}>Editar</Button>
+                    <Button variant="ghost" loading={removingId === supplement.id} loadingLabel="Removendo..." onClick={() => void handleRemove(supplement.id)}>Remover</Button>
+                  </div>
+                </div>
+              ),
+            )
           ) : (
             <p className="muted compact">Nenhum medicamento ou suplemento cadastrado ainda.</p>
           )}
@@ -107,38 +218,13 @@ export function PatientSupplementsEditor({ patientId }: { patientId: string }) {
         <input
           type="text"
           placeholder="Ex.: Amoxicilina"
-          value={name}
+          value={form.name}
           maxLength={120}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => setForm({ ...form, name: event.target.value })}
           aria-label="Nome do medicamento ou suplemento"
         />
-        <div className="page-actions">
-          <label>
-            Quantas vezes
-            <input type="number" min={1} max={99} value={dosageTimes} onChange={(event) => setDosageTimes(event.target.value)} aria-label="Quantidade de vezes" />
-          </label>
-          <label>
-            Por
-            <select value={dosagePeriod} onChange={(event) => setDosagePeriod(event.target.value as SupplementDosagePeriod)} aria-label="Período">
-              <option value="DAY">Dia</option>
-              <option value="WEEK">Semana</option>
-              <option value="MONTH">Mês</option>
-            </select>
-          </label>
-        </div>
-        <div className="page-actions">
-          <label>
-            <input type="checkbox" checked={indeterminate} onChange={(event) => setIndeterminate(event.target.checked)} />
-            {' '}Uso contínuo (sem data para parar)
-          </label>
-          {!indeterminate ? (
-            <label>
-              Por quantos dias
-              <input type="number" min={1} max={3650} value={durationDays} onChange={(event) => setDurationDays(event.target.value)} aria-label="Duração em dias" />
-            </label>
-          ) : null}
-        </div>
-        <Button type="submit" loading={saving} loadingLabel="Adicionando..." disabled={!name.trim()}>
+        <DosageFields values={form} onChange={setForm} />
+        <Button type="submit" loading={saving} loadingLabel="Adicionando..." disabled={!form.name.trim()}>
           Adicionar
         </Button>
       </form>
