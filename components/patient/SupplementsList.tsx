@@ -175,7 +175,7 @@ export function SupplementsList() {
   }
 
   return (
-    <Card>
+    <Card data-tour="supplements-list">
       <span className="eyebrow">Meus suplementos e remédios</span>
       <h2>O que você toma regularmente</h2>
       <p className="muted">
