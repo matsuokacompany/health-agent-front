@@ -9,7 +9,9 @@ import { anamnesesApi } from '@/services/anamnese';
 
 export default function PatientAnamnese() {
   const { plans } = usePatientData();
-  const hasProfessional = plans.some((plan) => plan.origin === 'PROFESSIONAL');
+  const hasProfessional = plans.some(
+    (plan) => plan.origin === 'PROFESSIONAL' && (plan.active || String(plan.status ?? '').toLowerCase() === 'active'),
+  );
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(true);
 
