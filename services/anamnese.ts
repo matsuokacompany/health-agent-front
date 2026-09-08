@@ -2,33 +2,15 @@ import type { Anamnese, User } from '@/lib/types';
 import { assertCanAccessPatient } from '@/lib/rbac';
 import { api } from './api';
 
-let currentUserAnamneseRequest: Promise<Anamnese> | null = null;
-
-const fetchCurrentUserAnamnese = () => {
-  if (!currentUserAnamneseRequest) {
-    currentUserAnamneseRequest = api<Anamnese>('/api/anamneses/me').catch((error) => {
-      currentUserAnamneseRequest = null;
-      throw error;
-    });
-  }
-
-  return currentUserAnamneseRequest;
-};
-
-const refreshCurrentUserAnamnese = (request: Promise<Anamnese>) => {
-  currentUserAnamneseRequest = request;
-  return request;
-};
-
+// No caching here: a per-module cache not keyed by user id previously
+// survived logout/login within the same tab, serving one account's
+// anamnese to whichever account loaded next.
 export const anamnesesApi = {
-  me: fetchCurrentUserAnamnese,
-  create: (payload: Anamnese) => refreshCurrentUserAnamnese(api<Anamnese>('/api/anamneses/me', { method: 'POST', body: JSON.stringify(payload) })),
-  updateMe: (payload: Anamnese) => refreshCurrentUserAnamnese(api<Anamnese>('/api/anamneses/me', { method: 'PUT', body: JSON.stringify(payload) })),
+  me: () => api<Anamnese>('/api/anamneses/me'),
+  create: (payload: Anamnese) => api<Anamnese>('/api/anamneses/me', { method: 'POST', body: JSON.stringify(payload) }),
+  updateMe: (payload: Anamnese) => api<Anamnese>('/api/anamneses/me', { method: 'PUT', body: JSON.stringify(payload) }),
   byUser: (userId: number) => api<Anamnese>(`/api/anamneses/user/${userId}`),
-  remove: (id: number) => {
-    currentUserAnamneseRequest = null;
-    return api<void>(`/api/anamneses/${id}`, { method: 'DELETE' });
-  },
+  remove: (id: number) => api<void>(`/api/anamneses/${id}`, { method: 'DELETE' }),
 };
 export const getAnamnese = async (user: User, patientId: number) => {
   assertCanAccessPatient(user, patientId);
