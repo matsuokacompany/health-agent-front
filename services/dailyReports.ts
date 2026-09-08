@@ -11,7 +11,7 @@ export const dailyReportsApi = {
   get: (id: number | string) => api<DailyReport>(`/api/daily-reports/${id}`),
   update: (
     id: number | string,
-    payload: Partial<Pick<DailyReport, 'had_symptoms' | 'symptom_description' | 'diet_adherence' | 'exercise_adherence' | 'medication_adherence' | 'lifestyle_notes'>>,
+    payload: Partial<Pick<DailyReport, 'had_symptoms' | 'symptom_description' | 'diet_adherence' | 'exercise_adherence' | 'medication_adherence' | 'medication_adherence_level' | 'lifestyle_notes'>>,
   ) => api<DailyReport>(`/api/daily-reports/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   remove: (id: number) => api<void>(`/api/daily-reports/${id}`, { method: 'DELETE' }),
   removeResponse: (id: number | string) => api<void>(`/api/daily-reports/${id}/response`, { method: 'DELETE' }),

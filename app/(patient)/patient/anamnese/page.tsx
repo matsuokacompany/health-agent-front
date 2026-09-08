@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
+import { SelfAnamneseEditor } from '@/components/patient/SelfAnamneseEditor';
 import { SupplementsList } from '@/components/patient/SupplementsList';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { anamnesesApi } from '@/services/anamnese';
@@ -12,11 +13,21 @@ export default function PatientAnamnese() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { anamnesesApi.me().then((a) => setInfo(String(a.info ?? ''))).catch(() => setInfo('')).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    if (hasProfessional) {
+      anamnesesApi.me().then((a) => setInfo(String(a.info ?? ''))).catch(() => setInfo('')).finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [hasProfessional]);
 
   return (
-    <section className="stack" data-tour="anamnese-card">
-      <ReadOnlyAnamnese info={info} loading={loading} hasProfessional={hasProfessional} />
+    <section className="stack">
+      {hasProfessional ? (
+        <ReadOnlyAnamnese info={info} loading={loading} />
+      ) : (
+        <SelfAnamneseEditor />
+      )}
       <SupplementsList />
     </section>
   );
