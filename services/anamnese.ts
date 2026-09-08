@@ -22,7 +22,7 @@ const refreshCurrentUserAnamnese = (request: Promise<Anamnese>) => {
 
 export const anamnesesApi = {
   me: fetchCurrentUserAnamnese,
-  create: (payload: Anamnese) => refreshCurrentUserAnamnese(api<Anamnese>('/api/anamneses/', { method: 'POST', body: JSON.stringify(payload) })),
+  create: (payload: Anamnese) => refreshCurrentUserAnamnese(api<Anamnese>('/api/anamneses/me', { method: 'POST', body: JSON.stringify(payload) })),
   updateMe: (payload: Anamnese) => refreshCurrentUserAnamnese(api<Anamnese>('/api/anamneses/me', { method: 'PUT', body: JSON.stringify(payload) })),
   byUser: (userId: number) => api<Anamnese>(`/api/anamneses/user/${userId}`),
   remove: (id: number) => {

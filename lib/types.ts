@@ -107,6 +107,7 @@ export type DailyReport = {
   diet_adherence?: boolean | null;
   exercise_adherence?: boolean | null;
   medication_adherence?: boolean | null;
+  medication_adherence_level?: 'ALL' | 'PARTIAL' | 'NONE' | null;
   lifestyle_notes?: string | null;
   completed?: boolean;
   created_at?: string;
