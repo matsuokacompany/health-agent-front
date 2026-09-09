@@ -21,6 +21,7 @@ import { useOptionalQueryClient } from '@/lib/tanstack-react-query';
 export type AccessContext = 'admin' | 'professional' | 'patient';
 
 const ACCESS_CONTEXT_KEY = 'julha.activeAccessContext';
+const LOGOUT_BROADCAST_KEY = 'julha.logoutBroadcast';
 const SESSION_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 export const accessContextLabels: Record<AccessContext, string> = {
@@ -92,6 +93,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(clearAuthState);
     return () => setUnauthorizedHandler(null);
+  }, [clearAuthState]);
+
+  // Signing out in one tab must not leave other already-open tabs showing
+  // protected content -- the cookie clears browser-wide, but each tab's own
+  // React state only learns about it if told. localStorage's `storage` event
+  // fires in every OTHER tab (never the one that wrote the key), so this
+  // never re-triggers itself: it only reacts, it never re-broadcasts.
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === LOGOUT_BROADCAST_KEY && event.newValue) clearAuthState();
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, [clearAuthState]);
 
   const refreshMe = useCallback(async () => {
@@ -212,6 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear immediately: a refresh that was already in flight must never make
     // protected UI visible again while the logout request is completing.
     clearAuthState();
+    if (typeof window !== 'undefined') window.localStorage.setItem(LOGOUT_BROADCAST_KEY, String(Date.now()));
     try {
       await backendSignOut();
     } catch {

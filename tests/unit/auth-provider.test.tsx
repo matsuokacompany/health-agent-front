@@ -88,4 +88,33 @@ describe('AuthProvider session restoration', () => {
     await waitFor(() => expect(screen.getByText('Sem aviso')).toBeTruthy());
     expect(screen.queryByText('Autenticado')).toBeNull();
   });
+
+  it('signs out other open tabs when one tab logs out', async () => {
+    signOutMock.mockResolvedValueOnce(undefined);
+    getCurrentUserMock.mockResolvedValueOnce({ id: '1', email: 'ana@example.com', roles: ['patient'] });
+    render(<AuthProvider><AuthStatus /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('Autenticado')).toBeTruthy());
+
+    // Simulate another tab calling signOut() -- it writes the broadcast key,
+    // which fires a `storage` event in every OTHER tab (jsdom doesn't do this
+    // automatically for same-window writes, so this dispatches it directly,
+    // as the browser would for a real second tab).
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'julha.logoutBroadcast', newValue: String(Date.now()) }));
+    });
+
+    await waitFor(() => expect(screen.getByText('Sem aviso')).toBeTruthy());
+  });
+
+  it('ignores unrelated storage events', async () => {
+    getCurrentUserMock.mockResolvedValueOnce({ id: '1', email: 'ana@example.com', roles: ['patient'] });
+    render(<AuthProvider><AuthStatus /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('Autenticado')).toBeTruthy());
+
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'julha.activeAccessContext', newValue: 'patient' }));
+    });
+
+    expect(screen.getByText('Autenticado')).toBeTruthy();
+  });
 });
