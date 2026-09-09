@@ -2,8 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { TOUR_STEPS, tourStorageKey, type TourStep } from '@/lib/tour';
+import { TOUR_STEPS, type TourStep } from '@/lib/tour';
 
 type TourContextValue = { startTour(): void; available: boolean };
 const TourContext = createContext<TourContextValue>({ startTour() {}, available: false });
@@ -52,7 +51,6 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
-  const auth = useAuth();
   const pathname = usePathname();
   const steps = useMemo(() => TOUR_STEPS[pathname] ?? [], [pathname]);
 
@@ -60,7 +58,6 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [sidebarRect, setSidebarRect] = useState<DOMRect | null>(null);
-  const autoStartedPathRef = useRef<string | null>(null);
 
   const step: TourStep | undefined = steps[stepIndex];
 
@@ -100,30 +97,12 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', measureSidebar);
   }, [open]);
 
-  useEffect(() => {
-    if (!auth.user || !steps.length || autoStartedPathRef.current === pathname) return;
-    autoStartedPathRef.current = pathname;
-    try {
-      if (!window.localStorage.getItem(tourStorageKey(pathname, auth.user.id))) {
-        setStepIndex(0);
-        setOpen(true);
-      }
-    } catch {
-      // localStorage unavailable (private mode, etc.) -- skip auto-start, the help button still works
-    }
-  }, [pathname, auth.user, steps.length]);
-
-  function markSeen() {
-    if (!auth.user) return;
-    try { window.localStorage.setItem(tourStorageKey(pathname, auth.user.id), '1'); } catch { /* best-effort */ }
-  }
-
   function startTour() {
     if (!steps.length) return;
     setStepIndex(0);
     setOpen(true);
   }
-  function close() { setOpen(false); markSeen(); }
+  function close() { setOpen(false); }
   function next() { if (stepIndex >= steps.length - 1) { close(); return; } setStepIndex((current) => current + 1); }
   function back() { setStepIndex((current) => Math.max(0, current - 1)); }
 

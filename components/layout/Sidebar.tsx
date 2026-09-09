@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/components/i18n/I18nProvider';
+import { TourButton } from '@/components/tour/TourButton';
 
 const icons: Record<string, string> = {
   Dashboard: '📊',
@@ -60,6 +61,7 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
       {links.map(([href,label]) => <Link className={pathname === href ? 'is-current' : ''} key={href} href={href as never} onClick={onNavigate} title={label}><span aria-hidden="true">{icons[label] ?? '•'}</span><span className="sidebar-label">{label}</span></Link>)}
     </nav>
     <div className="sidebar-actions">
+      <TourButton />
       <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><span aria-hidden="true">👤</span><span className="sidebar-label">{t('nav.profile')}</span></Link>
       <Link className="nav-action" href={footerHref as never} onClick={onNavigate} title={footerLabel}><span aria-hidden="true">🚪</span><span className="sidebar-label">{footerLabel}</span></Link>
     </div>
