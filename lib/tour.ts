@@ -18,11 +18,11 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
     { target: '[data-tour="new-patient"]', title: 'Cadastre um paciente', body: 'Clique aqui para cadastrar um paciente, definir o plano de acompanhamento e a data do primeiro check-in por WhatsApp.' },
     { target: '[data-tour="patients-metrics"]', title: 'Indicadores rápidos', body: 'Veja de relance quantos pacientes estão ativos e quantos relatos de sintomas foram recebidos.' },
     { target: '[data-tour="patients-table"]', title: 'Prontuário do paciente', body: 'Clique em "Ver prontuário" para abrir o histórico completo de check-ins, dados clínicos e relatórios de IA de cada paciente.' },
-    { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Ajuda" no topo da página.' },
+    { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/professional/assinatura': [
     { target: '[data-tour="assinatura-status"]', title: 'Status da assinatura', body: 'Veja o status atual, quantos pacientes você já usa do seu limite e as ações disponíveis (trocar de plano, cancelar).' },
-    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/dashboard': [
     { title: 'Bem-vindo à Julha', body: 'Vamos te mostrar rapidamente como acompanhar sua evolução por aqui. Leva menos de um minuto.' },
@@ -30,51 +30,47 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
     { target: '[data-tour="patient-plan"]', title: 'Seu plano', body: 'Aqui fica o plano de acompanhamento atual, com datas de início e término.' },
     { target: '[data-tour="patient-summary"]', title: 'Seu progresso', body: 'Acompanhe quantos check-ins você já respondeu e sua taxa de resposta.' },
     { target: '[data-tour="patient-symptoms"]', title: 'Evolução dos sintomas', body: 'Veja a proporção de dias com e sem sintomas ao longo do acompanhamento.' },
-    { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Ajuda" no topo da página.' },
+    { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/monitoring': [
     { target: '[data-tour="monitoring-calendar"]', title: 'Seu calendário', body: 'Cada dia mostra se você respondeu o check-in e se relatou sintomas. Clique em um dia para ver os detalhes ou editar sua resposta.' },
-    { target: '[data-tour="monitoring-legend"]', title: 'Legenda', body: 'A primeira linha mostra o status do dia (sem sintomas, com sintomas, pendente ou sem check-in); a segunda mostra o que você respondeu sobre dieta, treino e remédios/suplementos. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="monitoring-legend"]', title: 'Legenda', body: 'A primeira linha mostra o status do dia (sem sintomas, com sintomas, pendente ou sem check-in); a segunda mostra o que você respondeu sobre dieta, treino e remédios/suplementos. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/anamnese': [
     { target: '[data-tour="anamnese-card"]', title: 'Sua anamnese', body: 'Aqui fica o histórico clínico registrado pelo seu profissional. É somente leitura — só ele pode editar.' },
-    { target: '[data-tour="supplements-list"]', title: 'Seus remédios e suplementos', body: 'Cadastre o que você toma regularmente, com a frequência e por quanto tempo. O check-in diário do WhatsApp usa essa lista para perguntar sobre cada um enquanto o tratamento estiver em curso — clique em "Editar" para corrigir algo ou "Remover" para tirar da lista. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="supplements-list"]', title: 'Seus remédios e suplementos', body: 'Cadastre o que você toma regularmente, com a frequência e por quanto tempo. O check-in diário do WhatsApp usa essa lista para perguntar sobre cada um enquanto o tratamento estiver em curso — clique em "Editar" para corrigir algo ou "Remover" para tirar da lista. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/relatorios': [
-    { target: '[data-tour="relatorios-list"]', title: 'Histórico de resumos', body: 'Cada resumo gerado por IA no Automonitoramento fica registrado aqui, para você acompanhar sua evolução ao longo do tempo. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="relatorios-list"]', title: 'Histórico de resumos', body: 'Cada resumo gerado por IA no Automonitoramento fica registrado aqui, para você acompanhar sua evolução ao longo do tempo. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/assinatura': [
     { target: '[data-tour="assinatura-status"]', title: 'Status da assinatura', body: 'Veja o status atual da sua assinatura e as ações disponíveis (trocar de plano, cancelar).' },
-    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/admin': [
     { title: 'Bem-vindo à administração', body: 'Vamos te mostrar rapidamente o painel administrativo. Leva menos de um minuto.' },
     { target: '[data-tour="sidebar-nav"]', title: 'Menu de navegação', body: 'Use o menu lateral para acessar usuários, pacientes, custos e a operação do WhatsApp.' },
     { target: '[data-tour="admin-metrics"]', title: 'Indicadores gerais', body: 'Usuários ativos, uso de IA e mensagens de WhatsApp do mês atual, tudo em um só lugar.' },
     { target: '[data-tour="admin-shortcuts"]', title: 'Atalhos', body: 'Acesse rapidamente as áreas de gestão da plataforma a partir daqui.' },
-    { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Ajuda" no topo da página.' },
+    { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/admin/usuarios': [
     { target: '[data-tour="admin-users-metrics"]', title: 'Indicadores', body: 'Total de usuários da plataforma e quantos estão ativos ou inativos.' },
     { target: '[data-tour="admin-users-filters"]', title: 'Buscar e filtrar', body: 'Filtre por nome, e-mail, papel (paciente, profissional, admin) ou status.' },
-    { target: '[data-tour="admin-users-table"]', title: 'Ações por usuário', body: 'Edite os papéis de um usuário ou gerencie a assinatura dele diretamente na tabela. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="admin-users-table"]', title: 'Ações por usuário', body: 'Edite os papéis de um usuário ou gerencie a assinatura dele diretamente na tabela. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/admin/pacientes': [
     { target: '[data-tour="admin-patients-new"]', title: 'Novo paciente', body: 'Cadastre um paciente diretamente pela administração.' },
-    { target: '[data-tour="admin-patients-table"]', title: 'Lista de pacientes', body: 'Clique em um paciente para ver seus detalhes. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="admin-patients-table"]', title: 'Lista de pacientes', body: 'Clique em um paciente para ver seus detalhes. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/admin/custos': [
     { target: '[data-tour="custos-billing"]', title: 'Receita e assinaturas', body: 'MRR (receita recorrente mensal), assinaturas ativas e taxa de churn dos últimos 30 dias.' },
     { target: '[data-tour="custos-metrics"]', title: 'Custos do período', body: 'Custo total estimado, relatórios de IA gerados e mensagens de WhatsApp enviadas, calculados automaticamente a partir do uso.' },
-    { target: '[data-tour="custos-manual"]', title: 'Lançamentos manuais', body: 'Adicione gastos que este painel não calcula sozinho (contratos, ferramentas, suporte) e veja o histórico na tabela abaixo. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="custos-manual"]', title: 'Lançamentos manuais', body: 'Adicione gastos que este painel não calcula sozinho (contratos, ferramentas, suporte) e veja o histórico na tabela abaixo. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/admin/whatsapp': [
     { target: '[data-tour="whatsapp-health"]', title: 'Sua aplicação está no ar?', body: 'Veja de relance a última mensagem enviada e recebida, falhas recentes e planos ativos — os sinais mais diretos de que o bot parou de funcionar.' },
     { target: '[data-tour="whatsapp-metrics"]', title: 'Indicadores do período', body: 'Mensagens enviadas, custo estimado e média diária — ajuste o período no seletor acima.' },
-    { target: '[data-tour="whatsapp-chart"]', title: 'Envios por dia', body: 'Acompanhe o volume de check-ins enviados dia a dia. Você pode reabrir este tour quando quiser clicando em "Ajuda".' },
+    { target: '[data-tour="whatsapp-chart"]', title: 'Envios por dia', body: 'Acompanhe o volume de check-ins enviados dia a dia. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
 };
-
-export function tourStorageKey(path: string, userId: string | number) {
-  return `julha_tour_seen_v2_${path}_${userId}`;
-}
