@@ -144,7 +144,10 @@ export type NotificationKind =
   | 'SYMPTOM_REPORTED'
   | 'PATIENT_ASSIGNED'
   | 'CHECKIN_PENDING'
-  | 'SUPPLEMENT_COURSE_ENDED';
+  | 'SUPPLEMENT_COURSE_ENDED'
+  | 'PATIENT_INACTIVE'
+  | 'MEDICATION_ADHERENCE_ALERT'
+  | 'SYMPTOM_PATTERN_ALERT';
 export type AppNotification = {
   id: number;
   kind: NotificationKind;
