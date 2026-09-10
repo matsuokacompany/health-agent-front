@@ -358,3 +358,24 @@ img.brand-logo-dark{display:none}
 [data-theme="dark"] .patient-monitoring-status-card.has-alert{border-color:#7f1d1d;background:#2a1012}
 .patient-monitoring-status-card.has-orange-alert{border-color:#fed7aa;background:#fff7ed}
 [data-theme="dark"] .patient-monitoring-status-card.has-orange-alert{border-color:#9a3412;background:#2a1a0d}
+
+/* Denser typography for the patient dashboard's compact stat/donut tiles --
+   the same numbers read fine smaller once several sit side by side. */
+.patient-dashboard-summary-grid .metric{font-size:clamp(1.2rem,2vw,1.6rem)}
+.patient-dashboard-summary-grid .metric-card{padding:14px}
+.patient-donut span{font-size:1.55rem}
+.patient-donut small{font-size:.72rem}
+
+/* Timeline gets its own full-width row instead of sharing the 2-col grid
+   with the symptoms/top-symptoms pair -- 7 day-cells read better with the
+   extra room than squeezed into the narrower secondary column. */
+.patient-dashboard-timeline-card{grid-column:1/-1}
+
+.patient-symptom-terms-card{display:grid;gap:12px;align-content:start}
+.patient-symptom-terms-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.patient-symptom-terms-list li{display:grid;grid-template-columns:minmax(90px,.55fr) minmax(0,1fr) 28px;gap:10px;align-items:center}
+.patient-symptom-term-label{overflow:hidden;color:var(--muted);font-size:.82rem;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.patient-symptom-term-track{display:block;height:14px;border-radius:999px;background:var(--surface-soft)}
+.patient-symptom-term-bar{display:block;height:100%;min-width:6px;border-radius:0 999px 999px 0;background:var(--brand)}
+.patient-symptom-term-count{text-align:right;font-size:.86rem;font-weight:850;font-variant-numeric:tabular-nums}
+@media (max-width:640px){.patient-symptom-terms-list li{grid-template-columns:minmax(70px,.6fr) minmax(0,1fr) 24px}}
