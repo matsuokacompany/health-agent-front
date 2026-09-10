@@ -7,6 +7,8 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
 import { anamnesesApi } from '@/services/anamnese';
 import type { Anamnese } from '@/lib/types';
+import { RiskFactorChecklist } from '@/components/patient/RiskFactorChecklist';
+import { extractRiskFactors, type AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 
 function friendlyError(error: unknown) {
   if (error instanceof ApiError && error.status === 403) return 'Você não pode mais editar sua anamnese por conta própria -- fale com seu profissional.';
@@ -16,6 +18,7 @@ function friendlyError(error: unknown) {
 export function SelfAnamneseEditor() {
   const [anamnese, setAnamnese] = useState('');
   const [savedText, setSavedText] = useState('');
+  const [riskFactors, setRiskFactors] = useState<AnamneseRiskFactors>({});
   const [record, setRecord] = useState<Anamnese | null>(null);
   const [hasAnamnese, setHasAnamnese] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,7 +38,7 @@ export function SelfAnamneseEditor() {
       setHasAnamnese(true);
       const text = String(data.info ?? '');
       setSavedText(text);
-      if (!preserveDraft) setAnamnese(text);
+      if (!preserveDraft) { setAnamnese(text); setRiskFactors(extractRiskFactors(data)); }
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         setRecord(null);
@@ -66,12 +69,13 @@ export function SelfAnamneseEditor() {
     setSuccess(null);
     try {
       const updated = hasAnamnese
-        ? await anamnesesApi.updateMe({ info: normalized.trim() })
-        : await anamnesesApi.create({ info: normalized.trim() });
+        ? await anamnesesApi.updateMe({ info: normalized.trim(), ...riskFactors })
+        : await anamnesesApi.create({ info: normalized.trim(), ...riskFactors });
       setRecord(updated);
       setHasAnamnese(true);
       setAnamnese(String(updated.info ?? ''));
       setSavedText(String(updated.info ?? ''));
+      setRiskFactors(extractRiskFactors(updated));
       setSuccess(hasAnamnese ? 'Anamnese atualizada.' : 'Anamnese salva.');
     } catch (error) {
       if (error instanceof ApiError && error.status === 404 && hasAnamnese) {
@@ -119,6 +123,13 @@ export function SelfAnamneseEditor() {
       <p className="muted compact">
         {loading ? <SkeletonBlock className="anamnesis-help-skeleton" /> : `${anamnese.length.toLocaleString('pt-BR')} / ${INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres.`}
       </p>
+      {loading ? null : (
+        <RiskFactorChecklist
+          values={riskFactors}
+          onChange={(field, checked) => setRiskFactors((current) => ({ ...current, [field]: checked }))}
+          disabled={saving || Boolean(loadError)}
+        />
+      )}
       <Button onClick={() => void save()} loading={saving} loadingLabel="Salvando..." disabled={loading || Boolean(loadError)}>
         {hasAnamnese ? 'Salvar alterações' : 'Salvar anamnese'}
       </Button>

@@ -59,4 +59,27 @@ describe('anamnese do profissional', () => {
     expect(await screen.findByText(/já foi cadastrada/)).toBeTruthy();
     expect((field as HTMLTextAreaElement).value).toBe('Meu rascunho');
   });
+
+  it('pré-marca os fatores de risco já registrados e envia os que forem alterados', async () => {
+    api.get.mockResolvedValue({ ...existing, risk_heart_disease: true, risk_diabetes: false });
+    api.update.mockResolvedValue({ ...existing, risk_heart_disease: true, risk_diabetes: true });
+    render(<PatientAnamneseEditor patientId="10" />);
+    await screen.findByLabelText('Conteúdo clínico');
+
+    const heartDisease = screen.getByRole('checkbox', { name: 'Doença cardíaca' }) as HTMLInputElement;
+    const diabetes = screen.getByRole('checkbox', { name: 'Diabetes' }) as HTMLInputElement;
+    expect(heartDisease.checked).toBe(true);
+    expect(diabetes.checked).toBe(false);
+
+    fireEvent.click(diabetes);
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar anamnese' }));
+
+    await waitFor(() =>
+      expect(api.update).toHaveBeenCalledWith('10', {
+        info: existing.info,
+        risk_heart_disease: true,
+        risk_diabetes: true,
+      }),
+    );
+  });
 });

@@ -320,4 +320,9 @@ img.brand-logo-dark{display:none}
   .card,.panel{box-shadow:none!important;border:1px solid #ccc!important;break-inside:avoid}
   body{background:#fff!important;color:#000!important}
 }
+.risk-factor-checklist{border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-top:14px}
+.risk-factor-checklist legend{font-weight:650;padding:0 4px}
+.risk-factor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin-top:10px}
+.risk-factor-grid label{display:flex;align-items:center;gap:8px;font-weight:500}
+@media (max-width:600px){.risk-factor-grid{grid-template-columns:1fr}}
 @media (max-width:420px){.tour-actions{flex-direction:column-reverse;align-items:stretch}.tour-actions-nav{justify-content:stretch}.tour-actions-nav .button{flex:1}}

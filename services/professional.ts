@@ -1,5 +1,6 @@
 import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
 import type { Supplement, SupplementInput, SupplementUpdate } from '@/lib/types';
+import type { AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 import { api } from './api';
 
 export type ProfessionalPatient = {
@@ -71,9 +72,9 @@ export type Anamnese = {
   info: string;
   created_at: string;
   updated_at: string;
-};
+} & AnamneseRiskFactors;
 
-export type SaveAnamnesePayload = { info: string };
+export type SaveAnamnesePayload = { info: string } & Partial<AnamneseRiskFactors>;
 
 export async function getPatientAnamnese(patientId: number | string): Promise<Anamnese | null> {
   try {
