@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
+import { DateField } from '@/components/ui/DateField';
 import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -111,7 +112,7 @@ function NewCostEntryForm({ onCreated }: { onCreated(): void }) {
         </label>
         <label>
           Data
-          <input value={incurredOn} onChange={(event) => setIncurredOn(event.target.value)} type="date" required />
+          <DateField value={incurredOn} onChange={setIncurredOn} required />
         </label>
         <label className="checkbox-field">
           <input checked={isRecurring} onChange={(event) => setIsRecurring(event.target.checked)} type="checkbox" />
@@ -206,11 +207,11 @@ export default function AdminCostsPage() {
         <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); void load(); }}>
           <label>
             De
-            <input value={startDate} onChange={(event) => setStartDate(event.target.value)} type="date" />
+            <DateField value={startDate} onChange={setStartDate} max={endDate || undefined} />
           </label>
           <label>
             Até
-            <input value={endDate} onChange={(event) => setEndDate(event.target.value)} type="date" />
+            <DateField value={endDate} onChange={setEndDate} min={startDate || undefined} />
           </label>
           <button className="button" type="submit">Aplicar período</button>
         </form>
