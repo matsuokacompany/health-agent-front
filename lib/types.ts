@@ -109,6 +109,7 @@ export type DailyReport = {
   medication_adherence?: boolean | null;
   medication_adherence_level?: 'ALL' | 'PARTIAL' | 'NONE' | null;
   lifestyle_notes?: string | null;
+  red_flag_category?: string | null;
   completed?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -171,6 +172,17 @@ export type EvolutionMetrics = {
   symptom_rate_percentage: number;
   calendar_coverage_percentage: number;
 };
+export type EvolutionAdherence = {
+  diet_percentage: number | null;
+  exercise_percentage: number | null;
+  medication_percentage: number | null;
+};
+export type EvolutionRedFlagEvent = {
+  report_date: string;
+  category_key: string;
+  category_label: string;
+  tier: 'absoluto' | 'contextual';
+};
 export type EvolutionReport = {
   patient_id: number;
   start_date: string;
@@ -184,6 +196,9 @@ export type EvolutionReport = {
   longest_gap_days: number;
   symptoms: EvolutionSymptomOccurrence[];
   timeline: EvolutionTimelineGroup[];
+  adherence: EvolutionAdherence;
+  red_flag_events: EvolutionRedFlagEvent[];
+  risk_factors: string[];
 };
 
 export type SelfMonitoringInsightResult = {

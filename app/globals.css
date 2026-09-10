@@ -345,3 +345,8 @@ img.brand-logo-dark{display:none}
 .patient-notice{padding:12px 14px;border:1px solid #b7c9f1;border-radius:var(--radius-sm);background:var(--surface)}
 .patient-notice p{margin:0 0 4px}
 .patient-notice span{font-size:.78rem}
+.patient-red-flag-card{border-color:#fecaca;background:#fff1f2}
+[data-theme="dark"] .patient-red-flag-card{border-color:#7f1d1d;background:#2a1012}
+.patient-monitoring-status-card{grid-column:1/-1;border-color:#abefc6;background:var(--ok-soft)}
+.patient-monitoring-status-card.has-alert{border-color:#fecaca;background:#fff1f2}
+[data-theme="dark"] .patient-monitoring-status-card.has-alert{border-color:#7f1d1d;background:#2a1012}

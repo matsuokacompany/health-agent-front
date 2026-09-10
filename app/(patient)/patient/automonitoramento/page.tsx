@@ -8,7 +8,7 @@ import { ApiError } from '@/infrastructure/http/ApiClient';
 import { InsightResultBody } from '@/components/patient/InsightResultBody';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { shortcutPeriod } from '@/services/aiReports';
-import type { EvolutionReport, EvolutionSymptomOccurrence, SelfMonitoringInsight } from '@/lib/types';
+import type { EvolutionRedFlagEvent, EvolutionReport, EvolutionSymptomOccurrence, SelfMonitoringInsight } from '@/lib/types';
 
 const PERIOD_PRESETS = [
   [30, 'Últimos 30 dias'],
@@ -79,6 +79,35 @@ function PeriodSelector({ selected, onChange, disabled }: { selected: PeriodDays
   </div>;
 }
 
+function RedFlagEventsCard({ events }: { events: EvolutionRedFlagEvent[] }) {
+  if (!events.length) return null;
+  return <Card className="patient-red-flag-card" data-tour="patient-red-flags">
+    <span className="eyebrow">Sinais de alerta</span>
+    <h2>⚠️ Sinais identificados no período</h2>
+    <p className="muted">
+      Detectados automaticamente a partir das suas respostas nos check-ins — mostre isso ao profissional que for
+      avaliar este relatório.
+    </p>
+    <div className="stack compact">
+      {events.map((event, index) => (
+        <div key={`${event.report_date}-${index}`} className="list-row">
+          <span>{event.category_label}</span>
+          <span className="muted">{formatDate(event.report_date)}</span>
+        </div>
+      ))}
+    </div>
+  </Card>;
+}
+
+function RiskFactorsCard({ riskFactors }: { riskFactors: string[] }) {
+  if (!riskFactors.length) return null;
+  return <Card data-tour="patient-risk-factors">
+    <span className="eyebrow">Histórico de saúde</span>
+    <h2>Fatores de risco registrados</h2>
+    <ul>{riskFactors.map((factor) => <li key={factor}>{factor}</li>)}</ul>
+  </Card>;
+}
+
 function EvolutionCard({ report }: { report: EvolutionReport }) {
   if (!report.sufficient_data) {
     return <Card>
@@ -91,18 +120,24 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
     </Card>;
   }
 
+  const { adherence } = report;
   return <>
     <section className="patient-dashboard-summary-grid" aria-label="Evolução">
-      <MetricCard label="Adesão" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} />
+      <MetricCard label="Adesão aos check-ins" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} />
       <MetricCard label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} />
       <MetricCard label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} />
       <MetricCard label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} />
+      {adherence.diet_percentage !== null ? <MetricCard label="Adesão à dieta" value={`${adherence.diet_percentage}%`} /> : null}
+      {adherence.exercise_percentage !== null ? <MetricCard label="Adesão ao exercício" value={`${adherence.exercise_percentage}%`} /> : null}
+      {adherence.medication_percentage !== null ? <MetricCard label="Adesão à medicação/suplemento" value={`${adherence.medication_percentage}%`} /> : null}
     </section>
     <Card>
       <span className="eyebrow">Tendência</span>
       <h2>{trendLabel[report.symptom_trend]}</h2>
       <p className="muted">Período de {formatDate(report.start_date)} a {formatDate(report.end_date)}.</p>
     </Card>
+    <RedFlagEventsCard events={report.red_flag_events} />
+    <RiskFactorsCard riskFactors={report.risk_factors} />
     <SymptomsCard symptoms={report.symptoms} />
   </>;
 }
@@ -165,7 +200,6 @@ function InsightCard({
       >
         {result ? 'Atualizar resumo' : 'Gerar resumo com IA'}
       </Button>
-      {result ? <Button variant="secondary" onClick={() => window.print()}>Baixar PDF</Button> : null}
     </div>
     {daysUntilNext !== null && daysUntilNext > 0 ? (
       <p className="muted compact">
@@ -250,6 +284,10 @@ export default function Automonitoramento() {
   const periodLabel = (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
 
   return <section className="stack" aria-label="Automonitoramento">
+    {!reportBlocked ? <div className="professional-section-heading">
+      <div><span className="eyebrow">Automonitoramento</span><h1>Seu relatório de acompanhamento</h1><p className="muted">Mostre este relatório a um médico ou nutricionista — reúne o que você relatou, sinais identificados e seu histórico de saúde.</p></div>
+      {report?.sufficient_data ? <Button variant="secondary" onClick={() => window.print()}>Baixar PDF / Imprimir</Button> : null}
+    </div> : null}
     {!reportBlocked ? <PeriodSelector selected={selectedPeriod} onChange={setSelectedPeriod} disabled={loading} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
     {!reportBlocked ? (
