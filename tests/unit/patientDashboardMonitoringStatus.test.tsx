@@ -46,4 +46,51 @@ describe('status de monitoramento no dashboard do paciente', () => {
 
     expect(await screen.findByText('🟢 Sem sinais de alerta')).toBeTruthy();
   });
+
+  it('mostra o padrão laranja quando há uma notificação SYMPTOM_CLUSTER_ALERT recente e nenhum sinal vermelho', async () => {
+    mockReports = [{ id: 1, report_date: '2026-09-05', completed: true, had_symptoms: false }];
+    notifications.list.mockResolvedValue({
+      items: [
+        {
+          id: 10,
+          kind: 'SYMPTOM_CLUSTER_ALERT',
+          message: 'Ao longo dos últimos check-ins você relatou uma combinação de sinais...',
+          created_at: '2026-09-05T10:00:00Z',
+        },
+      ],
+      unread_count: 1,
+    });
+
+    render(<PatientDashboard />);
+
+    // The same unread notification also renders inside NoticesCard's own
+    // list, so the message text isn't unique on the page -- the heading
+    // alone is enough to confirm the status card picked it up.
+    expect(await screen.findByText('🟠 Padrão de sinais em observação')).toBeTruthy();
+  });
+
+  it('prioriza o sinal vermelho sobre uma notificação laranja no mesmo período', async () => {
+    mockReports = [{ id: 1, report_date: '2026-09-05', completed: true, red_flag_category: 'cardiorrespiratorio' }];
+    notifications.list.mockResolvedValue({
+      items: [{ id: 10, kind: 'SYMPTOM_CLUSTER_ALERT', message: 'combinação de sinais', created_at: '2026-09-05T10:00:00Z' }],
+      unread_count: 1,
+    });
+
+    render(<PatientDashboard />);
+
+    expect(await screen.findByText('🔴 Sinal de alerta identificado')).toBeTruthy();
+    expect(screen.queryByText('🟠 Padrão de sinais em observação')).toBeNull();
+  });
+
+  it('ignora notificação laranja fora da janela de 21 dias', async () => {
+    mockReports = [{ id: 1, report_date: '2026-09-05', completed: true, had_symptoms: false }];
+    notifications.list.mockResolvedValue({
+      items: [{ id: 10, kind: 'SYMPTOM_CLUSTER_ALERT', message: 'combinação de sinais', created_at: '2026-07-01T10:00:00Z' }],
+      unread_count: 1,
+    });
+
+    render(<PatientDashboard />);
+
+    expect(await screen.findByText('🟢 Sem sinais de alerta')).toBeTruthy();
+  });
 });

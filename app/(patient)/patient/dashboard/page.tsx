@@ -13,6 +13,11 @@ import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
 const MONITORING_STATUS_WINDOW_DAYS = 30;
+// Matches the longest window among ORANGE_COMBINATION_RULES on the backend
+// (app/services/red_flag_symptoms.py) -- a laranja notification older than
+// this is outside the pattern's own detection window and shouldn't still
+// read as "current" on this standing indicator.
+const ORANGE_STATUS_WINDOW_DAYS = 21;
 
 function formatDate(value?: string | null) {
   if (!value) return 'Não informado';
@@ -110,17 +115,52 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
 }
 
 function MonitoringStatusCard({ reports }: { reports: DailyReport[] }) {
+  // The laranja (orange combination) tier isn't stored on any DailyReport --
+  // it's patient-history-based, not tied to a single check-in -- so it only
+  // ever surfaces as a Notification (see notify_symptom_combination_alert on
+  // the backend). Fetched independently from `reports`, same pattern as
+  // NoticesCard below.
+  const [orangeNotice, setOrangeNotice] = useState<AppNotification | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const windowStartMs = Date.now() - ORANGE_STATUS_WINDOW_DAYS * 86_400_000;
+    notificationsApi.list()
+      .then((result) => {
+        if (!mounted) return;
+        const match = result.items.find(
+          (item) => item.kind === 'SYMPTOM_CLUSTER_ALERT' && new Date(item.created_at).getTime() >= windowStartMs,
+        );
+        setOrangeNotice(match ?? null);
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
   const windowStart = dateKey(new Date(Date.now() - (MONITORING_STATUS_WINDOW_DAYS - 1) * 86_400_000));
-  const latest = reports
+  const latestRed = reports
     .filter((report) => report.red_flag_category && String(report.report_date ?? '').slice(0, 10) >= windowStart)
     .sort((a, b) => String(b.report_date ?? '').localeCompare(String(a.report_date ?? '')))[0];
 
-  return <Card className={`patient-monitoring-status-card${latest ? ' has-alert' : ''}`} data-tour="patient-monitoring-status">
+  // Priority vermelho > laranja > verde -- a possible emergency always
+  // takes the card over a "worth a short-term evaluation" pattern.
+  const cardClassName = latestRed
+    ? 'patient-monitoring-status-card has-alert'
+    : orangeNotice
+      ? 'patient-monitoring-status-card has-orange-alert'
+      : 'patient-monitoring-status-card';
+
+  return <Card className={cardClassName} data-tour="patient-monitoring-status">
     <span className="eyebrow">Status de monitoramento</span>
-    {latest ? (
+    {latestRed ? (
       <>
         <h2>🔴 Sinal de alerta identificado</h2>
-        <p className="muted">{redFlagCategoryLabel(latest.red_flag_category!)} — {formatDate(latest.report_date)}</p>
+        <p className="muted">{redFlagCategoryLabel(latestRed.red_flag_category!)} — {formatDate(latestRed.report_date)}</p>
+      </>
+    ) : orangeNotice ? (
+      <>
+        <h2>🟠 Padrão de sinais em observação</h2>
+        <p className="muted">{orangeNotice.message}</p>
       </>
     ) : (
       <>
