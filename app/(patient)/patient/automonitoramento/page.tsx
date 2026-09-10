@@ -123,13 +123,13 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   const { adherence } = report;
   return <>
     <section className="patient-dashboard-summary-grid" aria-label="Evolução">
-      <MetricCard label="Adesão aos check-ins" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} tone={report.metrics.adherence_percentage >= 80 ? 'ok' : 'warn'} />
-      <MetricCard label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} tone={report.metrics.checkins_with_symptoms > 0 ? 'warn' : 'ok'} />
-      <MetricCard label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} tone="ok" />
-      <MetricCard label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} tone={report.longest_gap_days > 2 ? 'warn' : undefined} />
-      {adherence.diet_percentage !== null ? <MetricCard label="Adesão à dieta" value={`${adherence.diet_percentage}%`} tone={adherence.diet_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-      {adherence.exercise_percentage !== null ? <MetricCard label="Adesão ao exercício" value={`${adherence.exercise_percentage}%`} tone={adherence.exercise_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-      {adherence.medication_percentage !== null ? <MetricCard label="Adesão à medicação/suplemento" value={`${adherence.medication_percentage}%`} tone={adherence.medication_percentage >= 80 ? 'ok' : 'warn'} /> : null}
+      <MetricCard icon="✅" label="Adesão aos check-ins" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} tone={report.metrics.adherence_percentage >= 80 ? 'ok' : 'warn'} />
+      <MetricCard icon="🩺" label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} tone={report.metrics.checkins_with_symptoms > 0 ? 'warn' : 'ok'} />
+      <MetricCard icon="🌿" label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} tone="ok" />
+      <MetricCard icon="⏳" label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} tone={report.longest_gap_days > 2 ? 'warn' : undefined} />
+      {adherence.diet_percentage !== null ? <MetricCard icon="🥗" label="Adesão à dieta" value={`${adherence.diet_percentage}%`} tone={adherence.diet_percentage >= 80 ? 'ok' : 'warn'} /> : null}
+      {adherence.exercise_percentage !== null ? <MetricCard icon="🏃" label="Adesão ao exercício" value={`${adherence.exercise_percentage}%`} tone={adherence.exercise_percentage >= 80 ? 'ok' : 'warn'} /> : null}
+      {adherence.medication_percentage !== null ? <MetricCard icon="💊" label="Adesão à medicação/suplemento" value={`${adherence.medication_percentage}%`} tone={adherence.medication_percentage >= 80 ? 'ok' : 'warn'} /> : null}
     </section>
     <Card>
       <span className="eyebrow">Tendência</span>

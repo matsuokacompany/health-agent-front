@@ -256,10 +256,10 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
   const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
   return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento" data-tour="patient-summary">
-    <MetricCard label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
-    <MetricCard label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
-    <MetricCard label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
-    <MetricCard label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
+    <MetricCard icon="📅" label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
+    <MetricCard icon="💬" label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
+    <MetricCard icon="✅" label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
+    <MetricCard icon="🕒" label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
   </section>;
 }
 
