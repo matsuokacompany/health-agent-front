@@ -5,7 +5,7 @@ import type { AppNotification } from '@/lib/types';
 
 const POLL_INTERVAL_MS = 60_000;
 
-function formatRelative(value: string) {
+export function formatRelative(value: string) {
   const date = new Date(value);
   const diffMinutes = Math.round((Date.now() - date.getTime()) / 60_000);
   if (diffMinutes < 1) return 'agora';

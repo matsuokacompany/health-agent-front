@@ -340,3 +340,8 @@ img.brand-logo-dark{display:none}
 .date-field-day.selected{background:var(--brand);border-color:var(--brand);color:#fff}
 .date-field-day:disabled{opacity:.35;cursor:not-allowed}
 @media (max-width:600px){.date-field-calendar{left:auto;right:0;width:min(264px,calc(100vw - 32px))}}
+.patient-dashboard-notices-card{grid-column:1/-1;border-color:#b7c9f1;background:var(--brand-soft)}
+.patient-notices-list{display:grid;gap:10px}
+.patient-notice{padding:12px 14px;border:1px solid #b7c9f1;border-radius:var(--radius-sm);background:var(--surface)}
+.patient-notice p{margin:0 0 4px}
+.patient-notice span{font-size:.78rem}
