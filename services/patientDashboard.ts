@@ -49,6 +49,7 @@ export type HistoryParams = { page: number; perPage: number; period: DashboardPe
 export type CheckInsParams = { page: number; perPage: number; status: DashboardStatus };
 export type StatisticsParams = { period: DashboardPeriod; from?: string; to?: string };
 export type PatientDashboardStatistics = { cards: DashboardStatistic[]; charts: Array<{ id: string; title: string; data: Array<{ label: string; value: number }> }> };
+export type PatientTopSymptomTerm = { label: string; count: number };
 
 type RecordValue = Record<string, unknown>;
 function isRecord(value: unknown): value is RecordValue { return typeof value === 'object' && value !== null && !Array.isArray(value); }
@@ -112,4 +113,11 @@ export const patientDashboardApi = {
   getHistory: async (params: HistoryParams) => normalizePaginated<DashboardCheckIn>(await api<unknown>(withQuery('/api/patient/dashboard/history', params)), params),
   getStatistics: async (params: StatisticsParams) => normalizeStatistics(await api<unknown>(withQuery('/api/patient/dashboard/statistics', params))),
   getCheckIns: async (params: CheckInsParams) => normalizePaginated<DashboardCheckIn>(await api<unknown>(withQuery('/api/patient/dashboard/checkins', params)), params),
+  getTopSymptomTerms: async (limit = 6) => {
+    const source = await api<unknown>(withQuery('/patient/dashboard/symptom-terms', { limit }));
+    const items = normalizeArray<RecordValue>(isRecord(source) ? source.items : source);
+    return items
+      .map((item) => ({ label: String(item.label ?? ''), count: numberFrom(item.count) }))
+      .filter((item) => item.label);
+  },
 };

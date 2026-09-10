@@ -6,7 +6,7 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
 import type { AppNotification, DailyReport, MonitoringPlan } from '@/lib/types';
-import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
+import { patientDashboardApi, type PatientDashboardAggregate, type PatientDashboardTimelineDay, type PatientTopSymptomTerm } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
 import { redFlagCategoryLabel } from '@/lib/redFlagCategories';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
@@ -256,10 +256,10 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
   const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
   return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento" data-tour="patient-summary">
-    <MetricCard label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
-    <MetricCard label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
-    <MetricCard label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
-    <MetricCard label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
+    <MetricCard icon="📅" label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
+    <MetricCard icon="💬" label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
+    <MetricCard icon="✅" label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
+    <MetricCard icon="🕒" label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
   </section>;
 }
 
@@ -268,6 +268,50 @@ function SymptomsChart({ data }: { data: PatientDashboardAggregate }) {
   const withoutPct = total ? Math.round((data.symptoms.withoutSymptoms / total) * 100) : 0;
   const withPct = total ? 100 - withoutPct : 0;
   return <Card className="patient-dashboard-chart-card" data-tour="patient-symptoms"><span className="eyebrow">Evolução</span><h2>Dias com e sem sintomas</h2><div className="patient-donut-wrap"><div className="patient-donut" style={{ background: `conic-gradient(var(--ok) 0 ${withoutPct}%, var(--warn) ${withoutPct}% 100%)` }}><span>{total}<small>respostas</small></span></div><div className="patient-donut-list"><p><i className="ok" />Sem sintomas: <strong>{data.symptoms.withoutSymptoms} dias</strong></p><p><i className="warn" />Com sintomas: <strong>{data.symptoms.withSymptoms + data.symptoms.mildSymptoms} dias</strong></p><p className="muted compact">Percentuais calculados apenas sobre mensagens respondidas ({withPct}% com sintomas).</p></div></div></Card>;
+}
+
+function TopSymptomsCard() {
+  const [terms, setTerms] = useState<PatientTopSymptomTerm[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    patientDashboardApi.getTopSymptomTerms()
+      .then((items) => { if (mounted) setTerms(items); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const maxCount = terms.reduce((max, term) => Math.max(max, term.count), 0);
+
+  return (
+    <Card className="patient-symptom-terms-card" data-tour="patient-top-symptoms">
+      <span className="eyebrow">Sintomas</span>
+      <h2>Mais frequentes</h2>
+      {loading ? (
+        <SkeletonBlock className="sk-metric" />
+      ) : terms.length ? (
+        <ul className="patient-symptom-terms-list">
+          {terms.map((term) => (
+            <li key={term.label}>
+              <span className="patient-symptom-term-label">{term.label}</span>
+              <span className="patient-symptom-term-track">
+                <span
+                  className="patient-symptom-term-bar"
+                  style={{ width: maxCount ? `${Math.max((term.count / maxCount) * 100, 6)}%` : '0%' }}
+                  title={`${term.label}: ${term.count} registro(s)`}
+                />
+              </span>
+              <span className="patient-symptom-term-count">{term.count}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted compact">Nenhum sintoma registrado ainda — assim que houver check-ins com sintomas, os termos mais frequentes aparecem aqui.</p>
+      )}
+    </Card>
+  );
 }
 
 const timelineMeta: Record<PatientDashboardTimelineDay['status'], { icon: string; label: string; className: string }> = { without_symptoms: { icon: '🟢', label: 'respondeu sem sintomas', className: 'ok' }, mild_symptoms: { icon: '🟡', label: 'respondeu com sintomas leves', className: 'mild' }, with_symptoms: { icon: '🔴', label: 'respondeu com sintomas', className: 'alert' }, no_response: { icon: '⚪', label: 'não respondeu', className: 'empty' } };
@@ -312,6 +356,7 @@ export default function PatientDashboard() {
       <LastResponseCard data={dashboard} />
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
+      <TopSymptomsCard />
       <Timeline days={dashboard.timeline} />
     </section>;
 }
