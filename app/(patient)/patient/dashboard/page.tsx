@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Card } from '@/components/ui/design';
+import { Button, Card, MetricCard } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
@@ -256,10 +256,10 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
   const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
   return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento" data-tour="patient-summary">
-    <Card><span className="metric-label">Dias acompanhados</span><div className="metric">{data.daysElapsed}</div><p className="muted compact">{data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'}</p></Card>
-    <Card><span className="metric-label">Mensagens respondidas</span><div className="metric">{data.responses.answered}</div><p className="muted compact">de {data.responses.expected} esperadas</p></Card>
-    <Card><span className="metric-label">Taxa de resposta</span><div className="metric">{data.responses.rate}%</div></Card>
-    <Card><span className="metric-label">Última resposta enviada</span><div className="metric small-metric">{lastDate}</div></Card>
+    <MetricCard label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
+    <MetricCard label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
+    <MetricCard label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
+    <MetricCard label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
   </section>;
 }
 
