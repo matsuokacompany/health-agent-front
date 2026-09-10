@@ -17,8 +17,11 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
   return <article className={`card ${className}`.trim()} {...rest}>{children}</article>;
 }
 
-export function MetricCard({ label, value, description }: { label: string; value: ReactNode; description?: string }) {
-  return <Card><span className="metric-label">{label}</span><div className="metric">{value}</div>{description ? <p className="muted compact">{description}</p> : null}</Card>;
+type MetricTone = 'ok' | 'warn' | 'danger' | 'info';
+
+export function MetricCard({ label, value, description, tone }: { label: string; value: ReactNode; description?: string; tone?: MetricTone }) {
+  const className = `metric-card${tone ? ` tone-${tone}` : ''}`;
+  return <Card className={className}><span className="metric-label">{label}</span><div className="metric">{value}</div>{description ? <p className="muted compact">{description}</p> : null}</Card>;
 }
 
 export function ReadOnlyField({ label, value }: { label: string; value?: string | number | null }) {

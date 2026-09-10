@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { Button, Card } from '@/components/ui/design';
+import { Button, Card, MetricCard } from '@/components/ui/design';
 import { DateField } from '@/components/ui/DateField';
 import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
@@ -185,21 +185,9 @@ export default function AdminCostsPage() {
 
       {billingSummary ? (
         <section className="grid admin-metrics-grid" data-tour="custos-billing">
-          <article className="card">
-            <span className="metric-label">MRR</span>
-            <strong className="metric">{formatBrlFromCents(billingSummary.mrr_cents)}</strong>
-            <p className="muted compact">Receita recorrente mensal, assinaturas ativas</p>
-          </article>
-          <article className="card">
-            <span className="metric-label">Assinaturas ativas</span>
-            <strong className="metric">{billingSummary.active_subscriptions}</strong>
-            <p className="muted compact">{billingSummary.trialing_subscriptions} em teste · {billingSummary.past_due_subscriptions} com pagamento atrasado</p>
-          </article>
-          <article className="card">
-            <span className="metric-label">Churn (30 dias)</span>
-            <strong className="metric">{(billingSummary.churn_rate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</strong>
-            <p className="muted compact">{billingSummary.canceled_last_30d} cancelamento(s) nos últimos 30 dias</p>
-          </article>
+          <MetricCard label="MRR" value={formatBrlFromCents(billingSummary.mrr_cents)} description="Receita recorrente mensal, assinaturas ativas" tone="info" />
+          <MetricCard label="Assinaturas ativas" value={billingSummary.active_subscriptions} description={`${billingSummary.trialing_subscriptions} em teste · ${billingSummary.past_due_subscriptions} com pagamento atrasado`} />
+          <MetricCard label="Churn (30 dias)" value={`${(billingSummary.churn_rate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} description={`${billingSummary.canceled_last_30d} cancelamento(s) nos últimos 30 dias`} tone={billingSummary.churn_rate > 0 ? 'warn' : 'ok'} />
         </section>
       ) : null}
 
@@ -218,35 +206,17 @@ export default function AdminCostsPage() {
       </Card>
 
       <section className="grid admin-metrics-grid admin-section-offset" data-tour="custos-metrics">
-        <article className="card">
-          <span className="metric-label">Total em reais (período)</span>
-          <strong className="metric">{formatBrlFromCents(totalBrlCents)}</strong>
-          <p className="muted compact">WhatsApp estimado + lançamentos manuais</p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Relatórios de IA gerados</span>
-          <strong className="metric">{summary.ai_report_count}</strong>
-          <p className="muted compact">{formatUsd(summary.ai_report_cost_usd)} — custo real cobrado pela OpenAI</p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Resumos de automonitoramento gerados</span>
-          <strong className="metric">{summary.self_monitoring_report_count}</strong>
-          <p className="muted compact">{formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Resumo por IA")</p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Mensagens de WhatsApp enviadas</span>
-          <strong className="metric">{summary.whatsapp_message_count}</strong>
-          <p className="muted compact">
-            {whatsappConfigured
-              ? `${formatBrlFromCents(summary.whatsapp_cost_cents ?? 0)} estimado (${formatBrlFromCentsPrecise(summary.whatsapp_cost_per_message_cents ?? 0)}/mensagem)`
-              : 'Configure WHATSAPP_COST_PER_MESSAGE_CENTS para estimar'}
-          </p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Lançamentos manuais</span>
-          <strong className="metric">{formatBrlFromCents(summary.manual_cost_total_cents)}</strong>
-          <p className="muted compact">{summary.manual_cost_entries.length} lançamento(s) no período</p>
-        </article>
+        <MetricCard label="Total em reais (período)" value={formatBrlFromCents(totalBrlCents)} description="WhatsApp estimado + lançamentos manuais" tone="info" />
+        <MetricCard label="Relatórios de IA gerados" value={summary.ai_report_count} description={`${formatUsd(summary.ai_report_cost_usd)} — custo real cobrado pela OpenAI`} />
+        <MetricCard label="Resumos de automonitoramento gerados" value={summary.self_monitoring_report_count} description={`${formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Resumo por IA")`} />
+        <MetricCard
+          label="Mensagens de WhatsApp enviadas"
+          value={summary.whatsapp_message_count}
+          description={whatsappConfigured
+            ? `${formatBrlFromCents(summary.whatsapp_cost_cents ?? 0)} estimado (${formatBrlFromCentsPrecise(summary.whatsapp_cost_per_message_cents ?? 0)}/mensagem)`
+            : 'Configure WHATSAPP_COST_PER_MESSAGE_CENTS para estimar'}
+        />
+        <MetricCard label="Lançamentos manuais" value={formatBrlFromCents(summary.manual_cost_total_cents)} description={`${summary.manual_cost_entries.length} lançamento(s) no período`} />
       </section>
 
       <div className="admin-section-offset" data-tour="custos-manual">
