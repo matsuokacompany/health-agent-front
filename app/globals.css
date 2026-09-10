@@ -350,3 +350,5 @@ img.brand-logo-dark{display:none}
 .patient-monitoring-status-card{grid-column:1/-1;border-color:#abefc6;background:var(--ok-soft)}
 .patient-monitoring-status-card.has-alert{border-color:#fecaca;background:#fff1f2}
 [data-theme="dark"] .patient-monitoring-status-card.has-alert{border-color:#7f1d1d;background:#2a1012}
+.patient-monitoring-status-card.has-orange-alert{border-color:#fed7aa;background:#fff7ed}
+[data-theme="dark"] .patient-monitoring-status-card.has-orange-alert{border-color:#9a3412;background:#2a1a0d}

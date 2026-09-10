@@ -122,7 +122,6 @@ export type ProfessionalDashboard = {
   statistics?: { total?: number; answered?: number; missed?: number; with_symptoms?: number; without_symptoms?: number; adherence?: number } | null;
   last_response?: { date?: string | null; status?: string | null; had_symptoms?: boolean | null } | null;
   professionals?: Array<{ id: number | string; name: string; specialty?: string | null }>;
-  alerts?: Array<{ id?: number | string; title?: string; description?: string; severity?: string }>;
 };
 
 export type ProfessionalCheckIn = {
