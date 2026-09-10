@@ -8,8 +8,11 @@ import { formatRelative } from '@/components/layout/switchers/NotificationBell';
 import type { AppNotification, DailyReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
+import { redFlagCategoryLabel } from '@/lib/redFlagCategories';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
+
+const MONITORING_STATUS_WINDOW_DAYS = 30;
 
 function formatDate(value?: string | null) {
   if (!value) return 'Não informado';
@@ -104,6 +107,28 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
     lastResponse: last ? { date: last.report_date ?? last.updated_at ?? null, time: last.updated_at ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(last.updated_at)) : null, summary: last.symptom_description ?? last.cause ?? (last.had_symptoms ? 'Paciente registrou sintomas.' : 'Paciente respondeu sem sintomas.') } : null,
     nextPrompt: null,
   };
+}
+
+function MonitoringStatusCard({ reports }: { reports: DailyReport[] }) {
+  const windowStart = dateKey(new Date(Date.now() - (MONITORING_STATUS_WINDOW_DAYS - 1) * 86_400_000));
+  const latest = reports
+    .filter((report) => report.red_flag_category && String(report.report_date ?? '').slice(0, 10) >= windowStart)
+    .sort((a, b) => String(b.report_date ?? '').localeCompare(String(a.report_date ?? '')))[0];
+
+  return <Card className={`patient-monitoring-status-card${latest ? ' has-alert' : ''}`} data-tour="patient-monitoring-status">
+    <span className="eyebrow">Status de monitoramento</span>
+    {latest ? (
+      <>
+        <h2>🔴 Sinal de alerta identificado</h2>
+        <p className="muted">{redFlagCategoryLabel(latest.red_flag_category!)} — {formatDate(latest.report_date)}</p>
+      </>
+    ) : (
+      <>
+        <h2>🟢 Sem sinais de alerta</h2>
+        <p className="muted">Nenhum sinal de alerta identificado nos últimos {MONITORING_STATUS_WINDOW_DAYS} dias.</p>
+      </>
+    )}
+  </Card>;
 }
 
 function NoticesCard() {
@@ -239,6 +264,7 @@ export default function PatientDashboard() {
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
+      <MonitoringStatusCard reports={reports} />
       <NoticesCard />
       <Card className="patient-dashboard-main-card" data-tour="patient-plan"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
         {upcomingFirstCheckin ? <p className="notice">📅 Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
