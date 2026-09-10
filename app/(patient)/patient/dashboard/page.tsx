@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
-import type { DailyReport, MonitoringPlan } from '@/lib/types';
+import { formatRelative } from '@/components/layout/switchers/NotificationBell';
+import type { AppNotification, DailyReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
+import { notificationsApi } from '@/services/notifications';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
@@ -104,6 +106,47 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
   };
 }
 
+function NoticesCard() {
+  const [items, setItems] = useState<AppNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dismissing, setDismissing] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    notificationsApi.list()
+      .then((result) => { if (mounted) setItems(result.items.filter((item) => !item.read_at)); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  async function dismissAll() {
+    setDismissing(true);
+    try {
+      await notificationsApi.markAllRead();
+      setItems([]);
+    } catch {
+      // best-effort: the avisos just stay listed until the next successful attempt
+    } finally {
+      setDismissing(false);
+    }
+  }
+
+  if (loading || !items.length) return null;
+
+  return (
+    <Card className="patient-dashboard-notices-card" data-tour="patient-notices">
+      <div className="professional-section-heading">
+        <div><span className="eyebrow">Avisos</span><h2>Para você</h2></div>
+        <Button variant="secondary" onClick={dismissAll} loading={dismissing} loadingLabel="Marcando...">Marcar tudo como lido</Button>
+      </div>
+      <div className="patient-notices-list">
+        {items.map((item) => <div className="patient-notice" key={item.id}><p>{item.message}</p><span className="muted">{formatRelative(item.created_at)}</span></div>)}
+      </div>
+    </Card>
+  );
+}
+
 function LoadingDashboard() {
   return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando dashboard">
     <Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
@@ -196,6 +239,7 @@ export default function PatientDashboard() {
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
+      <NoticesCard />
       <Card className="patient-dashboard-main-card" data-tour="patient-plan"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
         {upcomingFirstCheckin ? <p className="notice">📅 Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
       </Card>

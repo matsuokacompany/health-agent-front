@@ -326,3 +326,22 @@ img.brand-logo-dark{display:none}
 .risk-factor-grid label{display:flex;align-items:center;gap:8px;font-weight:500}
 @media (max-width:600px){.risk-factor-grid{grid-template-columns:1fr}}
 @media (max-width:420px){.tour-actions{flex-direction:column-reverse;align-items:stretch}.tour-actions-nav{justify-content:stretch}.tour-actions-nav .button{flex:1}}
+.date-field{position:relative;width:100%}
+.date-field input{width:100%;padding-right:44px}
+.date-field-toggle{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:36px;min-height:36px;padding:0;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font-size:1rem;box-shadow:none}
+.date-field-toggle:hover{background:var(--surface-soft);color:var(--ink)}
+.date-field-calendar{position:absolute;top:calc(100% + 6px);left:0;z-index:30;width:264px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:0 18px 60px rgb(0 0 0 / 18%)}
+.date-field-calendar-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;color:var(--ink);font-weight:800;text-transform:capitalize}
+.date-field-calendar-header button{min-height:32px;width:32px;padding:0;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.date-field-calendar-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;color:var(--muted);font-size:.72rem;font-weight:800;text-align:center}
+.date-field-calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.date-field-day{min-height:32px;padding:0;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--ink);font-weight:650}
+.date-field-day:hover:not(:disabled){border-color:var(--line);background:var(--surface-soft)}
+.date-field-day.selected{background:var(--brand);border-color:var(--brand);color:#fff}
+.date-field-day:disabled{opacity:.35;cursor:not-allowed}
+@media (max-width:600px){.date-field-calendar{left:auto;right:0;width:min(264px,calc(100vw - 32px))}}
+.patient-dashboard-notices-card{grid-column:1/-1;border-color:#b7c9f1;background:var(--brand-soft)}
+.patient-notices-list{display:grid;gap:10px}
+.patient-notice{padding:12px 14px;border:1px solid #b7c9f1;border-radius:var(--radius-sm);background:var(--surface)}
+.patient-notice p{margin:0 0 4px}
+.patient-notice span{font-size:.78rem}

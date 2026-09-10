@@ -6,13 +6,14 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { DateField } from '@/components/ui/DateField';
 import { AuthLogo } from '@/components/ui/AuthLogo';
 import { formatBrazilianPhone, phoneValidationError, toBrazilianPhoneDigits } from '@/lib/phone';
 
 // Keep this in sync with the date at the top of docs/legal/termos-de-uso.md
 // in the backend repo — the backend records exactly this string alongside
 // terms_accepted_at, so it must match the version actually being linked here.
-const TERMS_VERSION = '2026-08-27';
+const TERMS_VERSION = '2026-09-10';
 
 export default function Signup() {
   const router = useRouter();
@@ -132,11 +133,10 @@ export default function Signup() {
               </label>
               <label>
                 Data de nascimento
-                <input
+                <DateField
                   name="birth_date"
-                  onChange={(event) => setBirthDate(event.target.value)}
+                  onChange={setBirthDate}
                   required
-                  type="date"
                   value={birthDate}
                 />
               </label>
