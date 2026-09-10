@@ -6,6 +6,8 @@ import { createPatientAnamnese, getPatientAnamnese, updatePatientAnamnese, type 
 import { Button } from '@/components/ui/design';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { RiskFactorChecklist } from '@/components/patient/RiskFactorChecklist';
+import { extractRiskFactors, type AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 
 function friendlyError(error: unknown) {
   if (error instanceof ApiError) {
@@ -21,6 +23,7 @@ function friendlyError(error: unknown) {
 export function PatientAnamneseEditor({ patientId }: { patientId: string }) {
   const [anamnese, setAnamnese] = useState('');
   const [savedText, setSavedText] = useState('');
+  const [riskFactors, setRiskFactors] = useState<AnamneseRiskFactors>({});
   const [record, setRecord] = useState<Anamnese | null>(null);
   const [hasAnamnese, setHasAnamnese] = useState(false);
   const [isLoadingAnamnese, setIsLoadingAnamnese] = useState(true);
@@ -38,7 +41,7 @@ export function PatientAnamneseEditor({ patientId }: { patientId: string }) {
       setRecord(data); setHasAnamnese(Boolean(data));
       const text = data?.info ?? '';
       setSavedText(text);
-      if (!preserveDraft) setAnamnese(text);
+      if (!preserveDraft) { setAnamnese(text); setRiskFactors(extractRiskFactors(data)); }
     } catch (error) {
       setAnamneseError(error instanceof ApiError && error.status === 403 ? 'Você não possui acesso à anamnese deste paciente.' : 'Não foi possível carregar a anamnese. Tente novamente.');
     } finally { setIsLoadingAnamnese(false); }
@@ -60,9 +63,10 @@ export function PatientAnamneseEditor({ patientId }: { patientId: string }) {
     setIsSavingAnamnese(true); setSaveError(null); setSuccess(null);
     try {
       const updated = hasAnamnese
-        ? await updatePatientAnamnese(patientId, { info: normalized.trim() })
-        : await createPatientAnamnese(patientId, { info: normalized.trim() });
+        ? await updatePatientAnamnese(patientId, { info: normalized.trim(), ...riskFactors })
+        : await createPatientAnamnese(patientId, { info: normalized.trim(), ...riskFactors });
       setRecord(updated); setHasAnamnese(true); setAnamnese(updated.info); setSavedText(updated.info);
+      setRiskFactors(extractRiskFactors(updated));
       setSuccess(hasAnamnese ? 'Anamnese atualizada com sucesso.' : 'Anamnese cadastrada com sucesso.');
     } catch (error) {
       if (error instanceof ApiError && error.status === 404 && hasAnamnese) {
@@ -76,7 +80,9 @@ export function PatientAnamneseEditor({ patientId }: { patientId: string }) {
   }
 
   return <section className="card professional-detail-section"><div className="professional-section-heading"><div><h2>Anamnese</h2><p className="muted compact">{hasAnamnese ? 'Registro clínico do paciente.' : 'Este paciente ainda não possui anamnese.'}</p></div>{record?.updated_at ? <small className="muted">Atualizada em {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(record.updated_at))}</small> : null}</div>
-    <label>Conteúdo clínico<div className="anamnesis-textarea-shell"><textarea rows={12} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} disabled={isLoadingAnamnese || isSavingAnamnese || Boolean(anamneseError)} aria-busy={isLoadingAnamnese} />{isLoadingAnamnese ? <div className="anamnesis-loading" role="status" aria-label="Carregando anamnese"><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /><span className="sr-only">Carregando anamnese...</span></div> : null}</div></label><p className="muted compact">{isLoadingAnamnese ? <SkeletonBlock className="anamnesis-help-skeleton" /> : <>{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</>}</p><Button onClick={save} loading={isSavingAnamnese} loadingLabel="Salvando..." disabled={isLoadingAnamnese || Boolean(anamneseError)}>Salvar anamnese</Button>
+    <label>Conteúdo clínico<div className="anamnesis-textarea-shell"><textarea rows={12} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} disabled={isLoadingAnamnese || isSavingAnamnese || Boolean(anamneseError)} aria-busy={isLoadingAnamnese} />{isLoadingAnamnese ? <div className="anamnesis-loading" role="status" aria-label="Carregando anamnese"><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /><span className="sr-only">Carregando anamnese...</span></div> : null}</div></label><p className="muted compact">{isLoadingAnamnese ? <SkeletonBlock className="anamnesis-help-skeleton" /> : <>{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</>}</p>
+    {isLoadingAnamnese ? null : <RiskFactorChecklist values={riskFactors} onChange={(field, checked) => setRiskFactors((current) => ({ ...current, [field]: checked }))} disabled={isSavingAnamnese || Boolean(anamneseError)} />}
+    <Button onClick={save} loading={isSavingAnamnese} loadingLabel="Salvando..." disabled={isLoadingAnamnese || Boolean(anamneseError)}>Salvar anamnese</Button>
     {anamneseError ? <p className="notice danger" role="alert">{anamneseError} <button type="button" className="button secondary" onClick={() => void load()}>Tentar novamente</button></p> : null}
     {saveError ? <p className="notice danger" role="alert">{saveError}</p> : null}{success ? <p className="notice success" role="status">{success}</p> : null}
   </section>;

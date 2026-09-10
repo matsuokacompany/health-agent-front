@@ -6,6 +6,7 @@ import { SelfAnamneseEditor } from '@/components/patient/SelfAnamneseEditor';
 import { SupplementsList } from '@/components/patient/SupplementsList';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { anamnesesApi } from '@/services/anamnese';
+import { extractRiskFactors, type AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 
 export default function PatientAnamnese() {
   const { plans } = usePatientData();
@@ -13,11 +14,15 @@ export default function PatientAnamnese() {
     (plan) => plan.origin === 'PROFESSIONAL' && (plan.active || String(plan.status ?? '').toLowerCase() === 'active'),
   );
   const [info, setInfo] = useState('');
+  const [riskFactors, setRiskFactors] = useState<AnamneseRiskFactors>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (hasProfessional) {
-      anamnesesApi.me().then((a) => setInfo(String(a.info ?? ''))).catch(() => setInfo('')).finally(() => setLoading(false));
+      anamnesesApi.me()
+        .then((a) => { setInfo(String(a.info ?? '')); setRiskFactors(extractRiskFactors(a)); })
+        .catch(() => setInfo(''))
+        .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
@@ -26,7 +31,7 @@ export default function PatientAnamnese() {
   return (
     <section className="stack">
       {hasProfessional ? (
-        <ReadOnlyAnamnese info={info} loading={loading} />
+        <ReadOnlyAnamnese info={info} loading={loading} riskFactors={riskFactors} />
       ) : (
         <SelfAnamneseEditor />
       )}
