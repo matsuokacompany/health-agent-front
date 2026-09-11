@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useProfessionalPatients } from '@/hooks/useProfessional';
 import { ErrorState, EmptyState } from '@/components/ui/states';
 import { NewPatientModal } from '@/components/professional/NewPatientModal';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { TableSkeleton } from '@/components/ui/Loading';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { MetricCard } from '@/components/ui/design';
@@ -14,8 +14,8 @@ import { MetricCard } from '@/components/ui/design';
 function LoadingPatients() {
   return <div aria-busy="true" aria-label="Carregando pacientes monitorados">
     <section className="grid">
-      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>
-      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>
+      <MetricCardSkeleton />
+      <MetricCardSkeleton />
       <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock /></article>
     </section>
     <TableSkeleton rows={6} columns={5} />

@@ -7,7 +7,7 @@ import { AiReportsJourney } from '@/components/professional/AiReportsJourney';
 import { PatientAnamneseEditor } from '@/components/professional/PatientAnamneseEditor';
 import { PatientSupplementsEditor } from '@/components/professional/PatientSupplementsEditor';
 import { ErrorState, EmptyState } from '@/components/ui/states';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { TableSkeleton } from '@/components/ui/Loading';
 import { ClinicalImagesSection } from '@/components/clinical-images/ClinicalImagesSection';
 import { MetricCard } from '@/components/ui/design';
@@ -39,7 +39,9 @@ function TabPanelSkeleton({ tab }: { tab: PatientDetailTab }) {
   </section>;
   return <div className="professional-tab-content">
     <section className="grid professional-detail-section">
-      {Array.from({ length: 3 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></article>)}
+      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></article>
+      <MetricCardSkeleton />
+      <MetricCardSkeleton />
     </section>
     <section className="split professional-detail-section">
       <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></article>
