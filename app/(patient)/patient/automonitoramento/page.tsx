@@ -213,11 +213,17 @@ function InsightCard({
 
 function LoadingAutomonitoramento() {
   return <section className="stack" aria-busy="true" aria-label="Carregando automonitoramento">
+    <div className="professional-section-heading">
+      <div><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-page-title" /><SkeletonBlock className="sk-page-copy" /></div>
+    </div>
+    <div className="ai-shortcuts">
+      {Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}
+    </div>
     <section className="patient-dashboard-summary-grid">
       {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
     <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
-    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock className="sk-action" /></Card>
   </section>;
 }
 
