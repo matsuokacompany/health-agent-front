@@ -5,7 +5,7 @@ import { Button, Card, MetricCard } from '@/components/ui/design';
 import { DateField } from '@/components/ui/DateField';
 import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { TableSkeleton } from '@/components/ui/Loading';
 import { adminReportingApi, type AdminBillingSummary, type AdminCostSummary } from '@/services/adminReporting';
 
@@ -13,11 +13,11 @@ function LoadingCustos() {
   return <div aria-busy="true" aria-label="Carregando custos">
     <div className="page-header"><div className="route-skeleton-header"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-page-title" /><SkeletonBlock className="sk-page-copy" /></div></div>
     <section className="grid admin-metrics-grid">
-      {Array.from({ length: 3 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+      {Array.from({ length: 3 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
     <Card><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
     <section className="grid admin-metrics-grid admin-section-offset">
-      {Array.from({ length: 5 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+      {Array.from({ length: 5 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
     <div className="admin-section-offset"><Card><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card></div>
     <div className="admin-section-offset"><TableSkeleton rows={5} columns={5} /></div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
 import type { AppNotification, DailyReport, MonitoringPlan } from '@/lib/types';
@@ -217,9 +217,10 @@ function LoadingDashboard() {
     <Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
     <Card className="patient-dashboard-last-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
     <section className="patient-dashboard-summary-grid">
-      {Array.from({ length: 4 }, (_, index) => <Card key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></Card>)}
+      {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
     <Card className="patient-dashboard-chart-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-tile" /></Card>
+    <Card className="patient-symptom-terms-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card>
     <Card className="patient-dashboard-timeline-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
   </section>;
 }

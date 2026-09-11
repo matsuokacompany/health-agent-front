@@ -2,6 +2,18 @@ export function SkeletonBlock({ className = '' }: { className?: string }) {
   return <span className={`skeleton ${className}`.trim()} aria-hidden="true" />;
 }
 
+/** Mirrors MetricCard's real markup (icon badge + label/value stack) so a
+ * loading grid doesn't shift shape the moment data replaces it. */
+export function MetricCardSkeleton() {
+  return <article className="card metric-card">
+    <span className="metric-icon skeleton" aria-hidden="true" />
+    <div className="metric-body">
+      <SkeletonBlock className="sk-eyebrow" />
+      <SkeletonBlock className="sk-metric" />
+    </div>
+  </article>;
+}
+
 export function ShellSkeleton() {
   return <main className="app-shell shell-skeleton"><aside className="sidebar"><SkeletonBlock className="sk-brand" /><div className="stack"><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></div></aside><section className="content-shell"><div className="app-header"><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-search" /><SkeletonBlock className="sk-action" /></div><RouteSkeleton /></section></main>;
 }
@@ -28,5 +40,5 @@ export function RouteSkeleton() {
 }
 
 export function CalendarSkeleton() {
-  return <section className="calendar-layout is-calendar-only"><article className="card calendar-card"><div className="calendar-header"><div><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-page-copy" /></div><div className="calendar-nav"><SkeletonBlock className="sk-icon" /><SkeletonBlock className="sk-icon" /></div></div><div className="calendar-weekdays">{Array.from({ length: 7 }, (_, index) => <SkeletonBlock key={index} />)}</div><div className="calendar">{Array.from({ length: 35 }, (_, index) => <SkeletonBlock className="sk-day" key={index} />)}</div></article></section>;
+  return <section className="calendar-layout is-calendar-only"><article className="card calendar-card"><div className="calendar-header"><div><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-page-copy" /></div><div className="calendar-nav"><SkeletonBlock className="sk-action" /><SkeletonBlock className="sk-icon" /><SkeletonBlock className="sk-icon" /></div></div><div className="calendar-weekdays">{Array.from({ length: 7 }, (_, index) => <SkeletonBlock key={index} />)}</div><div className="calendar">{Array.from({ length: 35 }, (_, index) => <SkeletonBlock className="sk-day" key={index} />)}</div><div className="calendar-legend"><div className="calendar-legend-group">{Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-legend" key={index} />)}</div><div className="calendar-legend-group">{Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-legend" key={index} />)}</div></div></article></section>;
 }

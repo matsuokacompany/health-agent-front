@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { InsightResultBody } from '@/components/patient/InsightResultBody';
@@ -214,7 +214,7 @@ function InsightCard({
 function LoadingAutomonitoramento() {
   return <section className="stack" aria-busy="true" aria-label="Carregando automonitoramento">
     <section className="patient-dashboard-summary-grid">
-      {Array.from({ length: 4 }, (_, index) => <Card key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></Card>)}
+      {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
     <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
     <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
