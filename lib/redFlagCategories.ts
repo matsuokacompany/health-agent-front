@@ -6,6 +6,7 @@ export const RED_FLAG_CATEGORIES: Record<string, { label: string; tier: 'absolut
   neurologico: { label: 'Sinais neurológicos súbitos', tier: 'absoluto' },
   consciencia: { label: 'Alteração de consciência', tier: 'absoluto' },
   sangramento_trauma_intoxicacao: { label: 'Sangramento, trauma ou intoxicação', tier: 'absoluto' },
+  sinais_de_sepse: { label: 'Possível infecção com sinais de gravidade', tier: 'absoluto' },
   falta_de_ar_leve: { label: 'Falta de ar leve ou moderada', tier: 'contextual' },
   dor_abdominal: { label: 'Dor abdominal', tier: 'contextual' },
   febre: { label: 'Febre', tier: 'contextual' },

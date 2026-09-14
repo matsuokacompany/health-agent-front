@@ -133,6 +133,7 @@ export type ProfessionalCheckIn = {
   completed?: boolean;
   had_symptoms?: boolean | null;
   symptom_description?: string | null;
+  red_flag_category?: string | null;
   suspected_cause?: string | null;
   prompt_sent_at?: string | null;
   answered_at?: string | null;

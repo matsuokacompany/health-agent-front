@@ -11,8 +11,9 @@ export type AiReportPreviewResponse = {
   preview_token: string | null;
   preview_expires_at: string | null;
 };
-export type AiReport = { report_id: number; patient_id: number; requested_by_user_id: number; start_date: string; end_date: string; modo: AiReportMode; status: AiReportStatus; requested_at: string; processing_started_at: string | null; generated_at: string | null; next_generation_at: string | null; clinical_summary: string | null; ai: Record<string, unknown> | null; input_tokens: number | null; output_tokens: number | null; estimated_cost: number | null; actual_cost: number | null; model_name: string | null; failure_code: string | null };
-export type AiReportHistoryItem = Pick<AiReport, 'report_id' | 'patient_id' | 'requested_by_user_id' | 'start_date' | 'end_date' | 'modo' | 'status' | 'requested_at' | 'generated_at' | 'next_generation_at' | 'estimated_cost' | 'actual_cost' | 'model_name' | 'failure_code'>;
+export type AiReportFeedback = 'up' | 'down';
+export type AiReport = { report_id: number; patient_id: number; requested_by_user_id: number; start_date: string; end_date: string; modo: AiReportMode; status: AiReportStatus; requested_at: string; processing_started_at: string | null; generated_at: string | null; next_generation_at: string | null; clinical_summary: string | null; ai: Record<string, unknown> | null; input_tokens: number | null; output_tokens: number | null; estimated_cost: number | null; actual_cost: number | null; model_name: string | null; failure_code: string | null; professional_feedback: AiReportFeedback | null };
+export type AiReportHistoryItem = Pick<AiReport, 'report_id' | 'patient_id' | 'requested_by_user_id' | 'start_date' | 'end_date' | 'modo' | 'status' | 'requested_at' | 'generated_at' | 'next_generation_at' | 'estimated_cost' | 'actual_cost' | 'model_name' | 'failure_code' | 'professional_feedback'>;
 export type AiReportHistoryResponse = { items: AiReportHistoryItem[]; pagination: { page: number; per_page: number; total: number; total_pages: number } };
 export type AiReportPeriod = { start_date: string; end_date: string; modo: AiReportMode };
 
@@ -80,6 +81,11 @@ export const aiReportsApi = {
     }
   },
   detail: (patientId: number | string, reportId: number) => api<AiReport>(`${base(patientId)}/${reportId}`),
+  setFeedback: (patientId: number | string, reportId: number, feedback: AiReportFeedback | null) =>
+    api<{ report_id: number; professional_feedback: AiReportFeedback | null }>(`${base(patientId)}/${reportId}/feedback`, {
+      method: 'PUT',
+      body: JSON.stringify({ feedback }),
+    }),
 };
 
 /** @deprecated Fluxo semanal legado; mantido enquanto outros consumidores forem migrados. */

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/ui/states';
-import { aiReportsApi, aiReportUserError, shortcutPeriod, validateAiReportPeriod, type AiReport, type AiReportMode, type AiReportPeriod, type AiReportPreviewResponse, type AiReportStatus, type AiReportUserError } from '@/services/aiReports';
+import { aiReportsApi, aiReportUserError, shortcutPeriod, validateAiReportPeriod, type AiReport, type AiReportFeedback, type AiReportMode, type AiReportPeriod, type AiReportPreviewResponse, type AiReportStatus, type AiReportUserError } from '@/services/aiReports';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { AiReportPdfButton } from './AiReportPdfButton';
 import { DateField } from '@/components/ui/DateField';
@@ -43,7 +43,31 @@ function AiInterpretation({ ai, mode }: { ai: Record<string, unknown> | null; mo
   </div>;
 }
 
-export function AiReportResult({ report, patientName, onOpenFull, showActions = true, showHeading = true }: { report: AiReport; patientName?: string; onOpenFull?: () => void; showActions?: boolean; showHeading?: boolean }) {
+function FeedbackButtons({ patientId, reportId, feedback, onChange }: { patientId: number | string; reportId: number; feedback: AiReportFeedback | null; onChange: (next: AiReportFeedback | null) => void }) {
+  const [busy, setBusy] = useState(false);
+  async function set(next: AiReportFeedback) {
+    if (busy) return;
+    const value = feedback === next ? null : next; // clicking the active choice again clears it
+    setBusy(true);
+    try {
+      const result = await aiReportsApi.setFeedback(patientId, reportId, value);
+      onChange(result.professional_feedback);
+    } catch {
+      // Best-effort: this is an annotation, not a critical action -- the
+      // button simply stays at its previous state for the professional to
+      // try again, no error banner needed for something this low-stakes.
+    } finally {
+      setBusy(false);
+    }
+  }
+  return <div className="ai-feedback" role="group" aria-label="Essa hipótese foi útil?">
+    <span className="muted">Essa hipótese foi útil?</span>
+    <button type="button" className="icon-control" aria-pressed={feedback === 'up'} disabled={busy} onClick={() => void set('up')} aria-label="Útil"><span aria-hidden="true">👍</span></button>
+    <button type="button" className="icon-control" aria-pressed={feedback === 'down'} disabled={busy} onClick={() => void set('down')} aria-label="Não útil"><span aria-hidden="true">👎</span></button>
+  </div>;
+}
+
+export function AiReportResult({ report, patientName, onOpenFull, showActions = true, showHeading = true, onFeedbackChange }: { report: AiReport; patientName?: string; onOpenFull?: () => void; showActions?: boolean; showHeading?: boolean; onFeedbackChange?: (feedback: AiReportFeedback | null) => void }) {
   const narrative = clinicalNarrative(report.clinical_summary);
   return <article className="card ai-result" aria-live="polite">
     {showHeading ? <div className="professional-section-heading"><div><span className="eyebrow">Gerar e visualizar</span><h2>{report.status === 'COMPLETED' ? 'Relatório gerado com sucesso' : 'Relatório solicitado'}</h2></div><Status value={report.status} /></div> : <div className="ai-report-modal-status"><Status value={report.status} /></div>}
@@ -52,6 +76,7 @@ export function AiReportResult({ report, patientName, onOpenFull, showActions = 
     {narrative ? <section className="ai-summary"><span className="eyebrow">Contexto do paciente</span><h3>Resumo das informações de saúde</h3><p>{narrative}</p></section> : null}
     {report.status === 'COMPLETED' ? <AiInterpretation ai={report.ai} mode={report.modo}/> : null}
     <p className="notice"><strong>Aviso:</strong> Conteúdo gerado com apoio de inteligência artificial a partir de dados auto-relatados pelo paciente. Não representa diagnóstico e deve ser interpretado por um profissional qualificado.</p>
+    {report.status === 'COMPLETED' && onFeedbackChange ? <FeedbackButtons patientId={report.patient_id} reportId={report.report_id} feedback={report.professional_feedback} onChange={onFeedbackChange} /> : null}
     {showActions ? <div className="ai-actions">
       <AiReportPdfButton report={report} patientId={report.patient_id} reportId={report.report_id} status={report.status} patientName={patientName} />
       {report.status === 'COMPLETED' ? <button type="button" className="button secondary" onClick={() => window.print()}>Imprimir</button> : null}
@@ -112,8 +137,8 @@ export function AiReportsJourney({ patientId, patientName }: { patientId: string
       </div><aside className="ai-requirements"><h3>Requisitos para gerar</h3><ul><li>Período entre 30 dias e 5 anos</li><li>Pelo menos 10 check-ins respondidos</li><li>Nenhum relatório em geração</li><li>30 dias desde o último relatório</li></ul><p>A disponibilidade é calculada por paciente, inclusive para relatórios solicitados por outro profissional.</p></aside></div>
     </article>
     {preview ? <Review preview={preview} canGenerate={preview.eligibility.can_generate === true && !!preview.preview_token && preview.modo === modo && previewPeriod?.modo === modo} expired={expired} busy={!!busy} onGenerate={generate} onRefresh={review} onBack={() => { setPreview(null); setPreviewPeriod(null); document.getElementById('ai-start')?.focus(); }} onHistory={() => document.getElementById('ai-history')?.scrollIntoView()} onLatest={detail}/> : null}
-    <div id="ai-result">{busy === 'generate' ? <article className="card ai-processing" role="status"><span className="spinner" aria-hidden="true"/><h2>Gerando análise do relatório...</h2><p>Estamos organizando os dados e preparando a interpretação. Isso pode levar alguns instantes.</p><strong>Não atualize nem feche esta página durante o processamento.</strong></article> : report ? <AiReportResult report={report} patientName={patientName} onOpenFull={() => { setModalReport(report); setReportModalOpen(true); }}/> : null}</div>
+    <div id="ai-result">{busy === 'generate' ? <article className="card ai-processing" role="status"><span className="spinner" aria-hidden="true"/><h2>Gerando análise do relatório...</h2><p>Estamos organizando os dados e preparando a interpretação. Isso pode levar alguns instantes.</p><strong>Não atualize nem feche esta página durante o processamento.</strong></article> : report ? <AiReportResult report={report} patientName={patientName} onOpenFull={() => { setModalReport(report); setReportModalOpen(true); }} onFeedbackChange={(feedback) => setReport(current => current ? { ...current, professional_feedback: feedback } : current)}/> : null}</div>
     <article className="card" id="ai-history"><div className="professional-section-heading"><div><h2>Relatórios anteriores</h2><p className="muted">Consulte análises solicitadas para este paciente.</p></div></div><div className="ai-history-filters" role="group" aria-label="Filtrar relatórios">{historyStatuses.map(([label,value]) => <button className={filter === value ? '' : 'button secondary'} aria-pressed={filter === value} onClick={() => { setFilter(value); setPage(1); }} key={label}>{label}</button>)}</div>{historyLoading ? <p role="status">Carregando histórico...</p> : history?.items.length ? <><div className="ai-history-list">{history.items.map(item => <article key={item.report_id}><div><strong>{date(item.start_date)} a {date(item.end_date)}</strong><span>{MODE_LABELS[item.modo]}</span></div><Status value={item.status}/><dl><div><dt>Solicitação</dt><dd>{dateTime(item.requested_at)}</dd></div><div><dt>Conclusão</dt><dd>{dateTime(item.generated_at)}</dd></div></dl><button className="button secondary" onClick={() => detail(item.report_id)}>Ver relatório completo</button></article>)}</div><div className="patient-pagination"><button className="button secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button><span>Página {history.pagination.page} de {history.pagination.total_pages}</span><button className="button secondary" disabled={page >= history.pagination.total_pages} onClick={() => setPage(p => p + 1)}>Próxima</button></div></> : <EmptyState title="Nenhum relatório encontrado" description="Os relatórios gerados aparecerão aqui."/>}</article>
-    <Modal open={reportModalOpen} title="Relatório completo" onClose={() => setReportModalOpen(false)} className="ai-report-modal">{reportLoading ? <div className="ai-report-modal-loading" role="status" aria-label="Carregando relatório"><SkeletonBlock className="sk-title"/><SkeletonBlock/><SkeletonBlock/><SkeletonBlock className="sk-tile"/></div> : modalReport ? <AiReportResult report={modalReport} patientName={patientName} showActions showHeading={false}/> : null}</Modal>
+    <Modal open={reportModalOpen} title="Relatório completo" onClose={() => setReportModalOpen(false)} className="ai-report-modal">{reportLoading ? <div className="ai-report-modal-loading" role="status" aria-label="Carregando relatório"><SkeletonBlock className="sk-title"/><SkeletonBlock/><SkeletonBlock/><SkeletonBlock className="sk-tile"/></div> : modalReport ? <AiReportResult report={modalReport} patientName={patientName} showActions showHeading={false} onFeedbackChange={(feedback) => { setModalReport(current => current ? { ...current, professional_feedback: feedback } : current); setReport(current => current && current.report_id === modalReport.report_id ? { ...current, professional_feedback: feedback } : current); }}/> : null}</Modal>
   </section>;
 }
