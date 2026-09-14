@@ -160,6 +160,10 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
 .ai-reports-section .ai-result{gap:13px;padding:16px}
 .ai-reports-section .ai-friendly-report{gap:16px}
 .ai-reports-section .ai-scenarios article,.ai-reports-section .ai-recommendations>div,.ai-reports-section .ai-clinical-grid>div{padding:11px}
+.ai-feedback{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-soft)}
+.ai-feedback .icon-control{width:36px;min-width:36px;height:36px;font-size:1rem;border-color:var(--line)}
+.ai-feedback .icon-control[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 30%,transparent)}
+.ai-feedback .icon-control:disabled{opacity:.6}
 .ai-config-card .ai-config-heading{padding-bottom:10px;border-bottom:1px solid var(--line)}
 .ai-config-card .ai-config-heading h2,.ai-config-card .ai-config-heading p,.ai-config-main h3{margin-bottom:0}
 .ai-config-card .eyebrow{margin-bottom:7px}

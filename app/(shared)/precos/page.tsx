@@ -57,6 +57,7 @@ export default function PublicPricingPage() {
       <header className="public-pricing-nav">
         <Link href="/login" className="public-pricing-brand"><AuthLogo /><span className="sidebar-label">Julha</span></Link>
         <div className="public-pricing-nav-actions">
+          <Link href="/seguranca" className="button ghost">Segurança</Link>
           <Button href="/login" variant="secondary">Entrar</Button>
           <Button href={copy.ctaHref}>Criar conta</Button>
         </div>
