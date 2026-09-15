@@ -151,6 +151,34 @@ export type ProfessionalCheckInsParams = {
 };
 
 export type ProfessionalPaginatedResponse<T> = { items: T[]; pagination: { page: number; per_page: number; total: number; total_pages: number } };
+
+export type ProfessionalCalendarCheckin = {
+  id: number | string;
+  check_type?: string | null;
+  status?: string | null;
+  completed?: boolean;
+  had_symptoms?: boolean | null;
+  diet_adherence?: boolean | null;
+  exercise_adherence?: boolean | null;
+  medication_adherence?: boolean | null;
+  medication_adherence_level?: 'ALL' | 'PARTIAL' | 'NONE' | null;
+  prompt_sent_at?: string | null;
+  answered_at?: string | null;
+};
+export type ProfessionalCalendarDay = {
+  date: string;
+  has_checkin: boolean;
+  completed: boolean;
+  pending: boolean;
+  has_symptoms: boolean;
+  diet_followed: boolean;
+  exercise_followed: boolean;
+  medication_taken: boolean;
+  medication_partial: boolean;
+  statuses: Array<string | null>;
+  checkins: ProfessionalCalendarCheckin[];
+};
+export type ProfessionalCalendar = { year: number; month: number; days: ProfessionalCalendarDay[] };
 export type AiReportPeriod = 'diario' | 'semanal' | 'mensal';
 export type AiReportMode = 'preventivo' | 'avaliacao_clinica';
 export type SuspicionLevel = 'baixo' | 'moderado' | 'alto';
@@ -192,6 +220,7 @@ export const professionalApi = {
   createPatient: createProfessionalPatient,
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
+  getCalendar: (patientId: number | string, year: number, month: number) => api<ProfessionalCalendar>(withQuery(`/api/professional/patients/${patientId}/calendar`, { year, month })),
   getAnamnese: getPatientAnamnese,
   createAnamnese: createPatientAnamnese,
   updateAnamnese: updatePatientAnamnese,
