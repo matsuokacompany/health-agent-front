@@ -37,12 +37,16 @@ function getDayClassName(day: ProfessionalCalendarDay) {
 function CheckinDetail({ checkin }: { checkin: ProfessionalCalendarCheckin }) {
   const completed = Boolean(checkin.completed);
   return <div className="checkin-detail">
-    <p><strong>Sintomas:</strong> {completed ? (checkin.had_symptoms ? 'Sim' : 'Não') : 'Aguardando resposta'}</p>
-    {completed && checkin.diet_adherence != null ? <p><strong>Dieta:</strong> {checkin.diet_adherence ? 'Sim' : 'Não'}</p> : null}
-    {completed && checkin.exercise_adherence != null ? <p><strong>Exercício:</strong> {checkin.exercise_adherence ? 'Sim' : 'Não'}</p> : null}
-    {completed && (checkin.medication_adherence != null || checkin.medication_adherence_level) ? (
+    <p><strong>Sintomas:</strong> {checkin.had_symptoms != null ? (checkin.had_symptoms ? 'Sim' : 'Não') : 'Aguardando resposta'}</p>
+    {checkin.diet_adherence != null ? <p><strong>Dieta:</strong> {checkin.diet_adherence ? 'Sim' : 'Não'}</p> : null}
+    {checkin.exercise_adherence != null ? <p><strong>Exercício:</strong> {checkin.exercise_adherence ? 'Sim' : 'Não'}</p> : null}
+    {checkin.medication_adherence != null || checkin.medication_adherence_level ? (
       <p><strong>Medicação:</strong> {checkin.medication_adherence_level === 'PARTIAL' ? 'Parcial' : checkin.medication_adherence ? 'Sim' : 'Não'}</p>
     ) : null}
+    {/* The check-in's own fields (above) show whatever the patient answered
+        even if they never finished the flow -- only the calendar's day-level
+        aggregate icons are gated on completion (see PatientMonitoringCalendar). */}
+    {!completed ? <p className="muted">Check-in ainda não finalizado pelo paciente.</p> : null}
   </div>;
 }
 
@@ -120,6 +124,7 @@ export function PatientMonitoringCalendar({ patientId }: { patientId: string }) 
           <span><i className="legend-complete" />Respondido, sem sintomas</span>
           <span><i className="legend-symptom" />Respondido, com sintomas</span>
           <span><i className="legend-pending" />Não respondido</span>
+          <span><i className="legend-issue" />Resposta incompleta</span>
           <span><i className="legend-empty" />Sem check-in</span>
         </div>
         <div className="calendar-legend-group">
