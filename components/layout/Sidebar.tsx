@@ -1,8 +1,17 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { useI18n } from '@/components/i18n/I18nProvider';
 import { TourButton } from '@/components/tour/TourButton';
+
+// Brazilian convention: address people by their first name, not a full name
+// or a generic "Perfil" label -- the button still links to the same profile
+// page, this only changes what's shown.
+function firstName(fullName: string | undefined | null): string | null {
+  const trimmed = fullName?.trim();
+  return trimmed ? trimmed.split(/\s+/)[0] : null;
+}
 
 const icons: Record<string, string> = {
   Dashboard: '📊',
@@ -47,6 +56,8 @@ type AppSidebarProps = {
 export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, mobileOpen = false, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { t } = useI18n();
+  const { user } = useAuth();
+  const profileLabel = firstName(user?.name) ?? t('nav.profile');
   return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
       <div className="sidebar-brand-main">
@@ -62,7 +73,7 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
     </nav>
     <div className="sidebar-actions">
       <TourButton />
-      <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><span aria-hidden="true">👤</span><span className="sidebar-label">{t('nav.profile')}</span></Link>
+      <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><span aria-hidden="true">👤</span><span className="sidebar-label">{profileLabel}</span></Link>
       <Link className="nav-action" href={footerHref as never} onClick={onNavigate} title={footerLabel}><span aria-hidden="true">🚪</span><span className="sidebar-label">{footerLabel}</span></Link>
     </div>
   </aside>;
