@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Automonitoramento from '@/app/(patient)/patient/automonitoramento/page';
 
-const selfMonitoring = vi.hoisted(() => ({ getEvolutionReport: vi.fn(), getInsight: vi.fn() }));
+const selfMonitoring = vi.hoisted(() => ({ getEvolutionReport: vi.fn(), getInsight: vi.fn(), listInsights: vi.fn() }));
 vi.mock('@/services/selfMonitoring', () => ({ selfMonitoringApi: selfMonitoring }));
 
 const baseReport = {
@@ -34,7 +34,11 @@ const baseReport = {
 };
 
 describe('relatório de automonitoramento do paciente', () => {
-  beforeEach(() => { selfMonitoring.getEvolutionReport.mockReset(); selfMonitoring.getInsight.mockReset(); });
+  beforeEach(() => {
+    selfMonitoring.getEvolutionReport.mockReset();
+    selfMonitoring.getInsight.mockReset();
+    selfMonitoring.listInsights.mockReset().mockResolvedValue({ items: [], pagination: { page: 1, per_page: 1, total: 0, total_pages: 0 } });
+  });
   afterEach(cleanup);
 
   it('mostra sinais de alerta, adesão e fatores de risco no relatório', async () => {
@@ -60,5 +64,22 @@ describe('relatório de automonitoramento do paciente', () => {
     await waitFor(() => expect(selfMonitoring.getEvolutionReport).toHaveBeenCalled());
     expect(screen.queryByText('Sinais identificados no período', { exact: false })).toBeNull();
     expect(screen.queryByText('Fatores de risco registrados')).toBeNull();
+  });
+
+  it('desabilita a geração de resumo e explica o cooldown quando já existe um resumo recente', async () => {
+    selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
+    const nextGenerationAt = new Date(Date.now() + 5 * 86_400_000).toISOString();
+    selfMonitoring.listInsights.mockResolvedValue({
+      items: [{ id: 42, start_date: '2026-08-12', end_date: '2026-09-10', generated_at: '2026-09-10T12:00:00Z', next_generation_at: nextGenerationAt }],
+      pagination: { page: 1, per_page: 1, total: 1, total_pages: 1 },
+    });
+
+    render(<Automonitoramento />);
+
+    expect(await screen.findByText('Faltam 5 dias para o próximo.', { exact: false })).toBeTruthy();
+    const button = screen.getByRole('button', { name: 'Disponível novamente em breve' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    const link = screen.getByRole('link', { name: 'Ver o resumo mais recente →' }) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/patient/relatorios/42');
   });
 });
