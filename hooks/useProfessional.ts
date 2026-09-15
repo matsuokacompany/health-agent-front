@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { professionalApi, type ProfessionalCheckInsParams, type ProfessionalCheckIn, type ProfessionalDashboard, type ProfessionalPaginatedResponse, type ProfessionalPatient } from '@/services/professional';
+import { professionalApi, type ProfessionalCalendar, type ProfessionalCheckInsParams, type ProfessionalCheckIn, type ProfessionalDashboard, type ProfessionalPaginatedResponse, type ProfessionalPatient } from '@/services/professional';
 import type { Anamnese } from '@/services/professional';
 
 export function useProfessionalPatients() {
@@ -24,6 +24,10 @@ export function useProfessionalDashboard(patientId: string) {
 
 export function useProfessionalCheckIns(patientId: string, params: ProfessionalCheckInsParams) {
   return useQuery<ProfessionalPaginatedResponse<ProfessionalCheckIn>>({ queryKey: ['professional', 'patients', patientId, 'checkins', params], queryFn: () => professionalApi.getCheckIns(patientId, params), enabled: Boolean(patientId), placeholderData: keepPreviousData, staleTime: 30_000 });
+}
+
+export function useProfessionalCalendar(patientId: string, year: number, month: number) {
+  return useQuery<ProfessionalCalendar>({ queryKey: ['professional', 'patients', patientId, 'calendar', year, month], queryFn: () => professionalApi.getCalendar(patientId, year, month), enabled: Boolean(patientId), placeholderData: keepPreviousData, staleTime: 30_000 });
 }
 
 export function useProfessionalAnamnese(patientId: string) {

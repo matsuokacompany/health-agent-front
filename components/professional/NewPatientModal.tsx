@@ -21,6 +21,18 @@ type FieldErrors = Partial<Record<keyof FormValues, string>>;
 const initialValues: FormValues = { name: '', email: '', phone: '+55', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
 const fieldNames = new Set(Object.keys(initialValues));
 
+type NewPatientTab = 'dados' | 'plano' | 'medicamentos' | 'anamnese';
+const newPatientTabs: Array<{ id: NewPatientTab; label: string; description: string; icon: string }> = [
+  { id: 'dados', label: 'Dados do paciente', description: 'Identificação e contato', icon: '🧑' },
+  { id: 'plano', label: 'Plano', description: 'Finalidade e datas do acompanhamento', icon: '🗓️' },
+  { id: 'medicamentos', label: 'Medicamentos', description: 'Suplementos e doses (opcional)', icon: '💊' },
+  { id: 'anamnese', label: 'Anamnese', description: 'Histórico clínico (opcional)', icon: '📋' },
+];
+const fieldTab: Record<keyof FormValues, NewPatientTab> = {
+  name: 'dados', email: 'dados', phone: 'dados', cpf: 'dados', birth_date: 'dados', gender: 'dados', city: 'dados', state: 'dados',
+  plan_title: 'plano', plan_description: 'plano', plan_start_date: 'plano', plan_end_date: 'plano',
+};
+
 function apiMessage(payload: unknown) {
   if (typeof payload === 'string') return payload;
   if (!payload || typeof payload !== 'object') return null;
@@ -97,7 +109,14 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   const [anamnese, setAnamnese] = useState('');
   const [isSavingAnamnese, setIsSavingAnamnese] = useState(false);
   const [supplements, setSupplements] = useState<SupplementDraft[]>([]);
+  const [activeTab, setActiveTab] = useState<NewPatientTab>('dados');
   const minStartDate = useRef(tomorrowIsoDate()).current;
+
+  function jumpToFirstErrorTab(fieldErrors: FieldErrors) {
+    const firstField = (Object.keys(fieldErrors) as Array<keyof FormValues>).find((name) => fieldErrors[name]);
+    if (firstField) setActiveTab(fieldTab[firstField]);
+  }
+
   const mutation = useCreateProfessionalPatient({
     onError: (error) => {
       if (!(error instanceof ApiError)) return setErrorMessage('Não foi possível cadastrar o paciente. Tente novamente.');
@@ -110,6 +129,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
       if (error.status === 422) {
         const mapped = validationErrors(error.payload);
         setErrors(mapped);
+        jumpToFirstErrorTab(mapped);
         return setErrorMessage(Object.keys(mapped).length ? 'Revise os campos indicados.' : apiMessage(error.payload) ?? 'Revise os dados informados.');
       }
       if (error.status === 400) return setErrorMessage(apiMessage(error.payload) ?? 'Verifique as datas do plano.');
@@ -163,7 +183,11 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     if (values.plan_start_date && values.plan_start_date < minStartDate) next.plan_start_date = 'Escolha uma data a partir de amanhã — hoje o check-in das 8h já foi enviado.';
     if (values.plan_start_date && values.plan_end_date && values.plan_end_date < values.plan_start_date) next.plan_end_date = 'A data final não pode ser anterior à data inicial.';
     setErrors(next); if (!anamneseValidationError) setErrorMessage('');
-    if (Object.keys(next).length || anamneseValidationError) return;
+    if (Object.keys(next).length || anamneseValidationError) {
+      if (anamneseValidationError && !Object.keys(next).length) setActiveTab('anamnese');
+      else jumpToFirstErrorTab(next);
+      return;
+    }
     submitting.current = true;
     try {
       const response = await mutation.mutateAsync({ ...toCreatePatientPayload(values), supplements: toSupplementsPayload() });
@@ -185,60 +209,80 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   }
 
   const input = (name: keyof FormValues, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, formatValue = (value: string) => value) => <label>{label}{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<input {...props} name={name} value={values[name]} onChange={(event) => setValue(name, formatValue(event.target.value))} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name] ? `${name}-error` : undefined} /></label>;
-  const dateInput = (name: keyof FormValues, label: string, extra: { min?: string; max?: string } = {}) => <label>{label}{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<DateField name={name} value={values[name]} onChange={(iso) => setValue(name, iso)} min={extra.min} max={extra.max} ariaInvalid={Boolean(errors[name])} ariaDescribedBy={errors[name] ? `${name}-error` : undefined} /></label>;
+  const dateInput = (name: keyof FormValues, label: string, extra: { min?: string; max?: string } = {}) => <label><span className="field-label-text">{label}</span>{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<DateField name={name} value={values[name]} onChange={(iso) => setValue(name, iso)} min={extra.min} max={extra.max} ariaInvalid={Boolean(errors[name])} ariaDescribedBy={errors[name] ? `${name}-error` : undefined} /></label>;
   return <Modal open={open} title="Novo paciente" onClose={() => { if (!mutation.isPending && !isSavingAnamnese) onClose(); }}><form onSubmit={submit} noValidate>
     <p className="muted">Cadastre o paciente e crie seu plano inicial de acompanhamento.</p>
-    <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true, maxLength: INPUT_LIMITS.name })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', maxLength: INPUT_LIMITS.phone, placeholder: '+55 (11) 99999-9999' }, formatBrazilianPhone)}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: INPUT_LIMITS.cpf })}{dateInput('birth_date', 'Data de nascimento')}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2', maxLength: INPUT_LIMITS.city })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: INPUT_LIMITS.state, placeholder: 'Estado' })}</div>
-    <h3 className="new-patient-section-title">Plano de acompanhamento</h3>
-    <label htmlFor="plan_title">Finalidade do acompanhamento <span aria-hidden="true">*</span><input id="plan_title" name="plan_title" required maxLength={INPUT_LIMITS.planTitle} value={values.plan_title} onChange={(event) => setValue('plan_title', event.target.value)} placeholder="Ex.: Acompanhar a recuperação após extração de terceiro molar" aria-invalid={Boolean(errors.plan_title)} aria-describedby={errors.plan_title ? 'plan-title-help plan-title-error' : 'plan-title-help'} /> <small className="muted" id="plan-title-help">Descreva, em uma frase, o principal objetivo deste acompanhamento.</small>{errors.plan_title ? <span className="field-error" id="plan-title-error" role="alert">{errors.plan_title}</span> : null}</label>
-    <label htmlFor="plan_description">Contexto clínico e pontos a acompanhar<textarea id="plan_description" name="plan_description" rows={4} maxLength={INPUT_LIMITS.planDescription} value={values.plan_description} onChange={(event) => setValue('plan_description', event.target.value)} placeholder="Ex.: Pós-operatório de extração realizada em 12/08. Acompanhar dor, inchaço, sangramento, alimentação, abertura da boca e possíveis sinais de infecção." aria-invalid={Boolean(errors.plan_description)} aria-describedby={errors.plan_description ? 'plan-description-help plan-description-count plan-description-error' : 'plan-description-help plan-description-count'} /><small className="muted" id="plan-description-help">Inclua o contexto necessário, procedimento ou tratamento relacionado, evolução esperada e os sinais que merecem acompanhamento. Não informe nome, CPF, telefone, endereço ou outros dados pessoais.</small><small className="muted" id="plan-description-count">{values.plan_description.length}/{INPUT_LIMITS.planDescription}</small>{errors.plan_description ? <span className="field-error" id="plan-description-error" role="alert">{errors.plan_description}</span> : null}</label>
-    <p className="notice plan-ai-notice">As informações deste plano organizam o acompanhamento e podem contextualizar relatórios de apoio gerados por IA. Eles não substituem a avaliação do profissional.</p>
-    <div className="new-patient-grid">
-      <label htmlFor="plan_start_date">
-        Data do 1º check-in por WhatsApp
-        <DateField id="plan_start_date" name="plan_start_date" min={minStartDate} value={values.plan_start_date} onChange={(iso) => setValue('plan_start_date', iso)} ariaInvalid={Boolean(errors.plan_start_date)} ariaDescribedBy={errors.plan_start_date ? 'plan-start-date-help plan-start-date-error' : 'plan-start-date-help'} />
-        <small className="muted" id="plan-start-date-help">O paciente recebe a primeira mensagem por volta das 8h desta data.</small>
-        {errors.plan_start_date ? <span className="field-error" id="plan-start-date-error" role="alert">{errors.plan_start_date}</span> : null}
-      </label>
-      {dateInput('plan_end_date', 'Data final', { min: values.plan_start_date || undefined })}
-    </div>
-    <h3 className="new-patient-section-title">Medicamentos e suplementos</h3>
-    <p className="muted compact">Opcional. O check-in diário do WhatsApp pergunta especificamente sobre cada um, enquanto o tratamento estiver em curso.</p>
-    <div className="stack compact">
-      {supplements.map((supplement, index) => (
-        <div className="new-patient-grid" key={index}>
-          <label>
-            Nome
-            <input type="text" placeholder="Ex.: Amoxicilina" maxLength={120} value={supplement.name} onChange={(event) => updateSupplement(index, { name: event.target.value })} />
-          </label>
-          <label>
-            Quantas vezes
-            <input type="number" min={1} max={99} value={supplement.dosageTimes} onChange={(event) => updateSupplement(index, { dosageTimes: event.target.value })} />
-          </label>
-          <label>
-            Por
-            <select value={supplement.dosagePeriod} onChange={(event) => updateSupplement(index, { dosagePeriod: event.target.value as SupplementDosagePeriod })}>
-              <option value="DAY">Dia</option>
-              <option value="WEEK">Semana</option>
-              <option value="MONTH">Mês</option>
-            </select>
-          </label>
-          <label>
-            <input type="checkbox" checked={supplement.indeterminate} onChange={(event) => updateSupplement(index, { indeterminate: event.target.checked })} />
-            {' '}Uso contínuo
-          </label>
-          {!supplement.indeterminate ? (
-            <label>
-              Por quantos dias
-              <input type="number" min={1} max={3650} value={supplement.durationDays} onChange={(event) => updateSupplement(index, { durationDays: event.target.value })} />
-            </label>
-          ) : null}
-          <Button variant="ghost" type="button" onClick={() => removeSupplement(index)}>Remover</Button>
-        </div>
+    <nav className="professional-patient-tabs new-patient-tabs" role="tablist" aria-label="Etapas do cadastro">
+      {newPatientTabs.map((tab) => (
+        <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>
+          <span className="tab-icon" aria-hidden="true">{tab.icon}</span>
+          <span>{tab.label}</span>
+          <small>{tab.description}</small>
+        </button>
       ))}
-      <Button variant="secondary" type="button" onClick={() => setSupplements((current) => [...current, emptySupplementDraft()])}>Adicionar medicamento/suplemento</Button>
+    </nav>
+
+    <div className="professional-tab-panel" hidden={activeTab !== 'dados'}>
+      <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true, maxLength: INPUT_LIMITS.name })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', maxLength: INPUT_LIMITS.phone, placeholder: '+55 (11) 99999-9999' }, formatBrazilianPhone)}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: INPUT_LIMITS.cpf })}{dateInput('birth_date', 'Data de nascimento')}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2', maxLength: INPUT_LIMITS.city })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: INPUT_LIMITS.state, placeholder: 'Estado' })}</div>
     </div>
-    <h3 className="new-patient-section-title">Anamnese</h3><label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
+
+    <div className="professional-tab-panel" hidden={activeTab !== 'plano'}>
+      <label htmlFor="plan_title">Finalidade do acompanhamento <span aria-hidden="true">*</span><input id="plan_title" name="plan_title" required maxLength={INPUT_LIMITS.planTitle} value={values.plan_title} onChange={(event) => setValue('plan_title', event.target.value)} placeholder="Ex.: Acompanhar a recuperação após extração de terceiro molar" aria-invalid={Boolean(errors.plan_title)} aria-describedby={errors.plan_title ? 'plan-title-help plan-title-error' : 'plan-title-help'} /> <small className="muted" id="plan-title-help">Descreva, em uma frase, o principal objetivo deste acompanhamento.</small>{errors.plan_title ? <span className="field-error" id="plan-title-error" role="alert">{errors.plan_title}</span> : null}</label>
+      <label htmlFor="plan_description">Contexto clínico e pontos a acompanhar<textarea id="plan_description" name="plan_description" rows={4} maxLength={INPUT_LIMITS.planDescription} value={values.plan_description} onChange={(event) => setValue('plan_description', event.target.value)} placeholder="Ex.: Pós-operatório de extração realizada em 12/08. Acompanhar dor, inchaço, sangramento, alimentação, abertura da boca e possíveis sinais de infecção." aria-invalid={Boolean(errors.plan_description)} aria-describedby={errors.plan_description ? 'plan-description-help plan-description-count plan-description-error' : 'plan-description-help plan-description-count'} /><small className="muted" id="plan-description-help">Inclua o contexto necessário, procedimento ou tratamento relacionado, evolução esperada e os sinais que merecem acompanhamento. Não informe nome, CPF, telefone, endereço ou outros dados pessoais.</small><small className="muted" id="plan-description-count">{values.plan_description.length}/{INPUT_LIMITS.planDescription}</small>{errors.plan_description ? <span className="field-error" id="plan-description-error" role="alert">{errors.plan_description}</span> : null}</label>
+      <p className="notice plan-ai-notice">As informações deste plano organizam o acompanhamento e podem contextualizar relatórios de apoio gerados por IA. Eles não substituem a avaliação do profissional.</p>
+      <div className="new-patient-grid">
+        <label htmlFor="plan_start_date">
+          <span className="field-label-text">Data do 1º check-in por WhatsApp</span>
+          <DateField id="plan_start_date" name="plan_start_date" min={minStartDate} value={values.plan_start_date} onChange={(iso) => setValue('plan_start_date', iso)} ariaInvalid={Boolean(errors.plan_start_date)} ariaDescribedBy={errors.plan_start_date ? 'plan-start-date-help plan-start-date-error' : 'plan-start-date-help'} />
+          <small className="muted" id="plan-start-date-help">O paciente recebe a primeira mensagem por volta das 8h desta data.</small>
+          {errors.plan_start_date ? <span className="field-error" id="plan-start-date-error" role="alert">{errors.plan_start_date}</span> : null}
+        </label>
+        {dateInput('plan_end_date', 'Data final', { min: values.plan_start_date || undefined })}
+      </div>
+    </div>
+
+    <div className="professional-tab-panel" hidden={activeTab !== 'medicamentos'}>
+      <p className="muted compact">Opcional. O check-in diário do WhatsApp pergunta especificamente sobre cada um, enquanto o tratamento estiver em curso.</p>
+      <div className="stack compact">
+        {supplements.map((supplement, index) => (
+          <div className="new-patient-grid" key={index}>
+            <label>
+              Nome
+              <input type="text" placeholder="Ex.: Amoxicilina" maxLength={120} value={supplement.name} onChange={(event) => updateSupplement(index, { name: event.target.value })} />
+            </label>
+            <label>
+              Quantas vezes
+              <input type="number" min={1} max={99} value={supplement.dosageTimes} onChange={(event) => updateSupplement(index, { dosageTimes: event.target.value })} />
+            </label>
+            <label>
+              Por
+              <select value={supplement.dosagePeriod} onChange={(event) => updateSupplement(index, { dosagePeriod: event.target.value as SupplementDosagePeriod })}>
+                <option value="DAY">Dia</option>
+                <option value="WEEK">Semana</option>
+                <option value="MONTH">Mês</option>
+              </select>
+            </label>
+            <label>
+              <input type="checkbox" checked={supplement.indeterminate} onChange={(event) => updateSupplement(index, { indeterminate: event.target.checked })} />
+              {' '}Uso contínuo
+            </label>
+            {!supplement.indeterminate ? (
+              <label>
+                Por quantos dias
+                <input type="number" min={1} max={3650} value={supplement.durationDays} onChange={(event) => updateSupplement(index, { durationDays: event.target.value })} />
+              </label>
+            ) : null}
+            <Button variant="ghost" type="button" onClick={() => removeSupplement(index)}>Remover</Button>
+          </div>
+        ))}
+        <Button variant="secondary" type="button" onClick={() => setSupplements((current) => [...current, emptySupplementDraft()])}>Adicionar medicamento/suplemento</Button>
+      </div>
+    </div>
+
+    <div className="professional-tab-panel" hidden={activeTab !== 'anamnese'}>
+      <label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
+    </div>
+
     {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}<div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button><Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button></div>
   </form></Modal>;
 }
