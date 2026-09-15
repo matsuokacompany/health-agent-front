@@ -25,6 +25,29 @@ function buildCalendar() {
           checkins: [{ id: 99, completed: true, had_symptoms: true, diet_adherence: true, exercise_adherence: false, medication_adherence: false, medication_adherence_level: 'NONE' }],
         };
       }
+      if (day === 6) {
+        // Patient answered diet/exercise but the check-in expired before
+        // medication -- completed=False AND pending=False (backend now only
+        // sets pending when nothing at all was answered), which the day
+        // status/class helpers must resolve to "Incompleto"/is-issue, not
+        // "Não respondido".
+        return {
+          date: isoDay(day), has_checkin: true, completed: false, pending: false, has_symptoms: false,
+          diet_followed: false, exercise_followed: false, medication_taken: false, medication_partial: false,
+          statuses: ['EXPIRED'],
+          checkins: [{ id: 100, completed: false, had_symptoms: false, diet_adherence: true, exercise_adherence: true, medication_adherence: null, medication_adherence_level: null }],
+        };
+      }
+      if (day === 7) {
+        // Genuinely untouched -- has_checkin=True but pending=True, the only
+        // case that should still read as "Não respondido".
+        return {
+          date: isoDay(day), has_checkin: true, completed: false, pending: true, has_symptoms: false,
+          diet_followed: false, exercise_followed: false, medication_taken: false, medication_partial: false,
+          statuses: ['PENDING'],
+          checkins: [{ id: 101, completed: false, had_symptoms: null, diet_adherence: null, exercise_adherence: null, medication_adherence: null, medication_adherence_level: null }],
+        };
+      }
       return { date: isoDay(day), has_checkin: false, completed: false, pending: false, has_symptoms: false, diet_followed: false, exercise_followed: false, medication_taken: false, medication_partial: false, statuses: [], checkins: [] };
     }),
   };
@@ -50,6 +73,21 @@ describe('calendário de monitoramento (visão do profissional, somente leitura)
     expect(screen.queryByRole('button', { name: /editar/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /excluir/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /responder/i })).toBeNull();
+  });
+
+  it('distingue "Incompleto" (respondeu parte) de "Não respondido" (nada respondido)', async () => {
+    useProfessionalCalendar.mockReturnValue({ data: buildCalendar(), isLoading: false, error: null });
+    render(<PatientMonitoringCalendar patientId="42" />);
+
+    const incompleteDay = screen.getByRole('button', { name: /Incompleto/ });
+    expect(incompleteDay.className).toContain('is-issue');
+    expect(screen.queryAllByRole('button', { name: /Não respondido/ }).length).toBeGreaterThan(0);
+
+    fireEvent.click(incompleteDay);
+    await screen.findByText('Check-in ainda não finalizado pelo paciente.');
+    expect(screen.getAllByText('Sim')).toHaveLength(2); // Dieta: Sim, Exercício: Sim
+
+    expect(screen.getByText('Resposta incompleta')).toBeTruthy();
   });
 
   it('mostra o skeleton enquanto carrega e o estado de erro quando a busca falha', () => {
