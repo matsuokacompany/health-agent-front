@@ -8,7 +8,7 @@ import { ApiError } from '@/infrastructure/http/ApiClient';
 import { InsightResultBody } from '@/components/patient/InsightResultBody';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { shortcutPeriod } from '@/services/aiReports';
-import type { EvolutionRedFlagEvent, EvolutionReport, EvolutionSymptomOccurrence, SelfMonitoringInsight } from '@/lib/types';
+import type { EvolutionRedFlagEvent, EvolutionReport, EvolutionSymptomOccurrence, SelfMonitoringInsight, SelfMonitoringInsightListItem } from '@/lib/types';
 
 const PERIOD_PRESETS = [
   [30, 'Últimos 30 dias'],
@@ -152,6 +152,7 @@ function insightDaysUntil(nextGenerationAt?: string | null) {
 function InsightCard({
   report,
   insight,
+  latestInsight,
   periodLabel,
   error,
   generating,
@@ -159,6 +160,7 @@ function InsightCard({
 }: {
   report: EvolutionReport | null;
   insight: SelfMonitoringInsight | null;
+  latestInsight: SelfMonitoringInsightListItem | null;
   periodLabel: string;
   error: string | null;
   generating: boolean;
@@ -166,12 +168,16 @@ function InsightCard({
 }) {
   const notEnoughData = Boolean(report && !report.sufficient_data);
   const result = insight?.insight ?? null;
-  const daysUntilNext = insight ? insightDaysUntil(insight.next_generation_at) : null;
-  // While the 15-day cooldown is active, generating again just returns the
-  // cached insight — which may cover a different period than the one
-  // currently selected above. Showing the period this specific result
-  // actually covers keeps that honest instead of implying it matches the
-  // selector.
+  // Cooldown is per patient, not per period selected above -- read it from
+  // the patient's latest insight (fetched once, independent of the period
+  // selector) so switching periods can't hide an active cooldown and make
+  // the button look available again when it isn't.
+  const daysUntilNext = latestInsight ? insightDaysUntil(latestInsight.next_generation_at) : null;
+  const cooldownActive = daysUntilNext !== null && daysUntilNext > 0;
+  // While the cooldown is active, generating again just returns the cached
+  // insight — which may cover a different period than the one currently
+  // selected above. Showing the period this specific result actually
+  // covers keeps that honest instead of implying it matches the selector.
   const resultPeriodLabel = insight ? `${formatDate(insight.start_date)} a ${formatDate(insight.end_date)}` : null;
 
   return <Card>
@@ -190,23 +196,24 @@ function InsightCard({
       <p className="notice">Ainda não há check-ins suficientes para gerar o resumo — continue respondendo ao WhatsApp diariamente.</p>
     ) : null}
     {error ? <p className="notice danger">{error}</p> : null}
+    {cooldownActive ? (
+      <p className="notice compact">
+        Você já gerou um resumo recentemente — para controlar o custo de IA, um resumo novo só pode ser gerado a cada
+        15 dias. Faltam {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`} para o próximo.
+        {!result && latestInsight ? <> {' '}<a href={`/patient/relatorios/${latestInsight.id}`}>Ver o resumo mais recente →</a></> : null}
+      </p>
+    ) : null}
     <div className="page-actions">
       <Button
         variant={result ? 'secondary' : 'primary'}
-        disabled={generating || notEnoughData}
+        disabled={generating || notEnoughData || cooldownActive}
         loading={generating}
         loadingLabel="Gerando resumo..."
         onClick={onGenerate}
       >
-        {result ? 'Atualizar resumo' : 'Gerar resumo com IA'}
+        {cooldownActive ? 'Disponível novamente em breve' : result ? 'Atualizar resumo' : 'Gerar resumo com IA'}
       </Button>
     </div>
-    {daysUntilNext !== null && daysUntilNext > 0 ? (
-      <p className="muted compact">
-        Um novo resumo passa a ser gerado a partir de {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`}; até
-        lá, "Atualizar resumo" só mostra o resultado atual de novo.
-      </p>
-    ) : null}
     {result ? <p className="muted compact"><a href="/patient/relatorios">Ver histórico completo de resumos →</a></p> : null}
   </Card>;
 }
@@ -233,16 +240,36 @@ export default function Automonitoramento() {
   const [report, setReport] = useState<EvolutionReport | null>(null);
   const [reportBlocked, setReportBlocked] = useState(false);
   const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
+  const [latestInsight, setLatestInsight] = useState<SelfMonitoringInsightListItem | null>(null);
   const [insightError, setInsightError] = useState<string | null>(null);
   const [generatingInsight, setGeneratingInsight] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Fetched once, independent of the period selector below, purely to know
+  // whether the patient is inside the cooldown window — this hits the list
+  // endpoint (no AI call), so it never itself triggers a generation.
+  useEffect(() => {
+    selfMonitoringApi.listInsights(1, 1)
+      .then((response) => setLatestInsight(response.items[0] ?? null))
+      .catch(() => undefined);
+  }, []);
+
   async function generateInsight() {
     setGeneratingInsight(true);
     setInsightError(null);
     try {
-      setInsight(await selfMonitoringApi.getInsight(period));
+      const result = await selfMonitoringApi.getInsight(period);
+      setInsight(result);
+      if (result.id) {
+        setLatestInsight({
+          id: result.id,
+          start_date: result.start_date,
+          end_date: result.end_date,
+          generated_at: result.generated_at ?? new Date().toISOString(),
+          next_generation_at: result.next_generation_at,
+        });
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 402) {
         // The evolution-report paywall above already explains this — no
@@ -297,7 +324,7 @@ export default function Automonitoramento() {
     {!reportBlocked ? <PeriodSelector selected={selectedPeriod} onChange={setSelectedPeriod} disabled={loading} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
     {!reportBlocked ? (
-      <InsightCard report={report} insight={insight} periodLabel={periodLabel} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />
+      <InsightCard report={report} insight={insight} latestInsight={latestInsight} periodLabel={periodLabel} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />
     ) : null}
   </section>;
 }
