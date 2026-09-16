@@ -29,6 +29,19 @@ export default function ResetPasswordPage() {
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       const code = new URLSearchParams(window.location.search).get('code');
+      const recoveryError = hashParams.get('error') || hashParams.get('error_code');
+
+      if (recoveryError && !accessToken && !code) {
+        // Supabase itself denied the link (expired/used/invalid) and redirected
+        // here with #error=access_denied&error_code=otp_expired&... instead of
+        // a token or code. There is no session to exchange in this case --
+        // showing the form anyway let the user submit a password change with
+        // no session, which the backend correctly rejected with 401.
+        window.history.replaceState(null, document.title, window.location.pathname);
+        const description = hashParams.get('error_description');
+        setError(description ? decodeURIComponent(description.replace(/\+/g, ' ')) : 'Link de redefinição inválido ou expirado. Solicite um novo link.');
+        return;
+      }
 
       try {
         if (accessToken && refreshToken) {
@@ -76,21 +89,27 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="hero">
-      <section>
-        <AuthLogo />
-        <span className="badge">Nova senha</span>
-        <h1>Redefinir senha</h1>
-        <p className="muted">Digite uma nova senha para concluir a recuperação do seu acesso.</p>
-        <form className="card" onSubmit={onSubmit}>
-          <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Nova senha" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required value={password} />
-          <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Confirmar nova senha" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required value={confirmPassword} />
+    <main className="login-hero">
+      <aside className="panel login-panel" aria-labelledby="reset-password-title">
+        <div className="login-heading">
+          <AuthLogo />
+          <span className="badge">Nova senha</span>
+          <h1 id="reset-password-title">Redefinir senha</h1>
+          <p className="muted">Digite uma nova senha para concluir a recuperação do seu acesso.</p>
+        </div>
+        <form className="login-form" onSubmit={onSubmit}>
+          <div className="login-fields">
+            <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Nova senha" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required value={password} />
+            <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Confirmar nova senha" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required value={confirmPassword} />
+          </div>
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
-          <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
-          <Link href="/login">Voltar ao login</Link>
+          <div className="login-actions">
+            <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
+            <Link href="/login">Voltar ao login</Link>
+          </div>
         </form>
-      </section>
+      </aside>
     </main>
   );
 }
