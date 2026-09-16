@@ -57,4 +57,20 @@ describe('tela de redefinição de senha', () => {
     await waitFor(() => expect(screen.getByText('Invalid or expired recovery code')).toBeTruthy());
     expect((screen.getByLabelText('Nova senha') as HTMLInputElement).disabled).toBe(true);
   });
+
+  it('mantém o formulário bloqueado quando o próprio Supabase nega o link (#error=access_denied)', async () => {
+    // Regressão: o Supabase pode redirecionar de volta com um link já usado
+    // ou expirado como #error=access_denied&error_code=otp_expired&... em vez
+    // de tokens ou um código. Sem tokens não há sessão para trocar, então o
+    // formulário não pode ser liberado -- antes disso, o efeito caía para
+    // setReady(true) mesmo neste caso, e o envio subsequente do formulário
+    // retornava 401 do backend por falta de sessão.
+    setLocation('/reset-password', '', '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired');
+
+    render(<ResetPasswordPage />);
+
+    await waitFor(() => expect(screen.getByText('Email link is invalid or has expired')).toBeTruthy());
+    expect(exchangePasswordRecoveryMock).not.toHaveBeenCalled();
+    expect((screen.getByLabelText('Nova senha') as HTMLInputElement).disabled).toBe(true);
+  });
 });

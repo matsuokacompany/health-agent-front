@@ -29,6 +29,19 @@ export default function ResetPasswordPage() {
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       const code = new URLSearchParams(window.location.search).get('code');
+      const recoveryError = hashParams.get('error') || hashParams.get('error_code');
+
+      if (recoveryError && !accessToken && !code) {
+        // Supabase itself denied the link (expired/used/invalid) and redirected
+        // here with #error=access_denied&error_code=otp_expired&... instead of
+        // a token or code. There is no session to exchange in this case --
+        // showing the form anyway let the user submit a password change with
+        // no session, which the backend correctly rejected with 401.
+        window.history.replaceState(null, document.title, window.location.pathname);
+        const description = hashParams.get('error_description');
+        setError(description ? decodeURIComponent(description.replace(/\+/g, ' ')) : 'Link de redefinição inválido ou expirado. Solicite um novo link.');
+        return;
+      }
 
       try {
         if (accessToken && refreshToken) {
