@@ -53,7 +53,7 @@ export class ConflictError extends ApiError {
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/signup', '/api/auth/forgot-password', '/api/auth/recovery/exchange']);
-const REFRESH_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/csrf', '/api/auth/refresh', '/api/auth/logout']);
+const REFRESH_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/csrf', '/api/auth/refresh', '/api/auth/logout', '/api/auth/recovery/exchange']);
 let refreshPromise: Promise<boolean> | null = null;
 let csrfToken: string | null = null;
 let csrfPromise: Promise<string> | null = null;

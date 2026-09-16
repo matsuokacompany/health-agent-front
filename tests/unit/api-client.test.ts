@@ -164,6 +164,30 @@ describe('ApiClient', () => {
     expect(refreshCalls).toBe(1);
   });
 
+  it('does not attempt a session refresh on a 401 from recovery/exchange', async () => {
+    // Regression test: landing on /reset-password from an emailed link means
+    // there is no session at all yet, so a 401 there (an invalid/expired
+    // recovery token) can never be fixed by refreshing a session that
+    // doesn't exist. Treating it like any other protected 401 added a
+    // pointless CSRF-fetch + refresh round trip before surfacing the real
+    // error, which is why the reset-password page felt slow to respond
+    // before showing (or hiding) the recovery error.
+    let refreshCalls = 0;
+    let exchangeCalls = 0;
+    vi.stubGlobal('fetch', async (url: string) => {
+      if (url.endsWith('/api/auth/csrf')) return new Response(JSON.stringify({ csrf_token: 'csrf' }), { status: 200 });
+      if (url.endsWith('/api/auth/refresh')) { refreshCalls += 1; return new Response(null, { status: 204 }); }
+      exchangeCalls += 1;
+      return new Response(JSON.stringify({ detail: 'Invalid or expired Supabase token' }), { status: 401 });
+    });
+    const client = new ApiClient({ baseUrl: 'http://api.test' });
+
+    await expect(client.request('/api/auth/recovery/exchange', { method: 'POST' })).rejects.toBeInstanceOf(UnauthorizedError);
+
+    expect(refreshCalls).toBe(0);
+    expect(exchangeCalls).toBe(1);
+  });
+
   it('notifies an expired session once only after refresh fails', async () => {
     const onUnauthorized = vi.fn();
     vi.stubGlobal('fetch', async (url: string) => {
