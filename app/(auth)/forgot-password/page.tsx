@@ -29,26 +29,29 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="hero">
-      <section>
-        <AuthLogo />
-        <span className="badge">Recuperação de acesso</span>
-        <h1>Esqueci minha senha</h1>
-        <p className="muted">Informe seu e-mail para receber o link seguro de redefinição de senha.</p>
-        <form className="card" onSubmit={onSubmit}>
-          <label>
-            E-mail
-            <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
-          </label>
+    <main className="login-hero">
+      <aside className="panel login-panel" aria-labelledby="forgot-password-title">
+        <div className="login-heading">
+          <AuthLogo />
+          <span className="badge">Recuperação de acesso</span>
+          <h1 id="forgot-password-title">Esqueci minha senha</h1>
+          <p className="muted">Informe seu e-mail para receber o link seguro de redefinição de senha.</p>
+        </div>
+        <form className="login-form" onSubmit={onSubmit}>
+          <div className="login-fields">
+            <label>
+              E-mail
+              <input autoComplete="email" name="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+            </label>
+          </div>
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
-          <button className="button" disabled={submitting} type="submit">{submitting ? 'Enviando...' : 'Enviar link de redefinição'}</button>
-          <Link href="/login">Voltar ao login</Link>
+          <div className="login-actions">
+            <button className="button" disabled={submitting} type="submit">{submitting ? 'Enviando...' : 'Enviar link de redefinição'}</button>
+            <Link href="/login">Voltar ao login</Link>
+          </div>
         </form>
-      </section>
-      <aside className="panel">
-        <h2>Como funciona?</h2>
-        <p>O link enviado por e-mail abre a tela de redefinição para você cadastrar uma nova senha sem compartilhar a senha antiga.</p>
+        <p className="muted login-signup-hint">O link enviado por e-mail abre a tela de redefinição para você cadastrar uma nova senha sem compartilhar a senha antiga.</p>
       </aside>
     </main>
   );

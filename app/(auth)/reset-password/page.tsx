@@ -89,21 +89,27 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="hero">
-      <section>
-        <AuthLogo />
-        <span className="badge">Nova senha</span>
-        <h1>Redefinir senha</h1>
-        <p className="muted">Digite uma nova senha para concluir a recuperação do seu acesso.</p>
-        <form className="card" onSubmit={onSubmit}>
-          <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Nova senha" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required value={password} />
-          <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Confirmar nova senha" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required value={confirmPassword} />
+    <main className="login-hero">
+      <aside className="panel login-panel" aria-labelledby="reset-password-title">
+        <div className="login-heading">
+          <AuthLogo />
+          <span className="badge">Nova senha</span>
+          <h1 id="reset-password-title">Redefinir senha</h1>
+          <p className="muted">Digite uma nova senha para concluir a recuperação do seu acesso.</p>
+        </div>
+        <form className="login-form" onSubmit={onSubmit}>
+          <div className="login-fields">
+            <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Nova senha" minLength={minimumPasswordLength} name="password" onChange={(event) => setPassword(event.target.value)} required value={password} />
+            <PasswordInput autoComplete="new-password" disabled={!ready || submitting} label="Confirmar nova senha" minLength={minimumPasswordLength} name="confirmPassword" onChange={(event) => setConfirmPassword(event.target.value)} required value={confirmPassword} />
+          </div>
           {message ? <p className="notice success">{message}</p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
-          <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
-          <Link href="/login">Voltar ao login</Link>
+          <div className="login-actions">
+            <button className="button" disabled={!ready || submitting} type="submit">{submitting ? 'Alterando...' : 'Alterar senha'}</button>
+            <Link href="/login">Voltar ao login</Link>
+          </div>
         </form>
-      </section>
+      </aside>
     </main>
   );
 }
