@@ -107,10 +107,14 @@ export function updatePassword(password: string) {
   });
 }
 
-export async function exchangePasswordRecoveryCode(code: string) {
+type RecoveryExchangePayload =
+  | { code: string }
+  | { access_token: string; refresh_token: string; expires_in?: number };
+
+export async function exchangePasswordRecovery(payload: RecoveryExchangePayload) {
   await api<void>('/api/auth/recovery/exchange', {
     method: 'POST',
-    body: JSON.stringify({ code }),
+    body: JSON.stringify(payload),
   });
   clearLegacySupabaseSession();
 }

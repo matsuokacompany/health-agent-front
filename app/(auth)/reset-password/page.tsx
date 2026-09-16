@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { exchangePasswordRecoveryCode, updatePassword } from '@/lib/supabase';
+import { exchangePasswordRecovery, updatePassword } from '@/lib/supabase';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { AuthLogo } from '@/components/ui/AuthLogo';
 
@@ -20,17 +20,23 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     async function prepareRecoverySession() {
+      // This Supabase project issues recovery links in the implicit flow
+      // (#access_token=...&refresh_token=...) rather than the PKCE flow
+      // (?code=...) -- confirmed against a real link. Handle both: whichever
+      // one Supabase actually sends, exchange it for our own session cookies
+      // via the same backend endpoint.
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      if (hashParams.has('access_token') || hashParams.has('refresh_token')) {
-        window.history.replaceState(null, document.title, window.location.pathname);
-        setError('Link de redefinição temporariamente incompatível. Solicite um novo link para usar o fluxo seguro.');
-        return;
-      }
-
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
       const code = new URLSearchParams(window.location.search).get('code');
+
       try {
-        if (code) {
-          await exchangePasswordRecoveryCode(code);
+        if (accessToken && refreshToken) {
+          const expiresIn = Number(hashParams.get('expires_in'));
+          await exchangePasswordRecovery({ access_token: accessToken, refresh_token: refreshToken, expires_in: Number.isFinite(expiresIn) ? expiresIn : undefined });
+          window.history.replaceState(null, document.title, window.location.pathname);
+        } else if (code) {
+          await exchangePasswordRecovery({ code });
           window.history.replaceState(null, document.title, window.location.pathname);
         }
         setReady(true);

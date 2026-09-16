@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clearLegacySupabaseSession, exchangePasswordRecoveryCode, resetPasswordForEmail, signInWithPassword, signOut, updatePassword } from '@/lib/supabase';
+import { clearLegacySupabaseSession, exchangePasswordRecovery, resetPasswordForEmail, signInWithPassword, signOut, updatePassword } from '@/lib/supabase';
 
 describe('backend auth client', () => {
   afterEach(() => {
@@ -27,7 +27,7 @@ describe('backend auth client', () => {
     await signInWithPassword('ana@example.com', 'safe-password');
     await resetPasswordForEmail('ana@example.com');
     await updatePassword('new-safe-password');
-    await exchangePasswordRecoveryCode('recovery-code');
+    await exchangePasswordRecovery({ code: 'recovery-code' });
     await signOut();
 
     expect(calls.map(({ url }) => url)).toEqual([
