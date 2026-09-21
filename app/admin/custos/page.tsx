@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { CurrencyDollar, Users, TrendDown, Money, Robot, NotePencil, WhatsappLogo, Receipt } from '@phosphor-icons/react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { DateField } from '@/components/ui/DateField';
 import { ErrorState } from '@/components/ui/states';
@@ -185,9 +186,9 @@ export default function AdminCostsPage() {
 
       {billingSummary ? (
         <section className="grid admin-metrics-grid" data-tour="custos-billing">
-          <MetricCard icon="💰" label="MRR" value={formatBrlFromCents(billingSummary.mrr_cents)} description="Receita recorrente mensal, assinaturas ativas" tone="info" />
-          <MetricCard icon="👥" label="Assinaturas ativas" value={billingSummary.active_subscriptions} description={`${billingSummary.trialing_subscriptions} em teste · ${billingSummary.past_due_subscriptions} com pagamento atrasado`} />
-          <MetricCard icon="📉" label="Churn (30 dias)" value={`${(billingSummary.churn_rate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} description={`${billingSummary.canceled_last_30d} cancelamento(s) nos últimos 30 dias`} tone={billingSummary.churn_rate > 0 ? 'warn' : 'ok'} />
+          <MetricCard icon={<CurrencyDollar aria-hidden="true" size={22} weight="bold" />} label="MRR" value={formatBrlFromCents(billingSummary.mrr_cents)} description="Receita recorrente mensal, assinaturas ativas" tone="info" />
+          <MetricCard icon={<Users aria-hidden="true" size={22} weight="bold" />} label="Assinaturas ativas" value={billingSummary.active_subscriptions} description={`${billingSummary.trialing_subscriptions} em teste · ${billingSummary.past_due_subscriptions} com pagamento atrasado`} />
+          <MetricCard icon={<TrendDown aria-hidden="true" size={22} weight="bold" />} label="Churn (30 dias)" value={`${(billingSummary.churn_rate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} description={`${billingSummary.canceled_last_30d} cancelamento(s) nos últimos 30 dias`} tone={billingSummary.churn_rate > 0 ? 'warn' : 'ok'} />
         </section>
       ) : null}
 
@@ -206,18 +207,18 @@ export default function AdminCostsPage() {
       </Card>
 
       <section className="grid admin-metrics-grid admin-section-offset" data-tour="custos-metrics">
-        <MetricCard icon="💵" label="Total em reais (período)" value={formatBrlFromCents(totalBrlCents)} description="WhatsApp estimado + lançamentos manuais" tone="info" />
-        <MetricCard icon="🤖" label="Relatórios de IA gerados" value={summary.ai_report_count} description={`${formatUsd(summary.ai_report_cost_usd)} — custo real cobrado pela OpenAI`} />
-        <MetricCard icon="📝" label="Resumos de automonitoramento gerados" value={summary.self_monitoring_report_count} description={`${formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Resumo por IA")`} />
+        <MetricCard icon={<Money aria-hidden="true" size={22} weight="bold" />} label="Total em reais (período)" value={formatBrlFromCents(totalBrlCents)} description="WhatsApp estimado + lançamentos manuais" tone="info" />
+        <MetricCard icon={<Robot aria-hidden="true" size={22} weight="bold" />} label="Relatórios de IA gerados" value={summary.ai_report_count} description={`${formatUsd(summary.ai_report_cost_usd)} — custo real cobrado pela OpenAI`} />
+        <MetricCard icon={<NotePencil aria-hidden="true" size={22} weight="bold" />} label="Resumos de automonitoramento gerados" value={summary.self_monitoring_report_count} description={`${formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Resumo por IA")`} />
         <MetricCard
-          icon="💬"
+          icon={<WhatsappLogo aria-hidden="true" size={22} weight="bold" />}
           label="Mensagens de WhatsApp enviadas"
           value={summary.whatsapp_message_count}
           description={whatsappConfigured
             ? `${formatBrlFromCents(summary.whatsapp_cost_cents ?? 0)} estimado (${formatBrlFromCentsPrecise(summary.whatsapp_cost_per_message_cents ?? 0)}/mensagem)`
             : 'Configure WHATSAPP_COST_PER_MESSAGE_CENTS para estimar'}
         />
-        <MetricCard icon="🧾" label="Lançamentos manuais" value={formatBrlFromCents(summary.manual_cost_total_cents)} description={`${summary.manual_cost_entries.length} lançamento(s) no período`} />
+        <MetricCard icon={<Receipt aria-hidden="true" size={22} weight="bold" />} label="Lançamentos manuais" value={formatBrlFromCents(summary.manual_cost_total_cents)} description={`${summary.manual_cost_entries.length} lançamento(s) no período`} />
       </section>
 
       <div className="admin-section-offset" data-tour="custos-manual">

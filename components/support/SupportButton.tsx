@@ -1,5 +1,6 @@
 'use client';
 import { ChangeEvent, FormEvent, useState } from 'react';
+import { FirstAidKit, Paperclip } from '@phosphor-icons/react';
 import { Modal } from '@/components/ui/Modal';
 import { SUPPORT_SUBJECTS, supportApi, supportContactError } from '@/services/support';
 
@@ -65,7 +66,7 @@ export function SupportButton() {
   }
 
   return <>
-    <button className="button secondary icon-control" type="button" aria-label="Suporte" title="Falar com o suporte" onClick={() => setOpen(true)}><span aria-hidden="true">🆘</span></button>
+    <button className="button secondary icon-control" type="button" aria-label="Suporte" title="Falar com o suporte" onClick={() => setOpen(true)}><span aria-hidden="true"><FirstAidKit weight="bold" /></span></button>
     <Modal open={open} title="Falar com o suporte" onClose={close}>
       {sent ? (
         <div className="stack">
@@ -89,7 +90,7 @@ export function SupportButton() {
             Anexar uma imagem (opcional)
             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseAttachment} />
           </label>
-          {attachment ? <p className="muted compact">📎 {attachment.name} — <button className="button ghost" type="button" onClick={() => setAttachment(null)}>remover</button></p> : null}
+          {attachment ? <p className="muted compact"><Paperclip aria-hidden="true" weight="bold" /> {attachment.name} — <button className="button ghost" type="button" onClick={() => setAttachment(null)}>remover</button></p> : null}
           {error ? <p className="notice danger">{error}</p> : null}
           <button className="button" disabled={sending} aria-busy={sending} type="submit">{sending ? <><span className="spinner" aria-hidden="true" />Enviando...</> : 'Enviar mensagem'}</button>
         </form>

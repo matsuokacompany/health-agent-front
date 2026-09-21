@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { Bell } from '@phosphor-icons/react';
 import { notificationsApi } from '@/services/notifications';
 import type { AppNotification } from '@/lib/types';
 
@@ -67,7 +68,7 @@ export function NotificationBell() {
         title="Notificações"
         onClick={() => void handleOpen()}
       >
-        <span aria-hidden="true">🔔</span>
+        <Bell aria-hidden="true" size={18} weight="bold" />
         {unreadCount > 0 ? <span className="notification-bell-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
       </button>
       {open ? (

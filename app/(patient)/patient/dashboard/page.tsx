@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plant } from '@phosphor-icons/react';
+import { Plant, CalendarBlank, ChatCircleText, CheckCircle, Clock } from '@phosphor-icons/react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
@@ -258,10 +258,10 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
 function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
   const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
   return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento" data-tour="patient-summary">
-    <MetricCard icon="📅" label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
-    <MetricCard icon="💬" label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
-    <MetricCard icon="✅" label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
-    <MetricCard icon="🕒" label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
+    <MetricCard icon={<CalendarBlank aria-hidden="true" size={22} weight="bold" />} label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
+    <MetricCard icon={<ChatCircleText aria-hidden="true" size={22} weight="bold" />} label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
+    <MetricCard icon={<CheckCircle aria-hidden="true" size={22} weight="bold" />} label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
+    <MetricCard icon={<Clock aria-hidden="true" size={22} weight="bold" />} label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
   </section>;
 }
 
@@ -353,7 +353,7 @@ export default function PatientDashboard() {
       <MonitoringStatusCard reports={reports} />
       <NoticesCard />
       <Card className="patient-dashboard-main-card" data-tour="patient-plan"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
-        {upcomingFirstCheckin ? <p className="notice">📅 Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
+        {upcomingFirstCheckin ? <p className="notice"><CalendarBlank aria-hidden="true" size={16} weight="bold" /> Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
       </Card>
       <LastResponseCard data={dashboard} />
       <SummaryCards data={dashboard} />

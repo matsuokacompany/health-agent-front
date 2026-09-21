@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { IdentificationCard, CalendarBlank, Pill, ClipboardText } from '@phosphor-icons/react';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { useCreateProfessionalPatient } from '@/hooks/useProfessional';
 import type { CreateProfessionalPatientRequest } from '@/services/professional';
@@ -22,11 +23,11 @@ const initialValues: FormValues = { name: '', email: '', phone: '+55', cpf: '', 
 const fieldNames = new Set(Object.keys(initialValues));
 
 type NewPatientTab = 'dados' | 'plano' | 'medicamentos' | 'anamnese';
-const newPatientTabs: Array<{ id: NewPatientTab; label: string; description: string; icon: string }> = [
-  { id: 'dados', label: 'Dados do paciente', description: 'Identificação e contato', icon: '🧑' },
-  { id: 'plano', label: 'Plano', description: 'Finalidade e datas do acompanhamento', icon: '🗓️' },
-  { id: 'medicamentos', label: 'Medicamentos', description: 'Suplementos e doses (opcional)', icon: '💊' },
-  { id: 'anamnese', label: 'Anamnese', description: 'Histórico clínico (opcional)', icon: '📋' },
+const newPatientTabs: Array<{ id: NewPatientTab; label: string; description: string; icon: ReactNode }> = [
+  { id: 'dados', label: 'Dados do paciente', description: 'Identificação e contato', icon: <IdentificationCard aria-hidden="true" weight="bold" /> },
+  { id: 'plano', label: 'Plano', description: 'Finalidade e datas do acompanhamento', icon: <CalendarBlank aria-hidden="true" weight="bold" /> },
+  { id: 'medicamentos', label: 'Medicamentos', description: 'Suplementos e doses (opcional)', icon: <Pill aria-hidden="true" weight="bold" /> },
+  { id: 'anamnese', label: 'Anamnese', description: 'Histórico clínico (opcional)', icon: <ClipboardText aria-hidden="true" weight="bold" /> },
 ];
 const fieldTab: Record<keyof FormValues, NewPatientTab> = {
   name: 'dados', email: 'dados', phone: 'dados', cpf: 'dados', birth_date: 'dados', gender: 'dados', city: 'dados', state: 'dados',

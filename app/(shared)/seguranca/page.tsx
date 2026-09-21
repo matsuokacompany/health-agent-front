@@ -1,43 +1,45 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { Lock, Wall, Stethoscope, Scroll, Receipt, Warning } from '@phosphor-icons/react/ssr';
 import { AuthLogo } from '@/components/ui/AuthLogo';
 import { Button, Card } from '@/components/ui/design';
 
 export const metadata: Metadata = { title: 'Segurança e Conformidade — Julha Saúde' };
 
-const PILLARS: Array<{ icon: string; title: string; description: string }> = [
+const PILLARS: Array<{ icon: ReactNode; title: string; description: string }> = [
   {
-    icon: '🔐',
+    icon: <Lock aria-hidden="true" size={22} weight="bold" />,
     title: 'Criptografia de ponta a ponta',
     description:
       'Sintomas, anamnese e Relatórios de IA são protegidos com criptografia de envelope (AES-256-GCM). As chaves são geridas por um serviço dedicado (AWS KMS) e vinculadas ao registro, ao paciente e ao campo específicos — um dado criptografado não pode ser reaproveitado fora do contexto original.',
   },
   {
-    icon: '🧱',
+    icon: <Wall aria-hidden="true" size={22} weight="bold" />,
     title: 'Isolamento por paciente no banco de dados',
     description:
       'Row Level Security no PostgreSQL garante que cada consulta só alcança os dados do próprio paciente ou dos pacientes efetivamente vinculados ao profissional que consulta — uma camada de proteção adicional à validação da aplicação, não uma substituta dela.',
   },
   {
-    icon: '🩺',
+    icon: <Stethoscope aria-hidden="true" size={22} weight="bold" />,
     title: 'Triagem de sintomas revisada por médico',
     description:
       'As categorias que orientam o alerta automático de sinais de gravidade são baseadas em diretrizes reconhecidas (CDC, AHA/ACC, NICE) e passam por revisão de um profissional de saúde — não são geradas livremente por um modelo de linguagem a cada mensagem.',
   },
   {
-    icon: '📜',
+    icon: <Scroll aria-hidden="true" size={22} weight="bold" />,
     title: 'Pronta para a Resolução CFM nº 2.454/2026',
     description:
       'Disponibilizamos um modelo preenchido de avaliação preliminar de risco de IA (art. 12 da Resolução), pronto para o médico responsável do seu consultório ou clínica classificar e assinar — o dever de casa técnico já está feito.',
   },
   {
-    icon: '🧾',
+    icon: <Receipt aria-hidden="true" size={22} weight="bold" />,
     title: 'Toda geração de IA é rastreável',
     description:
       'Cada Relatório de IA fica registrado com paciente, profissional solicitante, modelo de IA utilizado, versão do prompt e data de geração. Nada é produzido de forma anônima ou sem responsável identificável.',
   },
   {
-    icon: '⚠️',
+    icon: <Warning aria-hidden="true" size={22} weight="bold" />,
     title: 'A IA nunca decide sozinha',
     description:
       'Toda saída da IA é apresentada como hipótese, nunca como diagnóstico confirmado — tanto na interface quanto em um aviso fixo junto a cada relatório. A decisão clínica é sempre do profissional responsável.',
