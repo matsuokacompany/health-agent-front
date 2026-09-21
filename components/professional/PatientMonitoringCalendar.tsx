@@ -7,6 +7,7 @@ import { CalendarSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/states';
 import { useProfessionalCalendar } from '@/hooks/useProfessional';
 import type { ProfessionalCalendarCheckin, ProfessionalCalendarDay } from '@/services/professional';
+import { SensitivePlaceholder } from '@/components/professional/SensitivePlaceholder';
 
 type CalendarCell = { type: 'empty'; key: string } | { type: 'day'; day: ProfessionalCalendarDay };
 
@@ -34,11 +35,13 @@ function getDayClassName(day: ProfessionalCalendarDay) {
   return 'is-issue';
 }
 
-function CheckinDetail({ checkin }: { checkin: ProfessionalCalendarCheckin }) {
+function CheckinDetail({ checkin, revealSensitive }: { checkin: ProfessionalCalendarCheckin; revealSensitive: boolean }) {
   const completed = Boolean(checkin.completed);
   return <div className="checkin-detail">
     <p><strong>Sintomas:</strong> {checkin.had_symptoms != null ? (checkin.had_symptoms ? 'Sim' : 'Não') : 'Aguardando resposta'}</p>
+    {checkin.had_symptoms && checkin.symptom_description ? <p><strong>Descrição:</strong> {revealSensitive ? checkin.symptom_description : <SensitivePlaceholder label="Descrição oculta" />}</p> : null}
     {checkin.diet_adherence != null ? <p><strong>Dieta:</strong> {checkin.diet_adherence ? 'Sim' : 'Não'}</p> : null}
+    {checkin.diet_adherence === false && checkin.lifestyle_notes ? <p><strong>O que comeu fora da dieta:</strong> {revealSensitive ? checkin.lifestyle_notes : <SensitivePlaceholder label="Relato oculto" />}</p> : null}
     {checkin.exercise_adherence != null ? <p><strong>Exercício:</strong> {checkin.exercise_adherence ? 'Sim' : 'Não'}</p> : null}
     {checkin.medication_adherence != null || checkin.medication_adherence_level ? (
       <p><strong>Medicação:</strong> {checkin.medication_adherence_level === 'PARTIAL' ? 'Parcial' : checkin.medication_adherence ? 'Sim' : 'Não'}</p>
@@ -54,7 +57,7 @@ function CheckinDetail({ checkin }: { checkin: ProfessionalCalendarCheckin }) {
  * app/(patient)/patient/monitoring/page.tsx) so a professional can see the
  * same adherence picture their patient sees. This component never mutates
  * anything -- it only reads from GET /api/professional/patients/{id}/calendar. */
-export function PatientMonitoringCalendar({ patientId }: { patientId: string }) {
+export function PatientMonitoringCalendar({ patientId, revealSensitive = true }: { patientId: string; revealSensitive?: boolean }) {
   const [visibleMonth, setVisibleMonth] = useState(() => firstOfMonth(new Date()));
   const year = visibleMonth.getFullYear();
   const month = visibleMonth.getMonth() + 1;
@@ -139,7 +142,7 @@ export function PatientMonitoringCalendar({ patientId }: { patientId: string }) 
     <Modal open={detailsOpen} title={selected ? formatDateLong(selected.date) : 'Detalhes do dia'} onClose={() => setDetailsOpen(false)}>
       {selected ? (
         selected.checkins.length
-          ? <div className="stack">{selected.checkins.map((checkin) => <CheckinDetail checkin={checkin} key={checkin.id} />)}</div>
+          ? <div className="stack">{selected.checkins.map((checkin) => <CheckinDetail checkin={checkin} revealSensitive={revealSensitive} key={checkin.id} />)}</div>
           : <p className="muted">Nenhum check-in registrado para {getDayStatus(selected).toLowerCase()} neste dia.</p>
       ) : null}
     </Modal>

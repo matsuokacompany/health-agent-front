@@ -166,7 +166,11 @@ export type ProfessionalCalendarCheckin = {
   status?: string | null;
   completed?: boolean;
   had_symptoms?: boolean | null;
+  symptom_description?: string | null;
+  red_flag_category?: string | null;
   diet_adherence?: boolean | null;
+  /** Free-text answer to "o que você comeu fora da dieta?" -- only ever set when diet_adherence is false. */
+  lifestyle_notes?: string | null;
   exercise_adherence?: boolean | null;
   medication_adherence?: boolean | null;
   medication_adherence_level?: 'ALL' | 'PARTIAL' | 'NONE' | null;

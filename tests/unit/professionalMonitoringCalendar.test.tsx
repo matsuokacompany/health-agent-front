@@ -20,9 +20,13 @@ function buildCalendar() {
       if (day === 5) {
         return {
           date: isoDay(day), has_checkin: true, completed: true, pending: false, has_symptoms: true,
-          diet_followed: true, exercise_followed: false, medication_taken: false, medication_partial: false,
+          diet_followed: false, exercise_followed: false, medication_taken: false, medication_partial: false,
           statuses: ['COMPLETED'],
-          checkins: [{ id: 99, completed: true, had_symptoms: true, diet_adherence: true, exercise_adherence: false, medication_adherence: false, medication_adherence_level: 'NONE' }],
+          checkins: [{
+            id: 99, completed: true, had_symptoms: true, symptom_description: 'Dor lateral direita da pelve',
+            diet_adherence: false, lifestyle_notes: 'Comi um pedaço de bolo no aniversário de um amigo',
+            exercise_adherence: false, medication_adherence: false, medication_adherence_level: 'NONE',
+          }],
         };
       }
       if (day === 6) {
@@ -68,11 +72,27 @@ describe('calendário de monitoramento (visão do profissional, somente leitura)
     fireEvent.click(dayButton);
 
     expect(await screen.findByText('Sintomas:')).toBeTruthy();
+    // The symptom description and what the patient ate outside the diet
+    // must show up here, not just the Sim/Não summary.
+    expect(screen.getByText('Dor lateral direita da pelve')).toBeTruthy();
+    expect(screen.getByText('Comi um pedaço de bolo no aniversário de um amigo')).toBeTruthy();
     // No edit/delete/answer affordance should ever render for a professional here --
     // this view is strictly GET-only, unlike the patient's own Monitoramento tab.
     expect(screen.queryByRole('button', { name: /editar/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /excluir/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /responder/i })).toBeNull();
+  });
+
+  it('oculta a descrição do sintoma e o relato da dieta quando revealSensitive é falso', async () => {
+    useProfessionalCalendar.mockReturnValue({ data: buildCalendar(), isLoading: false, error: null });
+    render(<PatientMonitoringCalendar patientId="42" revealSensitive={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Com sintomas/ }));
+
+    await screen.findByText('Sintomas:');
+    expect(screen.queryByText('Dor lateral direita da pelve')).toBeNull();
+    expect(screen.queryByText('Comi um pedaço de bolo no aniversário de um amigo')).toBeNull();
+    expect(screen.getAllByText(/Descrição oculta|Relato oculto/).length).toBe(2);
   });
 
   it('distingue "Incompleto" (respondeu parte) de "Não respondido" (nada respondido)', async () => {
