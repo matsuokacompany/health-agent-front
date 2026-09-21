@@ -7,7 +7,7 @@ export type AiReportMetrics = { total_checkins: number; completed_checkins: numb
 export type AiReportPreviewResponse = {
   modo: AiReportMode;
   eligibility: { can_generate: boolean; reason: string | null; next_generation_at: string | null; sufficient_data: boolean; completed_checkins: number; minimum_required: number; latest_report_id: number | null; last_generated_at: string | null };
-  summary: { patient_id: number; start_date: string; end_date: string; period_days: number; aggregation: 'weekly' | 'monthly' | 'yearly'; minimum_completed_checkins: number; sufficient_data: boolean; metrics: AiReportMetrics; symptom_trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data'; longest_gap_days: number; symptoms: Array<{ description: string; occurrences: number; first_reported_at: string; last_reported_at: string }>; timeline: Array<{ start_date: string; end_date: string; metrics: AiReportMetrics }> };
+  summary: { patient_id: number; start_date: string; end_date: string; period_days: number; aggregation: 'weekly' | 'monthly' | 'yearly'; minimum_completed_checkins: number; sufficient_data: boolean; metrics: AiReportMetrics; symptom_trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data'; longest_gap_days: number; symptoms: Array<{ description: string; occurrences: number; first_reported_at: string; last_reported_at: string; longest_streak_days?: number | null }>; timeline: Array<{ start_date: string; end_date: string; metrics: AiReportMetrics }> };
   preview_token: string | null;
   preview_expires_at: string | null;
 };

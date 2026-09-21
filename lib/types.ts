@@ -160,7 +160,7 @@ export type AppNotification = {
 };
 export type NotificationListResponse = { items: AppNotification[]; unread_count: number };
 
-export type EvolutionSymptomOccurrence = { description: string; occurrences: number; first_reported_at: string; last_reported_at: string };
+export type EvolutionSymptomOccurrence = { description: string; occurrences: number; first_reported_at: string; last_reported_at: string; longest_streak_days?: number | null };
 export type EvolutionTimelineGroup = { start_date: string; end_date: string; metrics: EvolutionMetrics };
 export type EvolutionMetrics = {
   total_checkins: number;
