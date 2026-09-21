@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { Users, Sparkle, WhatsappLogo, CurrencyDollar, UsersThree } from '@phosphor-icons/react';
+import { MetricCard } from '@/components/ui/design';
 import { ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton } from '@/components/ui/Skeleton';
 import { adminReportingApi, type AdminCostSummary, type AdminUser, type AdminWhatsappStats } from '@/services/adminReporting';
 
 function formatUsd(value: number) {
@@ -16,10 +18,10 @@ function formatBrlFromCents(cents: number) {
 }
 
 const shortcuts = [
-  { icon: '👥', title: 'Usuários', description: 'Veja quem está na plataforma, ativos e inativos, com filtros por papel.', href: '/admin/usuarios', cta: 'Ver usuários' },
-  { icon: '🧑‍🤝‍🧑', title: 'Pacientes', description: 'Cadastre pacientes, consulte anamneses, planos e relatórios.', href: '/admin/pacientes', cta: 'Abrir pacientes' },
-  { icon: '💰', title: 'Custos', description: 'Custos de IA e WhatsApp calculados automaticamente, mais lançamentos manuais.', href: '/admin/custos', cta: 'Ver custos' },
-  { icon: '💬', title: 'WhatsApp', description: 'Status da integração, volume de mensagens e custo estimado por período.', href: '/admin/whatsapp', cta: 'Ver operação' },
+  { icon: Users, title: 'Usuários', description: 'Veja quem está na plataforma, ativos e inativos, com filtros por papel.', href: '/admin/usuarios', cta: 'Ver usuários' },
+  { icon: UsersThree, title: 'Pacientes', description: 'Cadastre pacientes, consulte anamneses, planos e relatórios.', href: '/admin/pacientes', cta: 'Abrir pacientes' },
+  { icon: CurrencyDollar, title: 'Custos', description: 'Custos de IA e WhatsApp calculados automaticamente, mais lançamentos manuais.', href: '/admin/custos', cta: 'Ver custos' },
+  { icon: WhatsappLogo, title: 'WhatsApp', description: 'Status da integração, volume de mensagens e custo estimado por período.', href: '/admin/whatsapp', cta: 'Ver operação' },
 ] as const;
 
 export default function Page() {
@@ -70,14 +72,14 @@ export default function Page() {
 
       {loading ? (
         <section className="grid admin-metrics-grid" aria-label="Carregando indicadores administrativos" aria-busy="true">
-          {Array.from({ length: 4 }, (_, index) => <article className="card" key={index}><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-metric" /></article>)}
+          {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
         </section>
       ) : !error ? (
         <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos" data-tour="admin-metrics">
-          <article className="card"><span className="metric-label">👥 Usuários ativos</span><strong className="metric">{activeUsers}</strong><p className="muted compact">{users?.length ?? 0} no total</p></article>
-          <article className="card"><span className="metric-label">✨ Relatórios de IA (mês)</span><strong className="metric">{costs?.ai_report_count ?? 0}</strong><p className="muted compact">{costs ? formatUsd(costs.ai_report_cost_usd) : '—'}</p></article>
-          <article className="card"><span className="metric-label">💬 Mensagens WhatsApp (30 dias)</span><strong className="metric">{whatsapp?.total_sent ?? 0}</strong><p className="muted compact">{whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'}</p></article>
-          <article className="card"><span className="metric-label">💰 Custos conhecidos (mês)</span><strong className="metric">{formatBrlFromCents(totalKnownCostsBrl)}</strong><p className="muted compact">WhatsApp + lançamentos manuais</p></article>
+          <MetricCard icon={<Users aria-hidden="true" size={22} weight="bold" />} label="Usuários ativos" value={activeUsers} description={`${users?.length ?? 0} no total`} />
+          <MetricCard icon={<Sparkle aria-hidden="true" size={22} weight="bold" />} label="Relatórios de IA (mês)" value={costs?.ai_report_count ?? 0} description={costs ? formatUsd(costs.ai_report_cost_usd) : '—'} />
+          <MetricCard icon={<WhatsappLogo aria-hidden="true" size={22} weight="bold" />} label="Mensagens WhatsApp (30 dias)" value={whatsapp?.total_sent ?? 0} description={whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'} />
+          <MetricCard icon={<CurrencyDollar aria-hidden="true" size={22} weight="bold" />} label="Custos conhecidos (mês)" value={formatBrlFromCents(totalKnownCostsBrl)} description="WhatsApp + lançamentos manuais" />
         </section>
       ) : null}
 
@@ -85,7 +87,7 @@ export default function Page() {
       <section className="grid" aria-label="Atalhos administrativos" data-tour="admin-shortcuts">
         {shortcuts.map((shortcut) => (
           <article className="card stack" key={shortcut.href}>
-            <h2><span aria-hidden="true">{shortcut.icon}</span> {shortcut.title}</h2>
+            <h2><shortcut.icon aria-hidden="true" size={20} weight="bold" /> {shortcut.title}</h2>
             <p className="muted">{shortcut.description}</p>
             <Link className="button secondary" href={shortcut.href as never}>{shortcut.cta}</Link>
           </article>

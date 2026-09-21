@@ -404,3 +404,8 @@ img.brand-logo-dark{display:none}
 .checkin-detail-row dt{color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
 .checkin-detail-row dd{margin:0;line-height:1.6}
 @media (max-width:640px){.checkins-table td:nth-child(4){max-width:180px}}
+
+/* Sidebar nav icons moved from emoji glyphs to Phosphor SVG components --
+   these never had an intrinsic flex-basis the way a text glyph did, so pin
+   size explicitly to stop them being squeezed by the flex row's text. */
+.menu a svg,.nav-action svg,.sidebar-actions a svg{flex-shrink:0}
