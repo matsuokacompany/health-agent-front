@@ -19,7 +19,7 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
 
 type MetricTone = 'ok' | 'warn' | 'danger' | 'info';
 
-export function MetricCard({ label, value, description, tone, icon }: { label: string; value: ReactNode; description?: string; tone?: MetricTone; icon?: string }) {
+export function MetricCard({ label, value, description, tone, icon }: { label: string; value: ReactNode; description?: string; tone?: MetricTone; icon?: ReactNode }) {
   const className = `metric-card${tone ? ` tone-${tone}` : ''}`;
   return <Card className={className}>
     {icon ? <span className="metric-icon" aria-hidden="true">{icon}</span> : null}

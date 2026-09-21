@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Plant } from '@phosphor-icons/react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
@@ -242,7 +243,7 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
   }
 
   return <Card className="patient-dashboard-empty">
-    <span className="patient-empty-icon">🌱</span>
+    <span className="patient-empty-icon"><Plant aria-hidden="true" weight="bold" /></span>
     <h2>Nenhum acompanhamento ativo por enquanto</h2>
     <p className="muted">Assim que um profissional iniciar seu acompanhamento, você verá aqui o plano, a evolução, os registros recentes e a próxima mensagem automática.</p>
     <p className="muted">Prefere acompanhar seus próprios sintomas por conta própria, sem um profissional vinculado?</p>
