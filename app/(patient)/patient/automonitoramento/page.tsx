@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle, Stethoscope, Leaf, HourglassHigh, ForkKnife, PersonSimpleRun, Pill, Warning } from '@phosphor-icons/react';
 import { Button, Card, MetricCard } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
@@ -83,7 +84,7 @@ function RedFlagEventsCard({ events }: { events: EvolutionRedFlagEvent[] }) {
   if (!events.length) return null;
   return <Card className="patient-red-flag-card" data-tour="patient-red-flags">
     <span className="eyebrow">Sinais de alerta</span>
-    <h2>⚠️ Sinais identificados no período</h2>
+    <h2><Warning aria-hidden="true" size={20} weight="bold" /> Sinais identificados no período</h2>
     <p className="muted">
       Detectados automaticamente a partir das suas respostas nos check-ins — mostre isso ao profissional que for
       avaliar este relatório.
@@ -123,13 +124,13 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
   const { adherence } = report;
   return <>
     <section className="patient-dashboard-summary-grid" aria-label="Evolução">
-      <MetricCard icon="✅" label="Adesão aos check-ins" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} tone={report.metrics.adherence_percentage >= 80 ? 'ok' : 'warn'} />
-      <MetricCard icon="🩺" label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} tone={report.metrics.checkins_with_symptoms > 0 ? 'warn' : 'ok'} />
-      <MetricCard icon="🌿" label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} tone="ok" />
-      <MetricCard icon="⏳" label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} tone={report.longest_gap_days > 2 ? 'warn' : undefined} />
-      {adherence.diet_percentage !== null ? <MetricCard icon="🥗" label="Adesão à dieta" value={`${adherence.diet_percentage}%`} tone={adherence.diet_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-      {adherence.exercise_percentage !== null ? <MetricCard icon="🏃" label="Adesão ao exercício" value={`${adherence.exercise_percentage}%`} tone={adherence.exercise_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-      {adherence.medication_percentage !== null ? <MetricCard icon="💊" label="Adesão à medicação/suplemento" value={`${adherence.medication_percentage}%`} tone={adherence.medication_percentage >= 80 ? 'ok' : 'warn'} /> : null}
+      <MetricCard icon={<CheckCircle aria-hidden="true" size={22} weight="bold" />} label="Adesão aos check-ins" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} tone={report.metrics.adherence_percentage >= 80 ? 'ok' : 'warn'} />
+      <MetricCard icon={<Stethoscope aria-hidden="true" size={22} weight="bold" />} label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} tone={report.metrics.checkins_with_symptoms > 0 ? 'warn' : 'ok'} />
+      <MetricCard icon={<Leaf aria-hidden="true" size={22} weight="bold" />} label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} tone="ok" />
+      <MetricCard icon={<HourglassHigh aria-hidden="true" size={22} weight="bold" />} label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} tone={report.longest_gap_days > 2 ? 'warn' : undefined} />
+      {adherence.diet_percentage !== null ? <MetricCard icon={<ForkKnife aria-hidden="true" size={22} weight="bold" />} label="Adesão à dieta" value={`${adherence.diet_percentage}%`} tone={adherence.diet_percentage >= 80 ? 'ok' : 'warn'} /> : null}
+      {adherence.exercise_percentage !== null ? <MetricCard icon={<PersonSimpleRun aria-hidden="true" size={22} weight="bold" />} label="Adesão ao exercício" value={`${adherence.exercise_percentage}%`} tone={adherence.exercise_percentage >= 80 ? 'ok' : 'warn'} /> : null}
+      {adherence.medication_percentage !== null ? <MetricCard icon={<Pill aria-hidden="true" size={22} weight="bold" />} label="Adesão à medicação/suplemento" value={`${adherence.medication_percentage}%`} tone={adherence.medication_percentage >= 80 ? 'ok' : 'warn'} /> : null}
     </section>
     <Card>
       <span className="eyebrow">Tendência</span>

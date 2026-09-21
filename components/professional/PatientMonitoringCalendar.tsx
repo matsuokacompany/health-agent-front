@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { ForkKnife, PersonSimpleRun, Pill, CircleHalf } from '@phosphor-icons/react';
 import { Card } from '@/components/ui/design';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarSkeleton } from '@/components/ui/Skeleton';
@@ -112,10 +113,10 @@ export function PatientMonitoringCalendar({ patientId, revealSensitive = true }:
             <span>{status}</span>
             {day.diet_followed || day.exercise_followed || day.medication_taken || day.medication_partial ? (
               <span className="day-adherence-icons" aria-hidden="true">
-                {day.diet_followed ? <span>🍎</span> : null}
-                {day.exercise_followed ? <span>🏃</span> : null}
-                {day.medication_taken ? <span>💊</span> : null}
-                {day.medication_partial ? <span>🟡</span> : null}
+                {day.diet_followed ? <ForkKnife weight="bold" /> : null}
+                {day.exercise_followed ? <PersonSimpleRun weight="bold" /> : null}
+                {day.medication_taken ? <Pill weight="bold" /> : null}
+                {day.medication_partial ? <CircleHalf weight="bold" /> : null}
               </span>
             ) : null}
           </button>;
@@ -132,10 +133,10 @@ export function PatientMonitoringCalendar({ patientId, revealSensitive = true }:
         </div>
         <div className="calendar-legend-group">
           <span className="calendar-legend-group-title">Respostas</span>
-          <span>🍎 Dieta</span>
-          <span>🏃 Exercício</span>
-          <span>💊 Medicação</span>
-          <span>🟡 Medicação parcial</span>
+          <span><ForkKnife aria-hidden="true" weight="bold" /> Dieta</span>
+          <span><PersonSimpleRun aria-hidden="true" weight="bold" /> Exercício</span>
+          <span><Pill aria-hidden="true" weight="bold" /> Medicação</span>
+          <span><CircleHalf aria-hidden="true" weight="bold" /> Medicação parcial</span>
         </div>
       </div>
     </Card>

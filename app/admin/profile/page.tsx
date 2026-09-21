@@ -61,7 +61,7 @@ export default function AdminProfile() {
     }
   }
 
-  return <><PageHeader eyebrow="👤 Perfil" title="Meus dados" description="Confira seus dados cadastrados, atualize seu telefone e altere sua senha quando necessário." />
+  return <><PageHeader eyebrow="Perfil" title="Meus dados" description="Confira seus dados cadastrados, atualize seu telefone e altere sua senha quando necessário." />
     <div className="profile-layout">
       <Card className="profile-card">
         <h2>Dados pessoais</h2>

@@ -1,3 +1,4 @@
+import { Stethoscope } from '@phosphor-icons/react/ssr';
 import type { SelfMonitoringInsightResult } from '@/lib/types';
 
 const urgencyLabel: Record<string, string> = {
@@ -28,7 +29,7 @@ export function InsightResultBody({ result }: { result: SelfMonitoringInsightRes
     {result.especialidade_sugerida ? (
       <div className="ai-recommendations">
         <div>
-          <span aria-hidden="true">👩‍⚕️</span>
+          <span aria-hidden="true"><Stethoscope size={20} weight="bold" /></span>
           <div>
             <h4>Especialidade sugerida</h4>
             <p>{result.especialidade_sugerida}</p>

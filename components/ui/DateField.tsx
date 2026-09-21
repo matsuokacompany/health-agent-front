@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { CalendarBlank } from '@phosphor-icons/react';
 
 function isoToDisplay(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
@@ -194,7 +195,7 @@ export function DateField({
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true">📅</span>
+        <span aria-hidden="true"><CalendarBlank weight="bold" /></span>
       </button>
       {open ? <CalendarPopover value={value} min={min} max={max} onSelect={handleSelect} /> : null}
     </div>
