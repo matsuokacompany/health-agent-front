@@ -42,6 +42,10 @@ export default function Login() {
           <h1 id="login-title">Entrar</h1>
           <p className="muted">Use suas credenciais para acessar a plataforma. O ambiente será definido automaticamente pelo seu perfil.</p>
         </div>
+        {/* This reflects the background session check on page load, not a login
+            attempt -- keep it visually distinct from formError below so a
+            connectivity hiccup doesn't read as a rejected login. */}
+        {!formError && error ? <p className="notice">Não foi possível verificar sua sessão atual: {error} Você ainda pode tentar entrar abaixo.</p> : null}
         <form className="login-form" onSubmit={onSubmit}>
           <div className="login-fields">
             <label>
@@ -50,7 +54,7 @@ export default function Login() {
             </label>
             <PasswordInput autoComplete="current-password" label="Senha" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required value={password} />
           </div>
-          {(formError || error) ? <p className="notice danger">{formError ?? error}</p> : null}
+          {formError ? <p className="notice danger">{formError}</p> : null}
           <div className="login-actions">
             <button className="button" disabled={submitting} type="submit">{submitting ? 'Entrando...' : 'Entrar'}</button>
             <Link href="/forgot-password">Esqueci minha senha</Link>
