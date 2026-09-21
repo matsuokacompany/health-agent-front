@@ -391,3 +391,16 @@ img.brand-logo-dark{display:none}
 .patient-symptom-term-bar{display:block;height:100%;min-width:6px;border-radius:0 999px 999px 0;background:var(--brand)}
 .patient-symptom-term-count{text-align:right;font-size:.86rem;font-weight:850;font-variant-numeric:tabular-nums}
 @media (max-width:640px){.patient-symptom-terms-list li{grid-template-columns:minmax(70px,.6fr) minmax(0,1fr) 24px}}
+
+.badge.tone-muted{color:var(--muted);background:var(--surface-soft);border-color:var(--line)}
+.checkins-table th:nth-child(1),.checkins-table td:nth-child(1),.checkins-table th:nth-child(2),.checkins-table td:nth-child(2),.checkins-table th:nth-child(3),.checkins-table td:nth-child(3),.checkins-table th:nth-child(5),.checkins-table td:nth-child(5){white-space:nowrap}
+.checkins-table td:nth-child(4){max-width:340px}
+.checkins-table .cell-truncate{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.checkins-table tbody tr{cursor:pointer;transition:background .12s ease}
+.checkins-table tbody tr:hover,.checkins-table tbody tr:focus-visible{background:var(--surface-soft)}
+.checkin-detail-grid{display:grid;gap:14px}
+.checkin-detail-row{display:grid;gap:4px;padding:12px 0;border-bottom:1px solid var(--line)}
+.checkin-detail-row:last-child{border-bottom:0}
+.checkin-detail-row dt{color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.checkin-detail-row dd{margin:0;line-height:1.6}
+@media (max-width:640px){.checkins-table td:nth-child(4){max-width:180px}}

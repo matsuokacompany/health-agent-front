@@ -135,10 +135,18 @@ export type ProfessionalCheckIn = {
   symptom_description?: string | null;
   red_flag_category?: string | null;
   suspected_cause?: string | null;
+  diet_adherence?: boolean | null;
+  /** Free-text answer to "o que você comeu fora da dieta?" -- only ever set when diet_adherence is false. */
+  lifestyle_notes?: string | null;
+  exercise_adherence?: boolean | null;
+  medication_adherence?: boolean | null;
+  medication_adherence_level?: 'ALL' | 'PARTIAL' | 'NONE' | null;
   prompt_sent_at?: string | null;
   answered_at?: string | null;
   expires_at?: string | null;
 };
+
+export type ProfessionalTopSymptomTerm = { label: string; count: number };
 
 export type ProfessionalCheckInsParams = {
   page: number;
@@ -221,6 +229,7 @@ export const professionalApi = {
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
   getCalendar: (patientId: number | string, year: number, month: number) => api<ProfessionalCalendar>(withQuery(`/api/professional/patients/${patientId}/calendar`, { year, month })),
+  getSymptomTerms: (patientId: number | string, limit = 6) => api<{ items: ProfessionalTopSymptomTerm[] }>(withQuery(`/api/professional/patients/${patientId}/symptom-terms`, { limit })),
   getAnamnese: getPatientAnamnese,
   createAnamnese: createPatientAnamnese,
   updateAnamnese: updatePatientAnamnese,
