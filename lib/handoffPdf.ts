@@ -36,6 +36,21 @@ function monitoringBlocks(summary: PatientHandoffSummary): PdfTextBlock[] {
   return blocks;
 }
 
+const ALLERGY_MATCH_DISCLAIMER = 'Correspondência literal de texto entre o que foi registrado como alergia/restrição e o que o paciente escreveu em um check-in -- não é um diagnóstico de reação.';
+
+function allergyMatchBlocks(summary: PatientHandoffSummary): PdfTextBlock[] {
+  const matches = summary.possible_allergy_matches ?? [];
+  if (!matches.length) {
+    return [{ kind: 'text', text: 'Nenhuma possível relação identificada no período.' }];
+  }
+  const blocks: PdfTextBlock[] = matches.map((match) => ({
+    kind: 'bullet' as const,
+    text: `${formatPdfDate(match.report_date)}: ${match.matched_terms.join(', ')}`,
+  }));
+  blocks.push({ kind: 'text', text: ALLERGY_MATCH_DISCLAIMER });
+  return blocks;
+}
+
 export function buildHandoffPdfBlocks({ summary, patientName }: HandoffPdfInput): PdfTextBlock[] {
   const blocks: PdfTextBlock[] = [
     { kind: 'title', text: 'Resumo clínico para consulta' },
@@ -63,6 +78,8 @@ export function buildHandoffPdfBlocks({ summary, patientName }: HandoffPdfInput)
       : 'Nenhum plano alimentar em PDF anexado.' },
     { kind: 'heading', text: 'Resumo do automonitoramento' },
     ...monitoringBlocks(summary),
+    { kind: 'heading', text: 'Possíveis relações com alergias/restrições' },
+    ...allergyMatchBlocks(summary),
     { kind: 'heading', text: 'Aviso importante' },
     { kind: 'text', text: DISCLAIMER },
   ];

@@ -21,6 +21,7 @@ const summary = (overrides: Partial<PatientHandoffSummary> = {}): PatientHandoff
     adherence: { diet_percentage: 80, exercise_percentage: null, medication_percentage: 100 },
     symptoms: [{ description: 'Dor abdominal', occurrences: 3 }],
   },
+  possible_allergy_matches: [{ report_date: '2026-01-15', matched_terms: ['Penicilina'] }],
   ...overrides,
 });
 
@@ -38,11 +39,12 @@ describe('documento PDF do resumo para o médico', () => {
     expect(text).toContain('dieta.pdf');
     expect(text).toContain('90%');
     expect(text).toContain('Dor abdominal (3x)');
+    expect(text).toContain('Penicilina');
   });
 
   it('mostra mensagens de "não informado" quando os campos estão vazios', () => {
     const text = buildHandoffPdfBlocks({
-      summary: summary({ anamnese_info: null, risk_factors: [], medication_allergies: null, food_restrictions: null, supplements: [], diet_document: null }),
+      summary: summary({ anamnese_info: null, risk_factors: [], medication_allergies: null, food_restrictions: null, supplements: [], diet_document: null, possible_allergy_matches: [] }),
     }).map((b) => b.text).join('\n');
     expect(text).toContain('Anamnese não registrada.');
     expect(text).toContain('Nenhum fator de risco registrado.');
@@ -50,6 +52,7 @@ describe('documento PDF do resumo para o médico', () => {
     expect(text).toContain('Nenhuma restrição alimentar registrada.');
     expect(text).toContain('Nenhum suplemento ou medicação registrada.');
     expect(text).toContain('Nenhum plano alimentar em PDF anexado.');
+    expect(text).toContain('Nenhuma possível relação identificada no período.');
   });
 
   it('trata dados de automonitoramento insuficientes', () => {

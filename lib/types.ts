@@ -43,6 +43,11 @@ export type DietDocument = {
   updated_at: string;
 };
 
+export type PatientHandoffAllergyMatch = {
+  report_date: string;
+  matched_terms: string[];
+};
+
 export type PatientHandoffSummary = {
   patient_id: number;
   generated_at: string;
@@ -53,6 +58,7 @@ export type PatientHandoffSummary = {
   supplements: Supplement[];
   diet_document?: DietDocument | null;
   monitoring_summary?: Record<string, unknown> | null;
+  possible_allergy_matches?: PatientHandoffAllergyMatch[];
 };
 
 export type SupplementDosagePeriod = 'DAY' | 'WEEK' | 'MONTH';
