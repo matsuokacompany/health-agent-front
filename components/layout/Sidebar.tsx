@@ -47,6 +47,36 @@ const icons: Record<string, PhosphorIcon> = {
   Automonitoreo: Heartbeat,
 };
 
+// Each module keeps a distinct accent color on its icon (see .icon-* in
+// globals.css) so the nav reads as a set of distinct places, not one flat
+// gray list -- utility items (Perfil, Resumo, Configurações) stay neutral
+// on purpose, color is reserved for the sections a person actually visits.
+const iconColors: Record<string, string> = {
+  Dashboard: 'icon-blue',
+  Usuários: 'icon-cyan',
+  Anamnese: 'icon-amber',
+  Anamnesis: 'icon-amber',
+  Monitoramento: 'icon-teal',
+  Monitoring: 'icon-teal',
+  Monitoreo: 'icon-teal',
+  Relatórios: 'icon-indigo',
+  Reports: 'icon-indigo',
+  Informes: 'icon-indigo',
+  Insights: 'icon-purple',
+  Pacientes: 'icon-green',
+  'Novo paciente': 'icon-orange',
+  Profissionais: 'icon-pink',
+  WhatsApp: 'icon-whatsapp',
+  'Área do paciente': 'icon-sky',
+  Paciente: 'icon-sky',
+  Assinatura: 'icon-gold',
+  Subscription: 'icon-gold',
+  Suscripción: 'icon-gold',
+  Automonitoramento: 'icon-rose',
+  'Self-monitoring': 'icon-rose',
+  Automonitoreo: 'icon-rose',
+};
+
 type AppSidebarProps = {
   title: string;
   marker: string;
@@ -74,12 +104,12 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
       </div>
     </div>
     <nav className="menu" aria-label={t('nav.mainMenu')} data-tour="sidebar-nav">
-      {links.map(([href,label]) => { const Icon = icons[label] ?? Circle; return <Link className={pathname === href ? 'is-current' : ''} key={href} href={href as never} onClick={onNavigate} title={label}><Icon aria-hidden="true" size={20} weight="bold" /><span className="sidebar-label">{label}</span></Link>; })}
+      {links.map(([href,label]) => { const Icon = icons[label] ?? Circle; return <Link className={pathname === href ? 'is-current' : ''} key={href} href={href as never} onClick={onNavigate} title={label}><Icon aria-hidden="true" size={20} weight="duotone" className={iconColors[label]} /><span className="sidebar-label">{label}</span></Link>; })}
     </nav>
     <div className="sidebar-actions">
       <TourButton />
-      <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><User aria-hidden="true" size={20} weight="bold" /><span className="sidebar-label">{profileLabel}</span></Link>
-      <Link className="nav-action" href={footerHref as never} onClick={onNavigate} title={footerLabel}><SignOut aria-hidden="true" size={20} weight="bold" /><span className="sidebar-label">{footerLabel}</span></Link>
+      <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><User aria-hidden="true" size={20} weight="duotone" /><span className="sidebar-label">{profileLabel}</span></Link>
+      <Link className="nav-action" href={footerHref as never} onClick={onNavigate} title={footerLabel}><SignOut aria-hidden="true" size={20} weight="duotone" /><span className="sidebar-label">{footerLabel}</span></Link>
     </div>
   </aside>;
 }
