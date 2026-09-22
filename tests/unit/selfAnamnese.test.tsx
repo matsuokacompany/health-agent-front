@@ -7,13 +7,6 @@ const api = vi.hoisted(() => ({ me: vi.fn(), create: vi.fn(), updateMe: vi.fn() 
 vi.mock('@/services/anamnese', () => ({
   anamnesesApi: { me: api.me, create: api.create, updateMe: api.updateMe },
 }));
-vi.mock('@/components/auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 10, name: 'Paciente' } }),
-}));
-vi.mock('@/services/dietDocument', () => ({
-  dietDocumentApi: { get: vi.fn().mockRejectedValue(new ApiError('não encontrado', 404)) },
-  dietDocumentError: () => 'erro',
-}));
 
 const existing = { id: 1, user_id: 10, info: 'Histórico pessoal', created_at: '2026-08-14T12:00:00Z', updated_at: '2026-08-14T13:00:00Z' };
 

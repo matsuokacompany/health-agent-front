@@ -347,6 +347,20 @@ img.brand-logo-dark{display:none}
 .risk-factor-checklist{border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-top:14px}
 .risk-factor-checklist legend{font-weight:650;padding:0 4px}
 .risk-factor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin-top:10px}
+
+/* Icon + label spacing inside any button (download actions, etc.) -- a
+   no-op for a single-child button, since gap only applies between items. */
+.button,button{gap:8px}
+
+.automonitoramento-toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+@media (max-width:575px){.automonitoramento-toolbar{flex-direction:column;align-items:stretch}.automonitoramento-toolbar .button,.automonitoramento-toolbar button{width:100%}}
+
+.insight-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.insight-points-positive,.insight-points-attention{padding:16px;border-radius:var(--radius);border-left:4px solid var(--ok);background:var(--ok-soft)}
+.insight-points-attention{border-left-color:var(--warn);background:var(--warn-soft)}
+.insight-points h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:1rem}
+.insight-points ul{margin:0;padding-left:20px}
+@media (max-width:767px){.insight-points{grid-template-columns:1fr}}
 .risk-factor-grid label{display:flex;align-items:center;gap:8px;margin:0;color:var(--ink);font-size:.9rem;font-weight:500}.risk-factor-grid input{width:auto;padding:0;margin:0;border:0;background:transparent;accent-color:var(--brand);flex:none}
 @media (max-width:600px){.risk-factor-grid{grid-template-columns:1fr}}
 @media (max-width:420px){.tour-actions{flex-direction:column-reverse;align-items:stretch}.tour-actions-nav{justify-content:stretch}.tour-actions-nav .button{flex:1}}

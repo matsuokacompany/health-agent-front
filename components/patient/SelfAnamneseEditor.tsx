@@ -9,9 +9,6 @@ import { anamnesesApi } from '@/services/anamnese';
 import type { Anamnese } from '@/lib/types';
 import { RiskFactorChecklist } from '@/components/patient/RiskFactorChecklist';
 import { extractRiskFactors, type AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { DietDocumentUpload } from '@/components/patient/DietDocumentUpload';
-import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
 
 function friendlyError(error: unknown) {
   if (error instanceof ApiError && error.status === 403) return 'Você não pode mais editar sua anamnese por conta própria -- fale com seu profissional.';
@@ -19,8 +16,6 @@ function friendlyError(error: unknown) {
 }
 
 export function SelfAnamneseEditor() {
-  const { user } = useAuth();
-  const patientId = user ? Number(user.id) : undefined;
   const [anamnese, setAnamnese] = useState('');
   const [savedText, setSavedText] = useState('');
   const [medicationAllergies, setMedicationAllergies] = useState('');
@@ -118,7 +113,6 @@ export function SelfAnamneseEditor() {
   }
 
   return (
-    <div className="stack">
     <Card data-tour="anamnese-card">
       <span className="eyebrow">Sua anamnese</span>
       <h2>{hasAnamnese ? 'Seu histórico de saúde' : 'Conte um pouco sobre sua saúde'}</h2>
@@ -193,8 +187,5 @@ export function SelfAnamneseEditor() {
         <small className="muted">Atualizada em {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(String(record.updated_at)))}</small>
       ) : null}
     </Card>
-    {patientId ? <DietDocumentUpload patientId={patientId} /> : null}
-    {patientId ? <PatientHandoffButton patientId={patientId} patientName={user?.name} /> : null}
-    </div>
   );
 }

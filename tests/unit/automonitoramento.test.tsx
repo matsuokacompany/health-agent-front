@@ -53,7 +53,7 @@ describe('relatório de automonitoramento do paciente', () => {
     expect(screen.getByText('80%')).toBeTruthy();
     expect(screen.getByText('Adesão à medicação/suplemento')).toBeTruthy();
     expect(screen.queryByText('Adesão ao exercício')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Baixar PDF / Imprimir' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Baixar PDF' })).toBeTruthy();
   });
 
   it('não mostra o card de sinais de alerta quando não há eventos no período', async () => {
