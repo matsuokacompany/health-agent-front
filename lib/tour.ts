@@ -77,7 +77,7 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
     { target: '[data-tour="profile-personal"]', title: 'Seus dados', body: 'Dados cadastrados pelo seu profissional ou no seu cadastro — CPF, e-mail, data de nascimento e sexo. Só é possível alterá-los falando com o suporte.' },
     { target: '[data-tour="profile-contact"]', title: 'Contato editável', body: 'Telefone, cidade e estado você mesmo mantém atualizados por aqui.' },
     { target: '[data-tour="profile-password"]', title: 'Alterar senha', body: 'Defina uma nova senha para sua conta quando quiser.' },
-    { target: '[data-tour="profile-address"]', title: 'Endereço e convênio', body: 'Aparece aqui quando estiver cadastrado.' },
+    { target: '[data-tour="profile-address"]', title: 'Endereço e convênio', body: 'Preencha e salve seu endereço e convênio quando quiser.' },
     { target: '[data-tour="profile-tracking"]', title: 'Acompanhamento', body: 'Quem é seu profissional responsável e desde quando você usa a plataforma. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/professional/profile': [

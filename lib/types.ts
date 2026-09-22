@@ -14,6 +14,10 @@ export type User = {
   gender?: string | null;
   birth_date?: string | null;
   cpf?: string | null;
+  street?: string | null;
+  neighborhood?: string | null;
+  zip_code?: string | null;
+  health_plan?: string | null;
   supabase_user_id?: string | null;
   created_at: string;
   updated_at: string;

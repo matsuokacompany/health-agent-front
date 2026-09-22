@@ -1,10 +1,11 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PatientProfile from '@/app/(patient)/patient/profile/page';
 import type { User } from '@/lib/types';
 
 vi.mock('@/lib/supabase', () => ({ updatePassword: vi.fn() }));
-vi.mock('@/services/users', () => ({ usersApi: { update: vi.fn() } }));
+const usersApi = vi.hoisted(() => ({ update: vi.fn().mockResolvedValue({}) }));
+vi.mock('@/services/users', () => ({ usersApi }));
 
 const auth = vi.hoisted(() => ({ user: null as User | null }));
 vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: auth.user, refreshMe: vi.fn() }) }));
@@ -22,7 +23,7 @@ const baseUser: User = {
 };
 
 describe('página de perfil do paciente', () => {
-  beforeEach(() => { patientData.plans = []; });
+  beforeEach(() => { patientData.plans = []; usersApi.update.mockClear(); });
   afterEach(cleanup);
 
   it('mostra o profissional responsável quando o plano vem com um vínculo ativo', () => {
@@ -48,5 +49,24 @@ describe('página de perfil do paciente', () => {
     render(<PatientProfile />);
 
     expect(screen.getByDisplayValue('Não registrado formalmente — conta criada em 10/01/2026')).toBeTruthy();
+  });
+
+  it('salva apenas os campos de endereço/convênio preenchidos, sem enviar os vazios', async () => {
+    auth.user = baseUser;
+
+    render(<PatientProfile />);
+
+    fireEvent.change(screen.getByLabelText('Endereço'), { target: { value: 'Rua das Flores, 123' } });
+    fireEvent.change(screen.getByLabelText('Convênio'), { target: { value: 'Unimed' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar endereço e convênio' }));
+
+    await screen.findByText('Endereço e convênio atualizados.');
+
+    expect(usersApi.update).toHaveBeenCalledWith(10, {
+      street: 'Rua das Flores, 123',
+      neighborhood: undefined,
+      zip_code: undefined,
+      health_plan: 'Unimed',
+    });
   });
 });

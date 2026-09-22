@@ -10,15 +10,6 @@ import { PasswordInput } from '@/components/ui/PasswordInput';
 import { usersApi } from '@/services/users';
 import { formatBrazilianPhone, toBrazilianPhoneDigits } from '@/lib/phone';
 
-type PatientExtraFields = {
-  address?: string | null;
-  street?: string | null;
-  neighborhood?: string | null;
-  zip_code?: string | null;
-  health_plan?: string | null;
-  insurance?: string | null;
-};
-
 function formatDate(value?: string | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -49,8 +40,19 @@ export default function PatientProfile() {
   const [passwordError, setPasswordError] = useState('');
   const [saving, setSaving] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const extra = user as (typeof user & PatientExtraFields);
+  const [addressMsg, setAddressMsg] = useState('');
+  const [addressError, setAddressError] = useState('');
+  const [savingAddress, setSavingAddress] = useState(false);
   const professionals = useMemo(() => plans.flatMap((plan) => plan.professionals ?? []).map((professional) => professional.name || professional.specialty || 'Profissional vinculado'), [plans]);
+
+  // These fields reject an empty string server-side (they're optional, but
+  // "provided and blank" is invalid, unlike "omitted") -- only send a field
+  // once it actually has a value, so saving one field never fails because
+  // another one on the same form hasn't been filled in yet.
+  function textOrUndefined(value: FormDataEntryValue | null): string | undefined {
+    const trimmed = String(value ?? '').trim();
+    return trimmed === '' ? undefined : trimmed;
+  }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,13 +62,40 @@ export default function PatientProfile() {
     setError('');
     setMsg('');
     try {
-      await usersApi.update(Number(user.id), { phone: toBrazilianPhoneDigits(String(f.get('phone') || '')), city: String(f.get('city') || ''), state: String(f.get('state') || '') });
+      await usersApi.update(Number(user.id), {
+        phone: toBrazilianPhoneDigits(String(f.get('phone') || '')),
+        city: textOrUndefined(f.get('city')),
+        state: textOrUndefined(f.get('state')),
+      });
       await refreshMe();
       setMsg('Telefone, cidade e estado atualizados.');
     } catch (err) {
       setError(toFriendlyErrorMessage(err));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function submitAddress(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!user) return;
+    const f = new FormData(e.currentTarget);
+    setSavingAddress(true);
+    setAddressError('');
+    setAddressMsg('');
+    try {
+      await usersApi.update(Number(user.id), {
+        street: textOrUndefined(f.get('street')),
+        neighborhood: textOrUndefined(f.get('neighborhood')),
+        zip_code: textOrUndefined(f.get('zip_code')),
+        health_plan: textOrUndefined(f.get('health_plan')),
+      });
+      await refreshMe();
+      setAddressMsg('Endereço e convênio atualizados.');
+    } catch (err) {
+      setAddressError(toFriendlyErrorMessage(err));
+    } finally {
+      setSavingAddress(false);
     }
   }
 
@@ -96,6 +125,6 @@ export default function PatientProfile() {
   }
 
   return <><PageHeader eyebrow="Perfil" title="Meus dados" description="Confira seus dados cadastrados, atualize seu contato e altere sua senha quando necessário." />
-    <div className="profile-layout"><Card className="profile-card" data-tour="profile-personal"><h2>Dados pessoais</h2><div className="form-grid"><Field label="Nome" value={user?.name} /><Field label="CPF" value={user?.cpf} /><Field label="E-mail" value={user?.email} /><Field label="Data de nascimento" value={user?.birth_date} /><Field label="Sexo" value={user?.gender} /></div></Card><form className="profile-card card" data-tour="profile-contact" onSubmit={submit}><h2>Contato editável</h2><label>Telefone<input name="phone" autoComplete="tel" inputMode="tel" defaultValue={formatBrazilianPhone(user?.phone ?? '')} onChange={(event) => { event.currentTarget.value = formatBrazilianPhone(event.currentTarget.value); }} /></label><div className="form-grid"><label>Cidade<input name="city" defaultValue={user?.city ?? ''} /></label><label>Estado<input name="state" defaultValue={user?.state ?? ''} /></label></div><Button type="submit" loading={saving} loadingLabel="Salvando...">Salvar telefone, cidade e estado</Button>{msg ? <p className="notice success">{msg}</p> : null}{error ? <p className="notice danger">{error}</p> : null}</form><form className="profile-card card" data-tour="profile-password" onSubmit={submitPassword}><h2>Alterar senha</h2><p className="muted compact">Defina uma nova senha para sua conta. Use pelo menos 6 caracteres.</p><PasswordInput autoComplete="new-password" label="Nova senha" minLength={6} name="password" required /><PasswordInput autoComplete="new-password" label="Confirmar nova senha" minLength={6} name="confirmPassword" required /><Button type="submit" loading={savingPassword} loadingLabel="Atualizando...">Atualizar senha</Button>{passwordMsg ? <p className="notice success">{passwordMsg}</p> : null}{passwordError ? <p className="notice danger">{passwordError}</p> : null}</form><Card className="profile-card" data-tour="profile-address"><h2>Endereço e convênio</h2><div className="form-grid"><Field label="Endereço" value={extra?.address ?? extra?.street} /><Field label="Bairro" value={extra?.neighborhood} /><Field label="CEP" value={extra?.zip_code} /><Field label="Cidade" value={user?.city} /><Field label="Estado" value={user?.state} /><Field label="Convênio" value={extra?.health_plan ?? extra?.insurance} /></div></Card><Card className="profile-card profile-card-full" data-tour="profile-tracking"><h2>Acompanhamento</h2><div className="form-grid"><Field label="Profissional responsável" value={professionals.length ? professionals.join(', ') : 'Não informado'} /><Field label="Consentimento" value={consentDisplay(user)} /></div></Card></div>
+    <div className="profile-layout"><Card className="profile-card" data-tour="profile-personal"><h2>Dados pessoais</h2><div className="form-grid"><Field label="Nome" value={user?.name} /><Field label="CPF" value={user?.cpf} /><Field label="E-mail" value={user?.email} /><Field label="Data de nascimento" value={user?.birth_date} /><Field label="Sexo" value={user?.gender} /></div></Card><form className="profile-card card" data-tour="profile-contact" onSubmit={submit}><h2>Contato editável</h2><label>Telefone<input name="phone" autoComplete="tel" inputMode="tel" defaultValue={formatBrazilianPhone(user?.phone ?? '')} onChange={(event) => { event.currentTarget.value = formatBrazilianPhone(event.currentTarget.value); }} /></label><div className="form-grid"><label>Cidade<input name="city" defaultValue={user?.city ?? ''} /></label><label>Estado<input name="state" defaultValue={user?.state ?? ''} /></label></div><Button type="submit" loading={saving} loadingLabel="Salvando...">Salvar telefone, cidade e estado</Button>{msg ? <p className="notice success">{msg}</p> : null}{error ? <p className="notice danger">{error}</p> : null}</form><form className="profile-card card" data-tour="profile-password" onSubmit={submitPassword}><h2>Alterar senha</h2><p className="muted compact">Defina uma nova senha para sua conta. Use pelo menos 6 caracteres.</p><PasswordInput autoComplete="new-password" label="Nova senha" minLength={6} name="password" required /><PasswordInput autoComplete="new-password" label="Confirmar nova senha" minLength={6} name="confirmPassword" required /><Button type="submit" loading={savingPassword} loadingLabel="Atualizando...">Atualizar senha</Button>{passwordMsg ? <p className="notice success">{passwordMsg}</p> : null}{passwordError ? <p className="notice danger">{passwordError}</p> : null}</form><form className="profile-card card" data-tour="profile-address" onSubmit={submitAddress}><h2>Endereço e convênio</h2><div className="form-grid"><label>Endereço<input name="street" defaultValue={user?.street ?? ''} /></label><label>Bairro<input name="neighborhood" defaultValue={user?.neighborhood ?? ''} /></label><label>CEP<input name="zip_code" defaultValue={user?.zip_code ?? ''} /></label><Field label="Cidade" value={user?.city} /><Field label="Estado" value={user?.state} /><label>Convênio<input name="health_plan" defaultValue={user?.health_plan ?? ''} /></label></div><Button type="submit" loading={savingAddress} loadingLabel="Salvando...">Salvar endereço e convênio</Button>{addressMsg ? <p className="notice success">{addressMsg}</p> : null}{addressError ? <p className="notice danger">{addressError}</p> : null}</form><Card className="profile-card profile-card-full" data-tour="profile-tracking"><h2>Acompanhamento</h2><div className="form-grid"><Field label="Profissional responsável" value={professionals.length ? professionals.join(', ') : 'Não informado'} /><Field label="Consentimento" value={consentDisplay(user)} /></div></Card></div>
   </>;
 }
