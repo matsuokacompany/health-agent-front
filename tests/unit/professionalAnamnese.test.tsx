@@ -16,7 +16,7 @@ describe('anamnese do profissional', () => {
   beforeEach(() => { api.get.mockReset(); api.create.mockReset(); api.update.mockReset(); });
   afterEach(cleanup);
 
-  it('mantém o campo inteiro visível e usa skeletons enquanto carrega', () => { api.get.mockReturnValue(new Promise(() => {})); render(<PatientAnamneseEditor patientId="10" />); expect(screen.getByRole('textbox')).toBeTruthy(); expect(screen.getByRole('textbox').getAttribute('aria-busy')).toBe('true'); expect(screen.getByLabelText('Carregando anamnese')).toBeTruthy(); });
+  it('mantém o campo inteiro visível e usa skeletons enquanto carrega', () => { api.get.mockReturnValue(new Promise(() => {})); render(<PatientAnamneseEditor patientId="10" />); const field = screen.getAllByRole('textbox')[0]; expect(field).toBeTruthy(); expect(field.getAttribute('aria-busy')).toBe('true'); expect(screen.getByLabelText('Carregando anamnese')).toBeTruthy(); });
 
   it('carrega e atualiza uma anamnese existente com PUT', async () => {
     api.get.mockResolvedValue(existing);
@@ -26,7 +26,7 @@ describe('anamnese do profissional', () => {
     expect((field as HTMLTextAreaElement).value).toBe('Histórico\nclínico');
     fireEvent.change(field, { target: { value: 'Conteúdo atualizado' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar anamnese' }));
-    await waitFor(() => expect(api.update).toHaveBeenCalledWith('10', { info: 'Conteúdo atualizado' }));
+    await waitFor(() => expect(api.update).toHaveBeenCalledWith('10', { info: 'Conteúdo atualizado', medication_allergies: null, food_restrictions: null }));
     expect(await screen.findByText('Anamnese atualizada com sucesso.')).toBeTruthy();
   });
 
@@ -38,7 +38,7 @@ describe('anamnese do profissional', () => {
     expect(screen.getByText('Este paciente ainda não possui anamnese.')).toBeTruthy();
     fireEvent.change(field, { target: { value: ' Primeira anamnese ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar anamnese' }));
-    await waitFor(() => expect(api.create).toHaveBeenCalledWith('10', { info: 'Primeira anamnese' }));
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith('10', { info: 'Primeira anamnese', medication_allergies: null, food_restrictions: null }));
     expect(await screen.findByText('Anamnese cadastrada com sucesso.')).toBeTruthy();
   });
 
@@ -79,6 +79,8 @@ describe('anamnese do profissional', () => {
         info: existing.info,
         risk_heart_disease: true,
         risk_diabetes: true,
+        medication_allergies: null,
+        food_restrictions: null,
       }),
     );
   });

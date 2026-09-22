@@ -9,6 +9,9 @@ import { anamnesesApi } from '@/services/anamnese';
 import type { Anamnese } from '@/lib/types';
 import { RiskFactorChecklist } from '@/components/patient/RiskFactorChecklist';
 import { extractRiskFactors, type AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { DietDocumentUpload } from '@/components/patient/DietDocumentUpload';
+import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
 
 function friendlyError(error: unknown) {
   if (error instanceof ApiError && error.status === 403) return 'Você não pode mais editar sua anamnese por conta própria -- fale com seu profissional.';
@@ -16,8 +19,12 @@ function friendlyError(error: unknown) {
 }
 
 export function SelfAnamneseEditor() {
+  const { user } = useAuth();
+  const patientId = user ? Number(user.id) : undefined;
   const [anamnese, setAnamnese] = useState('');
   const [savedText, setSavedText] = useState('');
+  const [medicationAllergies, setMedicationAllergies] = useState('');
+  const [foodRestrictions, setFoodRestrictions] = useState('');
   const [riskFactors, setRiskFactors] = useState<AnamneseRiskFactors>({});
   const [record, setRecord] = useState<Anamnese | null>(null);
   const [hasAnamnese, setHasAnamnese] = useState(false);
@@ -38,7 +45,12 @@ export function SelfAnamneseEditor() {
       setHasAnamnese(true);
       const text = String(data.info ?? '');
       setSavedText(text);
-      if (!preserveDraft) { setAnamnese(text); setRiskFactors(extractRiskFactors(data)); }
+      if (!preserveDraft) {
+        setAnamnese(text);
+        setRiskFactors(extractRiskFactors(data));
+        setMedicationAllergies(data.medication_allergies ?? '');
+        setFoodRestrictions(data.food_restrictions ?? '');
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         setRecord(null);
@@ -64,18 +76,30 @@ export function SelfAnamneseEditor() {
     if (!normalized.trim()) { setSaveError('Escreva algo antes de salvar.'); return; }
     const validationError = validateUserText(normalized, INPUT_LIMITS.anamnesis);
     if (validationError) { setSaveError(validationError); return; }
+    const normalizedAllergies = normalizeUserText(medicationAllergies);
+    const normalizedRestrictions = normalizeUserText(foodRestrictions);
+    const allergiesError = validateUserText(normalizedAllergies, INPUT_LIMITS.allergies) || validateUserText(normalizedRestrictions, INPUT_LIMITS.allergies);
+    if (allergiesError) { setSaveError(allergiesError); return; }
     setSaving(true);
     setSaveError(null);
     setSuccess(null);
+    const payload = {
+      info: normalized.trim(),
+      ...riskFactors,
+      medication_allergies: normalizedAllergies.trim() || null,
+      food_restrictions: normalizedRestrictions.trim() || null,
+    };
     try {
       const updated = hasAnamnese
-        ? await anamnesesApi.updateMe({ info: normalized.trim(), ...riskFactors })
-        : await anamnesesApi.create({ info: normalized.trim(), ...riskFactors });
+        ? await anamnesesApi.updateMe(payload)
+        : await anamnesesApi.create(payload);
       setRecord(updated);
       setHasAnamnese(true);
       setAnamnese(String(updated.info ?? ''));
       setSavedText(String(updated.info ?? ''));
       setRiskFactors(extractRiskFactors(updated));
+      setMedicationAllergies(updated.medication_allergies ?? '');
+      setFoodRestrictions(updated.food_restrictions ?? '');
       setSuccess(hasAnamnese ? 'Anamnese atualizada.' : 'Anamnese salva.');
     } catch (error) {
       if (error instanceof ApiError && error.status === 404 && hasAnamnese) {
@@ -94,6 +118,7 @@ export function SelfAnamneseEditor() {
   }
 
   return (
+    <div className="stack">
     <Card data-tour="anamnese-card">
       <span className="eyebrow">Sua anamnese</span>
       <h2>{hasAnamnese ? 'Seu histórico de saúde' : 'Conte um pouco sobre sua saúde'}</h2>
@@ -130,6 +155,30 @@ export function SelfAnamneseEditor() {
           disabled={saving || Boolean(loadError)}
         />
       )}
+      <div className="form-grid">
+        <label>
+          Alergias a medicamentos
+          <textarea
+            rows={3}
+            maxLength={INPUT_LIMITS.allergies}
+            value={medicationAllergies}
+            onChange={(event) => setMedicationAllergies(event.target.value)}
+            disabled={loading || saving || Boolean(loadError)}
+            placeholder="Ex.: Dipirona, Penicilina"
+          />
+        </label>
+        <label>
+          Alergias e restrições alimentares
+          <textarea
+            rows={3}
+            maxLength={INPUT_LIMITS.allergies}
+            value={foodRestrictions}
+            onChange={(event) => setFoodRestrictions(event.target.value)}
+            disabled={loading || saving || Boolean(loadError)}
+            placeholder="Ex.: Lactose, amendoim"
+          />
+        </label>
+      </div>
       <Button onClick={() => void save()} loading={saving} loadingLabel="Salvando..." disabled={loading || Boolean(loadError)}>
         {hasAnamnese ? 'Salvar alterações' : 'Salvar anamnese'}
       </Button>
@@ -144,5 +193,8 @@ export function SelfAnamneseEditor() {
         <small className="muted">Atualizada em {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(String(record.updated_at)))}</small>
       ) : null}
     </Card>
+    {patientId ? <DietDocumentUpload patientId={patientId} /> : null}
+    {patientId ? <PatientHandoffButton patientId={patientId} patientName={user?.name} /> : null}
+    </div>
   );
 }

@@ -28,7 +28,31 @@ export type Anamnese = {
   id?: number;
   user_id?: number;
   info?: string;
+  medication_allergies?: string | null;
+  food_restrictions?: string | null;
   [key: string]: unknown;
+};
+
+export type DietDocument = {
+  id: number;
+  patient_id: number;
+  uploaded_by_user_id: number;
+  original_filename: string;
+  byte_size: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PatientHandoffSummary = {
+  patient_id: number;
+  generated_at: string;
+  anamnese_info?: string | null;
+  risk_factors: string[];
+  medication_allergies?: string | null;
+  food_restrictions?: string | null;
+  supplements: Supplement[];
+  diet_document?: DietDocument | null;
+  monitoring_summary?: Record<string, unknown> | null;
 };
 
 export type SupplementDosagePeriod = 'DAY' | 'WEEK' | 'MONTH';

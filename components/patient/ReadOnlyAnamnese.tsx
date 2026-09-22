@@ -8,10 +8,14 @@ export function ReadOnlyAnamnese({
   info,
   loading,
   riskFactors,
+  medicationAllergies,
+  foodRestrictions,
 }: {
   info: string;
   loading: boolean;
   riskFactors?: AnamneseRiskFactors;
+  medicationAllergies?: string | null;
+  foodRestrictions?: string | null;
 }) {
   const emptyDescription = 'Seu profissional ainda não registrou sua anamnese. Ela aparecerá aqui assim que ele preencher.';
   const markedRiskFactors = ANAMNESE_RISK_FACTORS.filter(({ field }) => riskFactors?.[field as keyof AnamneseRiskFactors]);
@@ -20,6 +24,13 @@ export function ReadOnlyAnamnese({
       <div className="risk-factor-checklist">
         <strong>Fatores de risco registrados</strong>
         <ul>{markedRiskFactors.map(({ field, label }) => <li key={field}>{label}</li>)}</ul>
+      </div>
+    ) : null}
+    {!loading && (medicationAllergies || foodRestrictions) ? (
+      <div className="risk-factor-checklist">
+        <strong>Alergias e restrições</strong>
+        {medicationAllergies ? <p className="muted compact">Medicamentos: {medicationAllergies}</p> : null}
+        {foodRestrictions ? <p className="muted compact">Alimentos: {foodRestrictions}</p> : null}
       </div>
     ) : null}
   </Card>;
