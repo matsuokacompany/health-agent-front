@@ -8,7 +8,14 @@ const usersApi = vi.hoisted(() => ({ update: vi.fn().mockResolvedValue({}) }));
 vi.mock('@/services/users', () => ({ usersApi }));
 
 const auth = vi.hoisted(() => ({ user: null as User | null }));
-vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: auth.user, refreshMe: vi.fn() }) }));
+vi.mock('@/components/auth/AuthProvider', () => ({
+  useAuth: () => ({
+    user: auth.user,
+    refreshMe: vi.fn(),
+    isPatient: (auth.user?.roles ?? []).includes('patient'),
+    isProfessional: (auth.user?.roles ?? []).includes('professional'),
+  }),
+}));
 
 const patientData = vi.hoisted(() => ({ plans: [] as Array<{ professionals?: Array<{ name?: string; specialty?: string | null }> }> }));
 vi.mock('@/components/patient/PatientDataProvider', () => ({ usePatientData: () => patientData }));
@@ -68,5 +75,22 @@ describe('página de perfil do paciente', () => {
       zip_code: undefined,
       health_plan: 'Unimed',
     });
+  });
+
+  it('não mostra o alternador de painel para um paciente comum (sem papel de profissional)', () => {
+    auth.user = baseUser;
+
+    render(<PatientProfile />);
+
+    expect(screen.queryByText('Alternar modo de acesso')).toBeNull();
+  });
+
+  it('mostra o alternador de painel para uma conta com papel de paciente e de profissional', () => {
+    auth.user = { ...baseUser, roles: ['patient', 'professional'] };
+
+    render(<PatientProfile />);
+
+    expect(screen.getByText('Alternar modo de acesso')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Painel do profissional/ }).getAttribute('href')).toBe('/professional');
   });
 });

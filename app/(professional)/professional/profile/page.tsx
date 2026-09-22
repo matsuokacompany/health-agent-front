@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { updatePassword } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { PortalSwitchCard } from '@/components/auth/PortalSwitchCard';
 import { Button, Card, PageHeader, ReadOnlyField as Field } from '@/components/ui/design';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { PasswordInput } from '@/components/ui/PasswordInput';
@@ -91,6 +92,7 @@ export default function ProfessionalProfile() {
         {passwordMsg ? <p className="notice success">{passwordMsg}</p> : null}
         {passwordError ? <p className="notice danger">{passwordError}</p> : null}
       </form>
+      <PortalSwitchCard current="professional" />
     </div>
   </>;
 }
