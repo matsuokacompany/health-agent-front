@@ -2,7 +2,7 @@ export const INPUT_LIMITS = {
   name: 255, phone: 32, city: 255, state: 255, gender: 255, cpf: 32,
   professionalRegistry: 64, registryState: 32, specialty: 128, biography: 2_000,
   planTitle: 255, planDescription: 2_000, planProfessionalRole: 64,
-  anamnesis: 20_000, symptomDescription: 280, suspectedCause: 280, genericAiText: 6_000,
+  anamnesis: 20_000, allergies: 2_000, symptomDescription: 280, suspectedCause: 280, genericAiText: 6_000,
 } as const;
 
 // Markup remains untouched and is rendered by React as text. NUL is removed;

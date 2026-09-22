@@ -28,7 +28,37 @@ export type Anamnese = {
   id?: number;
   user_id?: number;
   info?: string;
+  medication_allergies?: string | null;
+  food_restrictions?: string | null;
   [key: string]: unknown;
+};
+
+export type DietDocument = {
+  id: number;
+  patient_id: number;
+  uploaded_by_user_id: number;
+  original_filename: string;
+  byte_size: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PatientHandoffAllergyMatch = {
+  report_date: string;
+  matched_terms: string[];
+};
+
+export type PatientHandoffSummary = {
+  patient_id: number;
+  generated_at: string;
+  anamnese_info?: string | null;
+  risk_factors: string[];
+  medication_allergies?: string | null;
+  food_restrictions?: string | null;
+  supplements: Supplement[];
+  diet_document?: DietDocument | null;
+  monitoring_summary?: Record<string, unknown> | null;
+  possible_allergy_matches?: PatientHandoffAllergyMatch[];
 };
 
 export type SupplementDosagePeriod = 'DAY' | 'WEEK' | 'MONTH';
@@ -132,6 +162,11 @@ export type Subscription = {
   // patients they currently have. Always null for a patient's own subscription.
   max_patients?: number | null;
   active_patient_count?: number | null;
+  // Patient-only: true when an actively-paying professional already has
+  // this patient under supervision, so self-monitoring access doesn't
+  // depend on this subscription being paid. Always false for a
+  // professional's own subscription.
+  covered_by_professional?: boolean;
 };
 export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus; plan_id?: string | null };
 export type BillingPlan = { id: string; label: string; cycle: string; months: number; price_cents: number; max_patients?: number | null };

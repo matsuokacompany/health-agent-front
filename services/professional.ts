@@ -70,11 +70,13 @@ export type Anamnese = {
   id: number;
   user_id: number;
   info: string;
+  medication_allergies?: string | null;
+  food_restrictions?: string | null;
   created_at: string;
   updated_at: string;
 } & AnamneseRiskFactors;
 
-export type SaveAnamnesePayload = { info: string } & Partial<AnamneseRiskFactors>;
+export type SaveAnamnesePayload = { info: string; medication_allergies?: string | null; food_restrictions?: string | null } & Partial<AnamneseRiskFactors>;
 
 export async function getPatientAnamnese(patientId: number | string): Promise<Anamnese | null> {
   try {
