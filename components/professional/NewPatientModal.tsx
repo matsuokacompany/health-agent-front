@@ -24,10 +24,10 @@ const fieldNames = new Set(Object.keys(initialValues));
 
 type NewPatientTab = 'dados' | 'plano' | 'medicamentos' | 'anamnese';
 const newPatientTabs: Array<{ id: NewPatientTab; label: string; description: string; icon: ReactNode }> = [
-  { id: 'dados', label: 'Dados do paciente', description: 'Identificação e contato', icon: <IdentificationCard aria-hidden="true" weight="bold" /> },
-  { id: 'plano', label: 'Plano', description: 'Finalidade e datas do acompanhamento', icon: <CalendarBlank aria-hidden="true" weight="bold" /> },
-  { id: 'medicamentos', label: 'Medicamentos', description: 'Suplementos e doses (opcional)', icon: <Pill aria-hidden="true" weight="bold" /> },
-  { id: 'anamnese', label: 'Anamnese', description: 'Histórico clínico (opcional)', icon: <ClipboardText aria-hidden="true" weight="bold" /> },
+  { id: 'dados', label: 'Dados do paciente', description: 'Identificação e contato', icon: <IdentificationCard aria-hidden="true" weight="duotone" /> },
+  { id: 'plano', label: 'Plano', description: 'Finalidade e datas do acompanhamento', icon: <CalendarBlank aria-hidden="true" weight="duotone" /> },
+  { id: 'medicamentos', label: 'Medicamentos', description: 'Suplementos e doses (opcional)', icon: <Pill aria-hidden="true" weight="duotone" /> },
+  { id: 'anamnese', label: 'Anamnese', description: 'Histórico clínico (opcional)', icon: <ClipboardText aria-hidden="true" weight="duotone" /> },
 ];
 const fieldTab: Record<keyof FormValues, NewPatientTab> = {
   name: 'dados', email: 'dados', phone: 'dados', cpf: 'dados', birth_date: 'dados', gender: 'dados', city: 'dados', state: 'dados',

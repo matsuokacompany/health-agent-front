@@ -68,7 +68,7 @@ export function NotificationBell() {
         title="Notificações"
         onClick={() => void handleOpen()}
       >
-        <Bell aria-hidden="true" size={18} weight="bold" />
+        <Bell aria-hidden="true" size={18} weight="duotone" />
         {unreadCount > 0 ? <span className="notification-bell-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
       </button>
       {open ? (

@@ -2,11 +2,11 @@
 .metric-card{padding:16px}.app-shell{display:grid;grid-template-columns:280px minmax(0,1fr);gap:24px;align-items:start;width:100%;max-width:none;margin:0;padding:24px;min-height:100vh}.sidebar{position:sticky;top:24px;display:flex;flex-direction:column;min-height:calc(100vh - 48px);padding:16px;border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}.brand-mark{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-weight:850;letter-spacing:-.025em}.brand-icon{display:grid;width:36px;height:36px;place-items:center;border-radius:10px;background:var(--brand-soft);color:var(--brand);border:1px solid #c7d2fe}.nav,.menu{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sidebar .menu{flex:1;flex-direction:column;align-items:stretch}.sidebar-actions{display:grid;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.sidebar-actions a,.nav-action{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);font-weight:700;box-shadow:none}.sidebar-actions a:hover,.nav-action:hover{border-color:var(--line);background:var(--surface-soft);color:var(--ink)}.sidebar-actions a.is-current{border-color:transparent;background:var(--brand-soft);color:var(--brand);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 16%,transparent)}.menu a,.nav a,.nav-link{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:10px;background:var(--surface);color:var(--muted);font-weight:700}.menu a:hover,.nav a:hover,.nav-link:hover{border-color:var(--line);background:var(--surface-soft);color:var(--ink)}.menu a.is-current,.nav a.is-current,.nav-link.is-current{border-color:transparent;background:var(--brand-soft);color:var(--brand);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 16%,transparent)}.content-shell{min-width:0}.app-header,.topbar{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:22px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}.app-header{position:sticky;top:24px;z-index:5}.app-header .eyebrow{margin-bottom:2px}.platform-search{flex:1;max-width:620px}.platform-search label{margin:0}.platform-search input{min-height:44px}.header-actions{display:flex;gap:10px;align-items:center}.user-chip{padding:9px 12px;border-radius:999px;background:var(--surface-soft);color:var(--muted);font-weight:800}.theme-toggle{white-space:nowrap}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.topbar{background:var(--surface)}.page-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:24px}.page-header p{max-width:760px;margin-bottom:0}.page-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px}.priority-grid .card{min-height:138px}.split{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:14px}.metric-label{display:block;margin-bottom:6px;color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.metric{font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:850;letter-spacing:-.045em}
 .metric-card{display:flex;align-items:flex-start;gap:12px;border-left:3px solid var(--line)}
 .metric-body{flex:1;min-width:0}
-.metric-icon{display:grid;flex:0 0 auto;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--brand-soft);font-size:1.3rem;line-height:1}
-.metric-card.tone-ok .metric-icon{background:var(--ok-soft)}
-.metric-card.tone-warn .metric-icon{background:var(--warn-soft)}
-.metric-card.tone-danger .metric-icon{background:var(--danger-soft)}
-.metric-card.tone-info .metric-icon{background:var(--brand-soft)}
+.metric-icon{display:grid;flex:0 0 auto;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--brand-soft);color:var(--brand);font-size:1.3rem;line-height:1}
+.metric-card.tone-ok .metric-icon{background:var(--ok-soft);color:var(--ok)}
+.metric-card.tone-warn .metric-icon{background:var(--warn-soft);color:var(--warn)}
+.metric-card.tone-danger .metric-icon{background:var(--danger-soft);color:var(--danger)}
+.metric-card.tone-info .metric-icon{background:var(--brand-soft);color:var(--brand)}
 .metric-icon.skeleton{width:42px;height:42px;border-radius:12px;background:linear-gradient(90deg,var(--surface-soft),var(--line),var(--surface-soft));background-size:200% 100%;animation:pulse 1.2s ease-in-out infinite}
 .metric-card.tone-ok{border-left-color:var(--ok);background:var(--ok-soft)}
 .metric-card.tone-warn{border-left-color:var(--warn);background:var(--warn-soft)}
@@ -415,3 +415,21 @@ img.brand-logo-dark{display:none}
    these never had an intrinsic flex-basis the way a text glyph did, so pin
    size explicitly to stop them being squeezed by the flex row's text. */
 .menu a svg,.nav-action svg,.sidebar-actions a svg{flex-shrink:0}
+
+/* Reusable icon accent colors -- each carries its own hue regardless of the
+   link/row's own active-state color, the same pattern used for the
+   monitoring calendar's diet/exercise/medication icons, so a module keeps a
+   recognizable identity instead of every icon reading as the same gray. */
+.icon-blue{color:#2563eb}
+.icon-sky{color:#0ea5e9}
+.icon-teal{color:#0d9488}
+.icon-green{color:#059669}
+.icon-rose{color:#e11d48}
+.icon-amber{color:#d97706}
+.icon-purple{color:#9333ea}
+.icon-indigo{color:#4f46e5}
+.icon-cyan{color:#0891b2}
+.icon-pink{color:#db2777}
+.icon-orange{color:#ea580c}
+.icon-whatsapp{color:#25d366}
+.icon-gold{color:#ca8a04}

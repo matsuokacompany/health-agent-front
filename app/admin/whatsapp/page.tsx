@@ -82,7 +82,7 @@ export default function AdminWhatsappPage() {
       <div className="page-header">
         <div>
           <span className="eyebrow">Operação</span>
-          <h1><WhatsappLogo aria-hidden="true" size={28} weight="bold" /> WhatsApp</h1>
+          <h1><WhatsappLogo aria-hidden="true" size={28} weight="duotone" /> WhatsApp</h1>
           <p className="muted">Status da integração e check-ins diários enviados pela plataforma — cada um é uma mensagem de template cobrada pela Meta.</p>
         </div>
         <label>
@@ -110,28 +110,28 @@ export default function AdminWhatsappPage() {
                 : 'Sem falhas recentes ou envios muito atrasados podem indicar que o bot parou de funcionar — veja os indicadores abaixo.'}
             </p>
             <div className="grid admin-metrics-grid admin-section-offset">
-              <MetricCard icon={<PaperPlaneTilt aria-hidden="true" size={22} weight="bold" />} label="Última mensagem enviada" value={<span className="small-metric">{formatRelative(health.last_outbound_message_at)}</span>} description={formatAbsolute(health.last_outbound_message_at)} />
-              <MetricCard icon={<Tray aria-hidden="true" size={22} weight="bold" />} label="Última mensagem recebida" value={<span className="small-metric">{formatRelative(health.last_inbound_message_at)}</span>} description={formatAbsolute(health.last_inbound_message_at)} />
-              <MetricCard icon={<Warning aria-hidden="true" size={22} weight="bold" />} label="Falhas nas últimas 24h" value={<span className="small-metric">{health.failed_messages_last_24h}</span>} description={`de ${health.failed_messages_last_24h + health.processed_messages_last_24h} mensagens processadas`} />
-              <MetricCard icon={<UsersThree aria-hidden="true" size={22} weight="bold" />} label="Planos ativos" value={<span className="small-metric">{health.active_monitoring_plans}</span>} description="recebendo check-in diário" />
+              <MetricCard icon={<PaperPlaneTilt aria-hidden="true" size={22} weight="duotone" />} label="Última mensagem enviada" value={<span className="small-metric">{formatRelative(health.last_outbound_message_at)}</span>} description={formatAbsolute(health.last_outbound_message_at)} />
+              <MetricCard icon={<Tray aria-hidden="true" size={22} weight="duotone" />} label="Última mensagem recebida" value={<span className="small-metric">{formatRelative(health.last_inbound_message_at)}</span>} description={formatAbsolute(health.last_inbound_message_at)} />
+              <MetricCard icon={<Warning aria-hidden="true" size={22} weight="duotone" />} label="Falhas nas últimas 24h" value={<span className="small-metric">{health.failed_messages_last_24h}</span>} description={`de ${health.failed_messages_last_24h + health.processed_messages_last_24h} mensagens processadas`} />
+              <MetricCard icon={<UsersThree aria-hidden="true" size={22} weight="duotone" />} label="Planos ativos" value={<span className="small-metric">{health.active_monitoring_plans}</span>} description="recebendo check-in diário" />
             </div>
           </section>
 
           <section className="grid admin-metrics-grid admin-section-offset" data-tour="whatsapp-metrics">
-            <MetricCard icon={<EnvelopeSimple aria-hidden="true" size={22} weight="bold" />} label="Mensagens enviadas" value={stats.total_sent} description={`Nos últimos ${stats.period_days} dias`} />
+            <MetricCard icon={<EnvelopeSimple aria-hidden="true" size={22} weight="duotone" />} label="Mensagens enviadas" value={stats.total_sent} description={`Nos últimos ${stats.period_days} dias`} />
             <MetricCard
-              icon={<CurrencyDollar aria-hidden="true" size={22} weight="bold" />}
+              icon={<CurrencyDollar aria-hidden="true" size={22} weight="duotone" />}
               label="Custo estimado"
               value={stats.estimated_cost_cents !== null ? formatBrlFromCents(stats.estimated_cost_cents) : '—'}
               description={stats.cost_per_message_cents !== null
                 ? `${formatBrlFromCents(stats.cost_per_message_cents)} por mensagem`
                 : 'Configure WHATSAPP_COST_PER_MESSAGE_CENTS para estimar'}
             />
-            <MetricCard icon={<ChartLineUp aria-hidden="true" size={22} weight="bold" />} label="Média por dia" value={stats.period_days ? (stats.total_sent / stats.period_days).toFixed(1) : '0'} description="Mensagens/dia no período" />
+            <MetricCard icon={<ChartLineUp aria-hidden="true" size={22} weight="duotone" />} label="Média por dia" value={stats.period_days ? (stats.total_sent / stats.period_days).toFixed(1) : '0'} description="Mensagens/dia no período" />
           </section>
 
           <section className="card admin-section-offset" data-tour="whatsapp-chart">
-            <h2><ChartBar aria-hidden="true" size={20} weight="bold" /> Envios por dia</h2>
+            <h2><ChartBar aria-hidden="true" size={20} weight="duotone" /> Envios por dia</h2>
             <div className="chart-lines">
               {stats.daily.map((point) => (
                 <div className="chart-row" key={point.date}>

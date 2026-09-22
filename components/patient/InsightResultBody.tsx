@@ -29,7 +29,7 @@ export function InsightResultBody({ result }: { result: SelfMonitoringInsightRes
     {result.especialidade_sugerida ? (
       <div className="ai-recommendations">
         <div>
-          <span aria-hidden="true"><Stethoscope size={20} weight="bold" /></span>
+          <span aria-hidden="true"><Stethoscope size={20} weight="duotone" /></span>
           <div>
             <h4>Especialidade sugerida</h4>
             <p>{result.especialidade_sugerida}</p>

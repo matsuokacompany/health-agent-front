@@ -195,7 +195,7 @@ export function DateField({
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true"><CalendarBlank weight="bold" /></span>
+        <span aria-hidden="true"><CalendarBlank weight="duotone" /></span>
       </button>
       {open ? <CalendarPopover value={value} min={min} max={max} onSelect={handleSelect} /> : null}
     </div>

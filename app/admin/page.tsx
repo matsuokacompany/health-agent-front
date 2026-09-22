@@ -76,10 +76,10 @@ export default function Page() {
         </section>
       ) : !error ? (
         <section className="grid admin-metrics-grid" aria-label="Indicadores administrativos" data-tour="admin-metrics">
-          <MetricCard icon={<Users aria-hidden="true" size={22} weight="bold" />} label="Usuários ativos" value={activeUsers} description={`${users?.length ?? 0} no total`} />
-          <MetricCard icon={<Sparkle aria-hidden="true" size={22} weight="bold" />} label="Relatórios de IA (mês)" value={costs?.ai_report_count ?? 0} description={costs ? formatUsd(costs.ai_report_cost_usd) : '—'} />
-          <MetricCard icon={<WhatsappLogo aria-hidden="true" size={22} weight="bold" />} label="Mensagens WhatsApp (30 dias)" value={whatsapp?.total_sent ?? 0} description={whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'} />
-          <MetricCard icon={<CurrencyDollar aria-hidden="true" size={22} weight="bold" />} label="Custos conhecidos (mês)" value={formatBrlFromCents(totalKnownCostsBrl)} description="WhatsApp + lançamentos manuais" />
+          <MetricCard icon={<Users aria-hidden="true" size={22} weight="duotone" />} label="Usuários ativos" value={activeUsers} description={`${users?.length ?? 0} no total`} />
+          <MetricCard icon={<Sparkle aria-hidden="true" size={22} weight="duotone" />} label="Relatórios de IA (mês)" value={costs?.ai_report_count ?? 0} description={costs ? formatUsd(costs.ai_report_cost_usd) : '—'} />
+          <MetricCard icon={<WhatsappLogo aria-hidden="true" size={22} weight="duotone" />} label="Mensagens WhatsApp (30 dias)" value={whatsapp?.total_sent ?? 0} description={whatsapp?.estimated_cost_cents != null ? `${formatBrlFromCents(whatsapp.estimated_cost_cents)} estimado` : 'custo por mensagem não configurado'} />
+          <MetricCard icon={<CurrencyDollar aria-hidden="true" size={22} weight="duotone" />} label="Custos conhecidos (mês)" value={formatBrlFromCents(totalKnownCostsBrl)} description="WhatsApp + lançamentos manuais" />
         </section>
       ) : null}
 
@@ -87,7 +87,7 @@ export default function Page() {
       <section className="grid" aria-label="Atalhos administrativos" data-tour="admin-shortcuts">
         {shortcuts.map((shortcut) => (
           <article className="card stack" key={shortcut.href}>
-            <h2><shortcut.icon aria-hidden="true" size={20} weight="bold" /> {shortcut.title}</h2>
+            <h2><shortcut.icon aria-hidden="true" size={20} weight="duotone" /> {shortcut.title}</h2>
             <p className="muted">{shortcut.description}</p>
             <Link className="button secondary" href={shortcut.href as never}>{shortcut.cta}</Link>
           </article>
