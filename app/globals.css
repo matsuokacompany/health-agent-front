@@ -265,8 +265,14 @@ body.has-open-drawer{overflow:hidden}.responsive-app-shell{--sidebar-width:280px
 }
 .patient-monitoring-page .calendar-legend-group{justify-content:center;gap:8px 18px}
 .patient-monitoring-page .calendar-legend i{width:14px;height:14px}
-.day-adherence-icons{display:flex;gap:2px;justify-content:center;line-height:1;font-size:.72rem;margin-top:1px}
-.patient-monitoring-page .day-adherence-icons{font-size:.65rem}
+.day-adherence-icons{display:flex;gap:4px;align-items:center;justify-content:center;line-height:1;margin-top:3px}
+.day-adherence-icons svg{width:1rem;height:1rem}
+.patient-monitoring-page .day-adherence-icons svg{width:.85rem;height:.85rem}
+.calendar-legend-icons svg{width:1rem;height:1rem;vertical-align:-2px}
+.icon-diet{color:var(--ok)}
+.icon-exercise{color:#2563eb}
+.icon-medication{color:#9333ea}
+.icon-medication-partial{color:var(--warn)}
 @media (max-width:575px){
   .patient-monitoring-page .calendar-layout.is-calendar-only .calendar-weekdays,
   .patient-monitoring-page .calendar-layout.is-calendar-only .calendar{max-width:none}

@@ -110,6 +110,44 @@ describe('calendário de monitoramento (visão do profissional, somente leitura)
     expect(screen.getByText('Resposta incompleta')).toBeTruthy();
   });
 
+  it('colore os ícones de aderência (dieta/exercício/medicação) para leitura rápida no calendário', () => {
+    // Regression: the Phosphor icons swapped in for the old colorful emoji
+    // rendered with no explicit size and inherited the muted gray text
+    // color -- effectively invisible at a glance. Each adherence icon must
+    // carry its own color class so diet/exercise/medication/partial stay
+    // instantly distinguishable.
+    const day = 5;
+    const calendar = {
+      year, month,
+      days: Array.from({ length: new Date(year, month, 0).getDate() }, (_, index) => {
+        const current = index + 1;
+        if (current === day) {
+          return {
+            date: isoDay(current), has_checkin: true, completed: true, pending: false, has_symptoms: false,
+            diet_followed: true, exercise_followed: true, medication_taken: true, medication_partial: false,
+            statuses: ['COMPLETED'],
+            checkins: [{ id: 1, completed: true, had_symptoms: false, diet_adherence: true, exercise_adherence: true, medication_adherence: true, medication_adherence_level: 'ALL' }],
+          };
+        }
+        return { date: isoDay(current), has_checkin: false, completed: false, pending: false, has_symptoms: false, diet_followed: false, exercise_followed: false, medication_taken: false, medication_partial: false, statuses: [], checkins: [] };
+      }),
+    };
+    useProfessionalCalendar.mockReturnValue({ data: calendar, isLoading: false, error: null });
+    render(<PatientMonitoringCalendar patientId="42" />);
+
+    const dayButton = screen.getByRole('button', { name: /Sem sintomas/ });
+    expect(dayButton.querySelector('.icon-diet')).toBeTruthy();
+    expect(dayButton.querySelector('.icon-exercise')).toBeTruthy();
+    expect(dayButton.querySelector('.icon-medication')).toBeTruthy();
+
+    // The legend uses the same color classes so the day icons stay
+    // recognizable against their key.
+    expect(document.querySelector('.calendar-legend-icons .icon-diet')).toBeTruthy();
+    expect(document.querySelector('.calendar-legend-icons .icon-exercise')).toBeTruthy();
+    expect(document.querySelector('.calendar-legend-icons .icon-medication')).toBeTruthy();
+    expect(document.querySelector('.calendar-legend-icons .icon-medication-partial')).toBeTruthy();
+  });
+
   it('mostra o skeleton enquanto carrega e o estado de erro quando a busca falha', () => {
     useProfessionalCalendar.mockReturnValue({ data: undefined, isLoading: true, error: null });
     const { container, unmount } = render(<PatientMonitoringCalendar patientId="42" />);
