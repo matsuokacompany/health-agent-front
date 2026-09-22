@@ -215,8 +215,11 @@ function NoticesCard() {
 
 function LoadingDashboard() {
   return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando dashboard">
-    <Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
-    <Card className="patient-dashboard-last-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <div className="patient-dashboard-top-row">
+      <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+      <Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
+      <Card className="patient-dashboard-last-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    </div>
     <section className="patient-dashboard-summary-grid">
       {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
@@ -350,12 +353,14 @@ export default function PatientDashboard() {
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
-      <MonitoringStatusCard reports={reports} />
       <NoticesCard />
-      <Card className="patient-dashboard-main-card" data-tour="patient-plan"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
-        {upcomingFirstCheckin ? <p className="notice"><CalendarBlank aria-hidden="true" size={16} weight="duotone" /> Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
-      </Card>
-      <LastResponseCard data={dashboard} />
+      <div className="patient-dashboard-top-row">
+        <MonitoringStatusCard reports={reports} />
+        <Card className="patient-dashboard-main-card" data-tour="patient-plan"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
+          {upcomingFirstCheckin ? <p className="notice"><CalendarBlank aria-hidden="true" size={16} weight="duotone" /> Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
+        </Card>
+        <LastResponseCard data={dashboard} />
+      </div>
       <SummaryCards data={dashboard} />
       <SymptomsChart data={dashboard} />
       <TopSymptomsCard />

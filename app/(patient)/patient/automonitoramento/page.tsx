@@ -20,13 +20,6 @@ const PERIOD_PRESETS = [
 ] as const;
 type PeriodDays = (typeof PERIOD_PRESETS)[number][0];
 
-const trendLabel: Record<EvolutionReport['symptom_trend'], string> = {
-  increasing: '📈 Sintomas em alta no período',
-  decreasing: '📉 Sintomas em queda no período',
-  stable: '➡️ Estável no período',
-  insufficient_data: 'Dados insuficientes para calcular tendência',
-};
-
 function formatDate(value?: string | null) {
   if (!value) return null;
   const date = new Date(value.length <= 10 ? `${value}T00:00:00` : value);
@@ -124,11 +117,6 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
 
   return <>
     <EvolutionMetricsGrid report={report} />
-    <Card>
-      <span className="eyebrow">Tendência</span>
-      <h2>{trendLabel[report.symptom_trend]}</h2>
-      <p className="muted">Período de {formatDate(report.start_date)} a {formatDate(report.end_date)}.</p>
-    </Card>
     <RedFlagEventsCard events={report.red_flag_events} />
     <RiskFactorsCard riskFactors={report.risk_factors} />
     <SymptomsCard symptoms={report.symptoms} />

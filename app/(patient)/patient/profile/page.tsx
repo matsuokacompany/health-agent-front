@@ -19,6 +19,27 @@ type PatientExtraFields = {
   insurance?: string | null;
 };
 
+function formatDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date);
+}
+
+/** A patient created directly by a professional never went through the
+ * self-signup screen that records explicit terms acceptance, so
+ * `terms_accepted_at` stays null for them even though they're a real,
+ * active user -- fall back to when the account itself was created rather
+ * than showing a flat "Não informado" for every professionally-onboarded
+ * patient. */
+function consentDisplay(user: { terms_accepted_at?: string | null; created_at?: string } | null | undefined) {
+  const acceptedAt = formatDate(user?.terms_accepted_at);
+  if (acceptedAt) return `Aceito em ${acceptedAt}`;
+  const createdAt = formatDate(user?.created_at);
+  if (createdAt) return `Não registrado formalmente — conta criada em ${createdAt}`;
+  return 'Não informado';
+}
+
 export default function PatientProfile() {
   const { user, refreshMe } = useAuth();
   const { plans } = usePatientData();
@@ -75,6 +96,6 @@ export default function PatientProfile() {
   }
 
   return <><PageHeader eyebrow="Perfil" title="Meus dados" description="Confira seus dados cadastrados, atualize seu contato e altere sua senha quando necessário." />
-    <div className="profile-layout"><Card className="profile-card"><h2>Dados pessoais</h2><div className="form-grid"><Field label="Nome" value={user?.name} /><Field label="CPF" value={user?.cpf} /><Field label="E-mail" value={user?.email} /><Field label="Data de nascimento" value={user?.birth_date} /><Field label="Sexo" value={user?.gender} /></div></Card><form className="profile-card card" onSubmit={submit}><h2>Contato editável</h2><label>Telefone<input name="phone" autoComplete="tel" inputMode="tel" defaultValue={formatBrazilianPhone(user?.phone ?? '')} onChange={(event) => { event.currentTarget.value = formatBrazilianPhone(event.currentTarget.value); }} /></label><div className="form-grid"><label>Cidade<input name="city" defaultValue={user?.city ?? ''} /></label><label>Estado<input name="state" defaultValue={user?.state ?? ''} /></label></div><Button type="submit" loading={saving} loadingLabel="Salvando...">Salvar telefone, cidade e estado</Button>{msg ? <p className="notice success">{msg}</p> : null}{error ? <p className="notice danger">{error}</p> : null}</form><form className="profile-card card" onSubmit={submitPassword}><h2>Alterar senha</h2><p className="muted compact">Defina uma nova senha para sua conta. Use pelo menos 6 caracteres.</p><PasswordInput autoComplete="new-password" label="Nova senha" minLength={6} name="password" required /><PasswordInput autoComplete="new-password" label="Confirmar nova senha" minLength={6} name="confirmPassword" required /><Button type="submit" loading={savingPassword} loadingLabel="Atualizando...">Atualizar senha</Button>{passwordMsg ? <p className="notice success">{passwordMsg}</p> : null}{passwordError ? <p className="notice danger">{passwordError}</p> : null}</form><Card className="profile-card"><h2>Endereço e convênio</h2><div className="form-grid"><Field label="Endereço" value={extra?.address ?? extra?.street} /><Field label="Bairro" value={extra?.neighborhood} /><Field label="CEP" value={extra?.zip_code} /><Field label="Cidade" value={user?.city} /><Field label="Estado" value={user?.state} /><Field label="Convênio" value={extra?.health_plan ?? extra?.insurance} /></div></Card><Card className="profile-card profile-card-full"><h2>Acompanhamento</h2><div className="form-grid"><Field label="Profissional responsável" value={professionals.length ? professionals.join(', ') : 'Não informado'} /><Field label="Consentimento" value={user?.consent?.accepted_at ? 'Aceito' : 'Não informado'} /></div></Card></div>
+    <div className="profile-layout"><Card className="profile-card" data-tour="profile-personal"><h2>Dados pessoais</h2><div className="form-grid"><Field label="Nome" value={user?.name} /><Field label="CPF" value={user?.cpf} /><Field label="E-mail" value={user?.email} /><Field label="Data de nascimento" value={user?.birth_date} /><Field label="Sexo" value={user?.gender} /></div></Card><form className="profile-card card" data-tour="profile-contact" onSubmit={submit}><h2>Contato editável</h2><label>Telefone<input name="phone" autoComplete="tel" inputMode="tel" defaultValue={formatBrazilianPhone(user?.phone ?? '')} onChange={(event) => { event.currentTarget.value = formatBrazilianPhone(event.currentTarget.value); }} /></label><div className="form-grid"><label>Cidade<input name="city" defaultValue={user?.city ?? ''} /></label><label>Estado<input name="state" defaultValue={user?.state ?? ''} /></label></div><Button type="submit" loading={saving} loadingLabel="Salvando...">Salvar telefone, cidade e estado</Button>{msg ? <p className="notice success">{msg}</p> : null}{error ? <p className="notice danger">{error}</p> : null}</form><form className="profile-card card" data-tour="profile-password" onSubmit={submitPassword}><h2>Alterar senha</h2><p className="muted compact">Defina uma nova senha para sua conta. Use pelo menos 6 caracteres.</p><PasswordInput autoComplete="new-password" label="Nova senha" minLength={6} name="password" required /><PasswordInput autoComplete="new-password" label="Confirmar nova senha" minLength={6} name="confirmPassword" required /><Button type="submit" loading={savingPassword} loadingLabel="Atualizando...">Atualizar senha</Button>{passwordMsg ? <p className="notice success">{passwordMsg}</p> : null}{passwordError ? <p className="notice danger">{passwordError}</p> : null}</form><Card className="profile-card" data-tour="profile-address"><h2>Endereço e convênio</h2><div className="form-grid"><Field label="Endereço" value={extra?.address ?? extra?.street} /><Field label="Bairro" value={extra?.neighborhood} /><Field label="CEP" value={extra?.zip_code} /><Field label="Cidade" value={user?.city} /><Field label="Estado" value={user?.state} /><Field label="Convênio" value={extra?.health_plan ?? extra?.insurance} /></div></Card><Card className="profile-card profile-card-full" data-tour="profile-tracking"><h2>Acompanhamento</h2><div className="form-grid"><Field label="Profissional responsável" value={professionals.length ? professionals.join(', ') : 'Não informado'} /><Field label="Consentimento" value={consentDisplay(user)} /></div></Card></div>
   </>;
 }
