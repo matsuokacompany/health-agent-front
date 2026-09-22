@@ -113,10 +113,10 @@ export function PatientMonitoringCalendar({ patientId, revealSensitive = true }:
             <span>{status}</span>
             {day.diet_followed || day.exercise_followed || day.medication_taken || day.medication_partial ? (
               <span className="day-adherence-icons" aria-hidden="true">
-                {day.diet_followed ? <ForkKnife weight="bold" /> : null}
-                {day.exercise_followed ? <PersonSimpleRun weight="bold" /> : null}
-                {day.medication_taken ? <Pill weight="bold" /> : null}
-                {day.medication_partial ? <CircleHalf weight="bold" /> : null}
+                {day.diet_followed ? <ForkKnife weight="bold" className="icon-diet" /> : null}
+                {day.exercise_followed ? <PersonSimpleRun weight="bold" className="icon-exercise" /> : null}
+                {day.medication_taken ? <Pill weight="bold" className="icon-medication" /> : null}
+                {day.medication_partial ? <CircleHalf weight="bold" className="icon-medication-partial" /> : null}
               </span>
             ) : null}
           </button>;
@@ -131,12 +131,12 @@ export function PatientMonitoringCalendar({ patientId, revealSensitive = true }:
           <span><i className="legend-issue" />Resposta incompleta</span>
           <span><i className="legend-empty" />Sem check-in</span>
         </div>
-        <div className="calendar-legend-group">
+        <div className="calendar-legend-group calendar-legend-icons">
           <span className="calendar-legend-group-title">Respostas</span>
-          <span><ForkKnife aria-hidden="true" weight="bold" /> Dieta</span>
-          <span><PersonSimpleRun aria-hidden="true" weight="bold" /> Exercício</span>
-          <span><Pill aria-hidden="true" weight="bold" /> Medicação</span>
-          <span><CircleHalf aria-hidden="true" weight="bold" /> Medicação parcial</span>
+          <span><ForkKnife aria-hidden="true" weight="bold" className="icon-diet" /> Dieta</span>
+          <span><PersonSimpleRun aria-hidden="true" weight="bold" className="icon-exercise" /> Exercício</span>
+          <span><Pill aria-hidden="true" weight="bold" className="icon-medication" /> Medicação</span>
+          <span><CircleHalf aria-hidden="true" weight="bold" className="icon-medication-partial" /> Medicação parcial</span>
         </div>
       </div>
     </Card>
