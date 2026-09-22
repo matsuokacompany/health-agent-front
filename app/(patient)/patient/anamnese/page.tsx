@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PageHeader } from '@/components/ui/design';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
 import { SelfAnamneseEditor } from '@/components/patient/SelfAnamneseEditor';
 import { SupplementsList } from '@/components/patient/SupplementsList';
@@ -11,8 +13,20 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { anamnesesApi } from '@/services/anamnese';
 import { extractRiskFactors, type AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 
+function LoadingAnamnese() {
+  return <section className="stack" aria-busy="true" aria-label="Carregando anamnese">
+    <div className="page-header">
+      <div><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-page-title" /><SkeletonBlock className="sk-page-copy" /></div>
+      <SkeletonBlock className="sk-action" />
+    </div>
+    <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock className="sk-tile" /></div>
+    <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
+    <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
+  </section>;
+}
+
 export default function PatientAnamnese() {
-  const { plans } = usePatientData();
+  const { plans, loading: plansLoading } = usePatientData();
   const { user } = useAuth();
   const patientId = user ? Number(user.id) : undefined;
   const hasProfessional = plans.some(
@@ -22,9 +36,10 @@ export default function PatientAnamnese() {
   const [riskFactors, setRiskFactors] = useState<AnamneseRiskFactors>({});
   const [medicationAllergies, setMedicationAllergies] = useState<string | null>(null);
   const [foodRestrictions, setFoodRestrictions] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingAnamnese, setLoadingAnamnese] = useState(true);
 
   useEffect(() => {
+    if (plansLoading) return;
     if (hasProfessional) {
       anamnesesApi.me()
         .then((a) => {
@@ -34,18 +49,29 @@ export default function PatientAnamnese() {
           setFoodRestrictions(a.food_restrictions ?? null);
         })
         .catch(() => setInfo(''))
-        .finally(() => setLoading(false));
+        .finally(() => setLoadingAnamnese(false));
     } else {
-      setLoading(false);
+      setLoadingAnamnese(false);
     }
-  }, [hasProfessional]);
+  }, [hasProfessional, plansLoading]);
+
+  // hasProfessional isn't known until plans finish loading -- rendering
+  // before then would flash the wrong editor (self-service vs read-only)
+  // for a professionally-monitored patient.
+  if (plansLoading) return <LoadingAnamnese />;
 
   return (
     <section className="stack">
+      <PageHeader
+        eyebrow="Sua saúde"
+        title="Anamnese"
+        description="Seu histórico de saúde, alergias, suplementos e plano alimentar — tudo num só lugar, pronto para levar a uma consulta."
+        action={patientId ? <PatientHandoffButton patientId={patientId} patientName={user?.name} /> : null}
+      />
       {hasProfessional ? (
         <ReadOnlyAnamnese
           info={info}
-          loading={loading}
+          loading={loadingAnamnese}
           riskFactors={riskFactors}
           medicationAllergies={medicationAllergies}
           foodRestrictions={foodRestrictions}
@@ -54,12 +80,7 @@ export default function PatientAnamnese() {
         <SelfAnamneseEditor />
       )}
       <SupplementsList />
-      {hasProfessional && patientId ? (
-        <>
-          <DietDocumentUpload patientId={patientId} />
-          <PatientHandoffButton patientId={patientId} patientName={user?.name} />
-        </>
-      ) : null}
+      {patientId ? <DietDocumentUpload patientId={patientId} /> : null}
     </section>
   );
 }

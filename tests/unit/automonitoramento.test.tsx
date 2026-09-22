@@ -52,8 +52,15 @@ describe('relatório de automonitoramento do paciente', () => {
     expect(screen.getByText('Adesão à dieta')).toBeTruthy();
     expect(screen.getByText('80%')).toBeTruthy();
     expect(screen.getByText('Adesão à medicação/suplemento')).toBeTruthy();
-    expect(screen.queryByText('Adesão ao exercício')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Baixar PDF / Imprimir' })).toBeTruthy();
+    // Rendered even when the patient doesn't track exercise, with a "Não se
+    // aplica" value, so the metrics grid always fills complete rows of four
+    // instead of leaving gaps.
+    expect(screen.getByText('Adesão ao exercício')).toBeTruthy();
+    expect(screen.getByText('Não se aplica')).toBeTruthy();
+    expect(screen.getByText('Tendência')).toBeTruthy();
+    expect(screen.getByText('Estável')).toBeTruthy();
+    expect(screen.queryByText('Tendência', { selector: '.eyebrow' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Baixar PDF' })).toBeTruthy();
   });
 
   it('não mostra o card de sinais de alerta quando não há eventos no período', async () => {

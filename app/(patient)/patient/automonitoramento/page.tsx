@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle, Stethoscope, Leaf, HourglassHigh, ForkKnife, PersonSimpleRun, Pill, Warning } from '@phosphor-icons/react';
-import { Button, Card, MetricCard } from '@/components/ui/design';
+import { DownloadSimple, Warning } from '@phosphor-icons/react';
+import { Button, Card } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
+import { EvolutionMetricsGrid } from '@/components/patient/EvolutionMetricsGrid';
 import { InsightResultBody } from '@/components/patient/InsightResultBody';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { shortcutPeriod } from '@/services/aiReports';
@@ -18,13 +19,6 @@ const PERIOD_PRESETS = [
   [365, 'Último ano'],
 ] as const;
 type PeriodDays = (typeof PERIOD_PRESETS)[number][0];
-
-const trendLabel: Record<EvolutionReport['symptom_trend'], string> = {
-  increasing: '📈 Sintomas em alta no período',
-  decreasing: '📉 Sintomas em queda no período',
-  stable: '➡️ Estável no período',
-  insufficient_data: 'Dados insuficientes para calcular tendência',
-};
 
 function formatDate(value?: string | null) {
   if (!value) return null;
@@ -121,22 +115,8 @@ function EvolutionCard({ report }: { report: EvolutionReport }) {
     </Card>;
   }
 
-  const { adherence } = report;
   return <>
-    <section className="patient-dashboard-summary-grid" aria-label="Evolução">
-      <MetricCard icon={<CheckCircle aria-hidden="true" size={22} weight="duotone" />} label="Adesão aos check-ins" value={`${report.metrics.adherence_percentage}%`} description={`${report.metrics.completed_checkins} de ${report.metrics.total_checkins} check-ins`} tone={report.metrics.adherence_percentage >= 80 ? 'ok' : 'warn'} />
-      <MetricCard icon={<Stethoscope aria-hidden="true" size={22} weight="duotone" />} label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} tone={report.metrics.checkins_with_symptoms > 0 ? 'warn' : 'ok'} />
-      <MetricCard icon={<Leaf aria-hidden="true" size={22} weight="duotone" />} label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} tone="ok" />
-      <MetricCard icon={<HourglassHigh aria-hidden="true" size={22} weight="duotone" />} label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} tone={report.longest_gap_days > 2 ? 'warn' : undefined} />
-      {adherence.diet_percentage !== null ? <MetricCard icon={<ForkKnife aria-hidden="true" size={22} weight="duotone" />} label="Adesão à dieta" value={`${adherence.diet_percentage}%`} tone={adherence.diet_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-      {adherence.exercise_percentage !== null ? <MetricCard icon={<PersonSimpleRun aria-hidden="true" size={22} weight="duotone" />} label="Adesão ao exercício" value={`${adherence.exercise_percentage}%`} tone={adherence.exercise_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-      {adherence.medication_percentage !== null ? <MetricCard icon={<Pill aria-hidden="true" size={22} weight="duotone" />} label="Adesão à medicação/suplemento" value={`${adherence.medication_percentage}%`} tone={adherence.medication_percentage >= 80 ? 'ok' : 'warn'} /> : null}
-    </section>
-    <Card>
-      <span className="eyebrow">Tendência</span>
-      <h2>{trendLabel[report.symptom_trend]}</h2>
-      <p className="muted">Período de {formatDate(report.start_date)} a {formatDate(report.end_date)}.</p>
-    </Card>
+    <EvolutionMetricsGrid report={report} />
     <RedFlagEventsCard events={report.red_flag_events} />
     <RiskFactorsCard riskFactors={report.risk_factors} />
     <SymptomsCard symptoms={report.symptoms} />
@@ -199,8 +179,8 @@ function InsightCard({
     {error ? <p className="notice danger">{error}</p> : null}
     {cooldownActive ? (
       <p className="notice compact">
-        Você já gerou um resumo recentemente — para controlar o custo de IA, um resumo novo só pode ser gerado a cada
-        15 dias. Faltam {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`} para o próximo.
+        Você já gerou um resumo recentemente. Um novo resumo pode ser gerado a cada 15 dias. Faltam{' '}
+        {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`} para o próximo.
         {!result && latestInsight ? <> {' '}<a href={`/patient/relatorios/${latestInsight.id}`}>Ver o resumo mais recente →</a></> : null}
       </p>
     ) : null}
@@ -221,11 +201,11 @@ function InsightCard({
 
 function LoadingAutomonitoramento() {
   return <section className="stack" aria-busy="true" aria-label="Carregando automonitoramento">
-    <div className="professional-section-heading">
-      <div><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-page-title" /><SkeletonBlock className="sk-page-copy" /></div>
-    </div>
-    <div className="ai-shortcuts">
-      {Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}
+    <div className="automonitoramento-toolbar">
+      <div className="ai-shortcuts">
+        {Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}
+      </div>
+      <SkeletonBlock className="sk-action" />
     </div>
     <section className="patient-dashboard-summary-grid">
       {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
@@ -318,11 +298,14 @@ export default function Automonitoramento() {
   const periodLabel = (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
 
   return <section className="stack" aria-label="Automonitoramento">
-    {!reportBlocked ? <div className="professional-section-heading">
-      <div><span className="eyebrow">Automonitoramento</span><h1>Seu relatório de acompanhamento</h1><p className="muted">Mostre este relatório a um médico ou nutricionista — reúne o que você relatou, sinais identificados e seu histórico de saúde.</p></div>
-      {report?.sufficient_data ? <Button variant="secondary" onClick={() => window.print()}>Baixar PDF / Imprimir</Button> : null}
+    {!reportBlocked ? <div className="automonitoramento-toolbar">
+      <PeriodSelector selected={selectedPeriod} onChange={setSelectedPeriod} disabled={loading} />
+      {report?.sufficient_data ? (
+        <Button variant="secondary" onClick={() => window.print()}>
+          <DownloadSimple aria-hidden="true" size={18} weight="bold" /> Baixar PDF
+        </Button>
+      ) : null}
     </div> : null}
-    {!reportBlocked ? <PeriodSelector selected={selectedPeriod} onChange={setSelectedPeriod} disabled={loading} /> : null}
     {reportBlocked ? <EvolutionPaywall /> : report ? <EvolutionCard report={report} /> : null}
     {!reportBlocked ? (
       <InsightCard report={report} insight={insight} latestInsight={latestInsight} periodLabel={periodLabel} error={insightError} generating={generatingInsight} onGenerate={() => void generateInsight()} />

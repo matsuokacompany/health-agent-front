@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { updatePassword } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { PortalSwitchCard } from '@/components/auth/PortalSwitchCard';
 import { Button, Card, PageHeader, ReadOnlyField as Field } from '@/components/ui/design';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { PasswordInput } from '@/components/ui/PasswordInput';
@@ -63,7 +64,7 @@ export default function ProfessionalProfile() {
 
   return <><PageHeader eyebrow="Perfil" title="Meus dados" description="Confira seus dados cadastrados, atualize seu contato e altere sua senha quando necessário." />
     <div className="profile-layout">
-      <Card className="profile-card">
+      <Card className="profile-card" data-tour="profile-personal">
         <h2>Dados pessoais</h2>
         <div className="form-grid">
           <Field label="Nome" value={user?.name} />
@@ -71,7 +72,7 @@ export default function ProfessionalProfile() {
           <Field label="E-mail" value={user?.email} />
         </div>
       </Card>
-      <form className="profile-card card" onSubmit={submit}>
+      <form className="profile-card card" data-tour="profile-contact" onSubmit={submit}>
         <h2>Contato editável</h2>
         <label>Telefone<input name="phone" autoComplete="tel" inputMode="tel" defaultValue={formatBrazilianPhone(user?.phone ?? '')} onChange={(event) => { event.currentTarget.value = formatBrazilianPhone(event.currentTarget.value); }} /></label>
         <div className="form-grid">
@@ -82,7 +83,7 @@ export default function ProfessionalProfile() {
         {msg ? <p className="notice success">{msg}</p> : null}
         {error ? <p className="notice danger">{error}</p> : null}
       </form>
-      <form className="profile-card card" onSubmit={submitPassword}>
+      <form className="profile-card card" data-tour="profile-password" onSubmit={submitPassword}>
         <h2>Alterar senha</h2>
         <p className="muted compact">Defina uma nova senha para sua conta. Use pelo menos 6 caracteres.</p>
         <PasswordInput autoComplete="new-password" label="Nova senha" minLength={6} name="password" required />
@@ -91,6 +92,7 @@ export default function ProfessionalProfile() {
         {passwordMsg ? <p className="notice success">{passwordMsg}</p> : null}
         {passwordError ? <p className="notice danger">{passwordError}</p> : null}
       </form>
+      <PortalSwitchCard current="professional" />
     </div>
   </>;
 }

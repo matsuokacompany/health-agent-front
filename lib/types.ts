@@ -14,12 +14,21 @@ export type User = {
   gender?: string | null;
   birth_date?: string | null;
   cpf?: string | null;
+  street?: string | null;
+  neighborhood?: string | null;
+  zip_code?: string | null;
+  health_plan?: string | null;
   supabase_user_id?: string | null;
   created_at: string;
   updated_at: string;
   roles: Role[];
   role?: Role;
   linkedPatientIds?: Array<number | string>;
+  // Only set by the self-signup flow -- a patient created directly by a
+  // professional never goes through that screen, so this stays null for
+  // them even though they are a real, active platform user.
+  terms_accepted_at?: string | null;
+  terms_version?: string | null;
   consent?: { user_id?: string | number; accepted_at?: string; revoked_at?: string | null; version?: string; ip_address?: string };
 };
 export type UserRead = User;

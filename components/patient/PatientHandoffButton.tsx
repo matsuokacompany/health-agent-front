@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
+import { DownloadSimple } from '@phosphor-icons/react';
 import { patientHandoffApi } from '@/services/patientHandoff';
 import { createHandoffPdf, downloadHandoffPdf } from '@/lib/handoffPdf';
 
@@ -36,7 +37,7 @@ export function PatientHandoffButton({ patientId, patientName, forProfessional =
   return (
     <div className="handoff-pdf-download">
       <button className="button secondary" type="button" disabled={generating} onClick={() => void download()}>
-        {generating ? 'Gerando resumo...' : 'Baixar resumo para o médico'}
+        {generating ? 'Gerando resumo...' : <><DownloadSimple aria-hidden="true" size={18} weight="bold" /> Baixar resumo para o médico</>}
       </button>
       {generating ? <span className="muted" role="status">Preparando o arquivo...</span> : null}
       {error ? <p className="notice danger" role="alert">{error}</p> : null}

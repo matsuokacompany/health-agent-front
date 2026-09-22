@@ -3,20 +3,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ChartBar, Users, User, ClipboardText, Broadcast, FileText, Sparkle, UsersThree, UserPlus,
-  Stethoscope, WhatsappLogo, House, PushPin, GearSix, CreditCard, Heartbeat, SignOut, Circle,
+  Stethoscope, WhatsappLogo, House, PushPin, GearSix, CreditCard, Heartbeat, Circle,
   type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
-import { useAuth } from '@/components/auth/AuthProvider';
 import { useI18n } from '@/components/i18n/I18nProvider';
+import { ProfileMenu } from './ProfileMenu';
 import { TourButton } from '@/components/tour/TourButton';
-
-// Brazilian convention: address people by their first name, not a full name
-// or a generic "Perfil" label -- the button still links to the same profile
-// page, this only changes what's shown.
-function firstName(fullName: string | undefined | null): string | null {
-  const trimmed = fullName?.trim();
-  return trimmed ? trimmed.split(/\s+/)[0] : null;
-}
 
 const icons: Record<string, PhosphorIcon> = {
   Dashboard: ChartBar,
@@ -91,8 +83,6 @@ type AppSidebarProps = {
 export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, mobileOpen = false, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { t } = useI18n();
-  const { user } = useAuth();
-  const profileLabel = firstName(user?.name) ?? t('nav.profile');
   return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
       <div className="sidebar-brand-main">
@@ -108,8 +98,7 @@ export function AppSidebar({ title, marker, links, profileHref, footerHref, foot
     </nav>
     <div className="sidebar-actions">
       <TourButton />
-      <Link className="nav-action" href={profileHref as never} onClick={onNavigate} title={t('nav.profile')}><User aria-hidden="true" size={20} weight="duotone" /><span className="sidebar-label">{profileLabel}</span></Link>
-      <Link className="nav-action" href={footerHref as never} onClick={onNavigate} title={footerLabel}><SignOut aria-hidden="true" size={20} weight="duotone" /><span className="sidebar-label">{footerLabel}</span></Link>
+      <ProfileMenu profileHref={profileHref} footerHref={footerHref} footerLabel={footerLabel} onNavigate={onNavigate} />
     </div>
   </aside>;
 }

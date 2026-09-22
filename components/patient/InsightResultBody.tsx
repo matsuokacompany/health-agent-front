@@ -1,4 +1,4 @@
-import { Stethoscope } from '@phosphor-icons/react/ssr';
+import { CheckCircle, Stethoscope, Warning } from '@phosphor-icons/react/ssr';
 import type { SelfMonitoringInsightResult } from '@/lib/types';
 
 const urgencyLabel: Record<string, string> = {
@@ -10,20 +10,28 @@ const urgencyRiskClass: Record<string, string> = { baixa: 'risk-baixo', moderada
 
 /** Renders one AI-generated self-monitoring summary's content — shared by
  * the "generate/latest" card on automonitoramento and the report history
- * detail page, so both show the exact same shape and disclaimer. */
+ * detail page, so both show the exact same shape and disclaimer. Styled as
+ * distinct highlighted sections (not a wall of plain text) so the summary
+ * itself reads as something the platform actively put together, not just a
+ * dump of the model's raw answer. */
 export function InsightResultBody({ result }: { result: SelfMonitoringInsightResult }) {
+  const hasPoints = Boolean(result.pontos_positivos?.length || result.pontos_de_atencao?.length);
   return <>
-    <p className="muted">{result.resumo}</p>
-    {result.pontos_positivos?.length ? (
-      <div>
-        <h3>Pontos positivos</h3>
-        <ul>{result.pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
-      </div>
-    ) : null}
-    {result.pontos_de_atencao?.length ? (
-      <div>
-        <h3>Pontos de atenção</h3>
-        <ul>{result.pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
+    <div className="ai-summary"><p>{result.resumo}</p></div>
+    {hasPoints ? (
+      <div className="insight-points">
+        {result.pontos_positivos?.length ? (
+          <div className="insight-points-positive">
+            <h3><CheckCircle aria-hidden="true" size={18} weight="duotone" /> Pontos positivos</h3>
+            <ul>{result.pontos_positivos.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        ) : null}
+        {result.pontos_de_atencao?.length ? (
+          <div className="insight-points-attention">
+            <h3><Warning aria-hidden="true" size={18} weight="duotone" /> Pontos de atenção</h3>
+            <ul>{result.pontos_de_atencao.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        ) : null}
       </div>
     ) : null}
     {result.especialidade_sugerida ? (
