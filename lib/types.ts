@@ -162,6 +162,11 @@ export type Subscription = {
   // patients they currently have. Always null for a patient's own subscription.
   max_patients?: number | null;
   active_patient_count?: number | null;
+  // Patient-only: true when an actively-paying professional already has
+  // this patient under supervision, so self-monitoring access doesn't
+  // depend on this subscription being paid. Always false for a
+  // professional's own subscription.
+  covered_by_professional?: boolean;
 };
 export type CheckoutResponse = { checkout_url: string | null; status: SubscriptionStatus; plan_id?: string | null };
 export type BillingPlan = { id: string; label: string; cycle: string; months: number; price_cents: number; max_patients?: number | null };

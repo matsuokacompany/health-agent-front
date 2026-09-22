@@ -50,6 +50,28 @@ export default function PatientAssinatura() {
   if (loadError) return <Card><p className="notice danger">{loadError}</p><Button onClick={() => void load()}>Tentar novamente</Button></Card>;
   if (!subscription) return null;
 
+  if (subscription.covered_by_professional) {
+    return (
+      <section className="pricing-page" aria-label="Assinatura">
+        <Card data-tour="assinatura-status">
+          <span className="eyebrow">Assinatura</span>
+          <h1>🩺 Coberto pelo seu profissional</h1>
+          <p className="muted">
+            Você está sendo acompanhado por um profissional que já paga pela plataforma, então o automonitoramento e o
+            histórico de relatórios estão liberados para você sem custo adicional.
+          </p>
+        </Card>
+        <p className="muted compact legal-links">
+          <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
+          {' · '}
+          <a href="/politica-de-privacidade" rel="noopener noreferrer" target="_blank">Política de Privacidade</a>
+          {' · '}
+          <a href="/politica-de-reembolso" rel="noopener noreferrer" target="_blank">Política de Reembolso</a>
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="pricing-page" aria-label="Assinatura">
       <Card data-tour="assinatura-status">
