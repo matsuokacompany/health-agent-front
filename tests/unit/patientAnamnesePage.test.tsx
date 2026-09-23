@@ -15,6 +15,9 @@ vi.mock('@/components/patient/PatientDataProvider', () => ({ usePatientData: () 
 const supplements = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock('@/services/supplements', () => ({ supplementsApi: { list: supplements.list, create: vi.fn(), update: vi.fn(), remove: vi.fn() } }));
 
+const allergies = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock('@/services/allergies', () => ({ allergiesApi: { list: allergies.list, create: vi.fn(), update: vi.fn(), remove: vi.fn() } }));
+
 const dietDocument = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock('@/services/dietDocument', async (original) => ({
   ...(await original<typeof import('@/services/dietDocument')>()),
@@ -25,6 +28,7 @@ describe('página de anamnese do paciente', () => {
   beforeEach(() => {
     anamnese.me.mockReset();
     supplements.list.mockReset().mockResolvedValue([]);
+    allergies.list.mockReset().mockResolvedValue([]);
     dietDocument.get.mockReset().mockRejectedValue(new ApiError('não encontrado', 404));
     patientData.plans = [];
     patientData.loading = false;
