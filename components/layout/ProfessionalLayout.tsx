@@ -4,6 +4,7 @@ import { RequireAccessContext } from '@/components/auth/guards';
 import { ResponsiveAppShell } from './ResponsiveAppShell';
 
 const links = [
+  ['/professional/dashboard', 'Dashboard'],
   ['/professional/patients', 'Pacientes'],
   ['/professional/assinatura', 'Assinatura'],
 ];

@@ -388,6 +388,10 @@ img.brand-logo-dark{display:none}
 .patient-symptom-term-samples li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;font-size:.82rem;color:var(--ink)}
 .patient-symptom-term-sample-date{color:var(--muted);font-weight:800;white-space:nowrap}
 @media (max-width:640px){.patient-symptom-term-row{grid-template-columns:minmax(70px,.6fr) minmax(0,1fr) 24px}.patient-symptom-term-samples li{grid-template-columns:1fr}}
+.professional-red-flags-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.professional-red-flags-list a{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;color:var(--ink)}
+.professional-red-flags-list a:hover{border-color:var(--danger);background:var(--danger-soft)}
+.professional-red-flags-list strong{flex:1 1 auto;min-width:0}
 
 .badge.tone-muted{color:var(--muted);background:var(--surface-soft);border-color:var(--line)}
 .checkins-table th:nth-child(1),.checkins-table td:nth-child(1),.checkins-table th:nth-child(2),.checkins-table td:nth-child(2),.checkins-table th:nth-child(3),.checkins-table td:nth-child(3),.checkins-table th:nth-child(5),.checkins-table td:nth-child(5){white-space:nowrap}

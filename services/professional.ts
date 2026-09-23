@@ -168,6 +168,20 @@ export type ProfessionalCheckIn = {
 export type ProfessionalSymptomTermSample = { report_id: number; report_date: string; description: string };
 export type ProfessionalTopSymptomTerm = { label: string; count: number; samples: ProfessionalSymptomTermSample[] };
 
+export type ProfessionalDashboardRedFlag = {
+  patient_id: number;
+  patient_name: string;
+  report_date: string;
+  category_key: string;
+  category_label: string;
+  tier: 'absoluto' | 'contextual';
+};
+export type ProfessionalDashboardOverview = {
+  active_patients: number;
+  red_flags: ProfessionalDashboardRedFlag[];
+  top_symptoms: ProfessionalTopSymptomTerm[];
+};
+
 export type ProfessionalCheckInsParams = {
   page: number;
   per_page: number;
@@ -258,6 +272,7 @@ function withQuery(path: string, params: Record<string, string | number | boolea
 export const professionalApi = {
   listPatients: () => api<ProfessionalPatient[]>('/api/professional/patients'),
   createPatient: createProfessionalPatient,
+  getDashboardOverview: () => api<ProfessionalDashboardOverview>('/api/professional/dashboard'),
   getDashboard: (patientId: number | string) => api<ProfessionalDashboard>(`/api/professional/patients/${patientId}/dashboard`),
   getCheckIns: (patientId: number | string, params: ProfessionalCheckInsParams) => api<ProfessionalPaginatedResponse<ProfessionalCheckIn>>(withQuery(`/api/professional/patients/${patientId}/checkins`, params)),
   getCalendar: (patientId: number | string, year: number, month: number) => api<ProfessionalCalendar>(withQuery(`/api/professional/patients/${patientId}/calendar`, { year, month })),
