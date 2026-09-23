@@ -10,6 +10,8 @@ vi.mock('@/components/patient/PatientDataProvider', () => ({
   usePatientData: () => ({ reports: [], plans: [plan], loading: false, refresh: vi.fn() }),
 }));
 
+vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 10, name: 'Paciente' } }) }));
+
 describe('avisos no dashboard do paciente', () => {
   beforeEach(() => { notifications.list.mockReset(); notifications.markAllRead.mockReset(); });
   afterEach(cleanup);

@@ -17,8 +17,8 @@ function Harness() {
     <button type="button" data-tour="new-patient">Novo paciente</button>
     <section data-tour="patients-metrics">metrics</section>
     <div data-tour="patients-table">table</div>
+    <div data-tour="patient-period-controls">controls</div>
     <div data-tour="patient-monitoring-status">status</div>
-    <section data-tour="patient-timeline">timeline</section>
     <div data-tour="patient-evolution">evolution</div>
   </TourProvider>;
 }
@@ -98,6 +98,7 @@ describe('tour guiado', () => {
     render(<Harness />);
     openTour();
     expect(screen.getByText('Bem-vindo à Julha')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     expect(screen.getByText('Status de monitoramento')).toBeTruthy();

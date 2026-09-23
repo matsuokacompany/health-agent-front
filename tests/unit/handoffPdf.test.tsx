@@ -99,8 +99,20 @@ describe('botão de download do resumo para o médico', () => {
     api.forPatient.mockResolvedValue(summary());
     render(<PatientHandoffButton patientId={12} forProfessional />);
     fireEvent.click(screen.getByRole('button', { name: 'Baixar resumo para o médico' }));
-    await waitFor(() => expect(api.forPatient).toHaveBeenCalledWith(12));
+    await waitFor(() => expect(api.forPatient).toHaveBeenCalledWith(12, undefined, undefined));
     expect(api.me).not.toHaveBeenCalled();
+  });
+
+  it('repassa o período informado para a busca do resumo', async () => {
+    api.me.mockResolvedValue(summary());
+    render(<PatientHandoffButton patientId={12} startDate="2026-01-01" endDate="2026-03-01" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Baixar resumo para o médico' }));
+    await waitFor(() => expect(api.me).toHaveBeenCalledWith('2026-01-01', '2026-03-01'));
+  });
+
+  it('fica desabilitado quando disabled é passado', () => {
+    render(<PatientHandoffButton patientId={12} disabled />);
+    expect((screen.getByRole('button', { name: 'Baixar resumo para o médico' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('mostra mensagem amigável quando a geração falha', async () => {

@@ -1,9 +1,12 @@
 'use client';
 
+import { useId } from 'react';
 import { Warning } from '@phosphor-icons/react';
 import { Button, Card } from '@/components/ui/design';
+import { DateField } from '@/components/ui/DateField';
 import { EvolutionMetricsGrid } from '@/components/patient/EvolutionMetricsGrid';
 import { InsightResultBody } from '@/components/patient/InsightResultBody';
+import { localIsoDate } from '@/services/aiReports';
 import type { EvolutionRedFlagEvent, EvolutionReport, EvolutionSymptomOccurrence, SelfMonitoringInsight, SelfMonitoringInsightListItem } from '@/lib/types';
 
 export const PERIOD_PRESETS = [
@@ -16,6 +19,16 @@ export type PeriodDays = (typeof PERIOD_PRESETS)[number][0];
 // The dashboard and the reports module both default to a full year, wide
 // enough to give a doctor a real longitudinal view instead of a snapshot.
 export const DEFAULT_PERIOD_DAYS: PeriodDays = 365;
+/** A preset window, or a custom range picked via `PeriodSelector`'s date fields. */
+export type PeriodSelection = PeriodDays | 'custom';
+export type CustomRange = { start_date: string; end_date: string };
+
+export function validateCustomPeriod(start: string, end: string, today = localIsoDate(new Date())) {
+  if (!start || !end) return 'Selecione a data inicial e a data final.';
+  if (start > end) return 'A data inicial não pode ser posterior à data final.';
+  if (end > today) return 'A data final não pode estar no futuro.';
+  return null;
+}
 
 export function formatReportDate(value?: string | null) {
   if (!value) return null;
@@ -54,20 +67,75 @@ export function SymptomsCard({ symptoms }: { symptoms: EvolutionSymptomOccurrenc
   </Card>;
 }
 
-export function PeriodSelector({ selected, onChange, disabled }: { selected: PeriodDays; onChange(days: PeriodDays): void; disabled?: boolean }) {
-  return <div className="ai-shortcuts" aria-label="Período do relatório">
-    {PERIOD_PRESETS.map(([days, label]) => (
-      <button
-        key={days}
-        type="button"
-        className="button secondary"
-        aria-pressed={selected === days}
-        disabled={disabled}
-        onClick={() => onChange(days)}
-      >
-        {label}
-      </button>
-    ))}
+/** Preset shortcuts (30/90/180/365 days). Pass `onSelectCustom` + `onCustomRangeChange`
+ * (both, or neither) to also offer a "Período personalizado" toggle with two date
+ * fields -- used on the dashboard, where a plain preset isn't always enough. */
+export function PeriodSelector({
+  selected,
+  onChange,
+  disabled,
+  onSelectCustom,
+  customRange,
+  onCustomRangeChange,
+  customError,
+}: {
+  selected: PeriodSelection;
+  onChange(days: PeriodDays): void;
+  disabled?: boolean;
+  onSelectCustom?(): void;
+  customRange?: CustomRange;
+  onCustomRangeChange?(range: CustomRange): void;
+  customError?: string | null;
+}) {
+  const startId = useId();
+  const endId = useId();
+  const today = localIsoDate(new Date());
+  const showCustomFields = selected === 'custom' && Boolean(onSelectCustom && onCustomRangeChange);
+
+  return <div className="stack compact">
+    <div className="ai-shortcuts" aria-label="Período do relatório">
+      {PERIOD_PRESETS.map(([days, label]) => (
+        <button
+          key={days}
+          type="button"
+          className="button secondary"
+          aria-pressed={selected === days}
+          disabled={disabled}
+          onClick={() => onChange(days)}
+        >
+          {label}
+        </button>
+      ))}
+      {onSelectCustom && onCustomRangeChange ? (
+        <button type="button" className="button secondary" aria-pressed={selected === 'custom'} disabled={disabled} onClick={onSelectCustom}>
+          Período personalizado
+        </button>
+      ) : null}
+    </div>
+    {showCustomFields ? (
+      <div className="ai-period-grid">
+        <label htmlFor={startId}>Data inicial
+          <DateField
+            id={startId}
+            value={customRange?.start_date ?? ''}
+            max={customRange?.end_date || today}
+            disabled={disabled}
+            onChange={(iso) => onCustomRangeChange!({ start_date: iso, end_date: customRange?.end_date ?? '' })}
+          />
+        </label>
+        <label htmlFor={endId}>Data final
+          <DateField
+            id={endId}
+            value={customRange?.end_date ?? ''}
+            min={customRange?.start_date || undefined}
+            max={today}
+            disabled={disabled}
+            onChange={(iso) => onCustomRangeChange!({ start_date: customRange?.start_date ?? '', end_date: iso })}
+          />
+        </label>
+      </div>
+    ) : null}
+    {showCustomFields && customError ? <p className="notice danger compact">{customError}</p> : null}
   </div>;
 }
 
@@ -103,8 +171,10 @@ export function RiskFactorsCard({ riskFactors }: { riskFactors: string[] }) {
 /** The at-a-glance evolution overview for a selected period -- metrics grid,
  * red flags, risk factors and most-frequent symptoms, all as reported by the
  * patient's own check-ins with their dates, so a professional reviewing this
- * can see not just a conclusion but the records and dates behind it. */
-export function EvolutionCard({ report }: { report: EvolutionReport }) {
+ * can see not just a conclusion but the records and dates behind it.
+ * `hideSymptoms` skips the most-frequent-symptoms card -- the dashboard
+ * shows that one separately, next to the monitoring-status card. */
+export function EvolutionCard({ report, hideSymptoms = false }: { report: EvolutionReport; hideSymptoms?: boolean }) {
   if (!report.sufficient_data) {
     return <Card>
       <span className="eyebrow">Evolução</span>
@@ -120,7 +190,7 @@ export function EvolutionCard({ report }: { report: EvolutionReport }) {
     <EvolutionMetricsGrid report={report} />
     <RedFlagEventsCard events={report.red_flag_events} />
     <RiskFactorsCard riskFactors={report.risk_factors} />
-    <SymptomsCard symptoms={report.symptoms} />
+    {!hideSymptoms ? <SymptomsCard symptoms={report.symptoms} /> : null}
   </>;
 }
 
