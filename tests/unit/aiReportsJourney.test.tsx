@@ -6,7 +6,7 @@ import { ApiError } from '@/infrastructure/http/ApiClient';
 
 const metrics = { total_checkins: 30, completed_checkins: 25, pending_checkins: 5, checkins_with_symptoms: 4, checkins_without_symptoms: 21, days_with_checkins: 30, adherence_percentage: 83, symptom_rate_percentage: 16, calendar_coverage_percentage: 100 };
 const eligible: AiReportPreviewResponse = { modo: 'avaliacao_clinica', eligibility: { can_generate: true, reason: null, next_generation_at: null, sufficient_data: true, completed_checkins: 25, minimum_required: 10, latest_report_id: null, last_generated_at: null }, summary: { patient_id: 7, start_date: '2026-07-02', end_date: '2026-07-31', period_days: 30, aggregation: 'weekly', minimum_completed_checkins: 10, sufficient_data: true, metrics, symptom_trend: 'stable', longest_gap_days: 1, symptoms: [], timeline: [] }, preview_token: 'secret-preview-token', preview_expires_at: '2099-07-31T12:00:00Z' };
-const report: AiReport = { report_id: 11, patient_id: 7, requested_by_user_id: 2, start_date: '2026-07-02', end_date: '2026-07-31', modo: 'avaliacao_clinica', status: 'COMPLETED', requested_at: '2026-07-31T10:00:00Z', processing_started_at: null, generated_at: '2026-07-31T10:01:00Z', next_generation_at: '2026-08-30T10:01:00Z', clinical_summary: 'Resumo seguro', ai: { interpretacao: 'Interpretação segura' }, input_tokens: null, output_tokens: null, estimated_cost: null, actual_cost: null, model_name: null, failure_code: null, professional_feedback: null };
+const report: AiReport = { report_id: 11, patient_id: 7, requested_by_user_id: 2, start_date: '2026-07-02', end_date: '2026-07-31', modo: 'avaliacao_clinica', status: 'COMPLETED', requested_at: '2026-07-31T10:00:00Z', processing_started_at: null, generated_at: '2026-07-31T10:01:00Z', next_generation_at: '2026-08-30T10:01:00Z', clinical_summary: 'Resumo seguro', ai: { hipoteses: [{ doenca: 'Interpretação segura', raciocinio: 'Raciocínio de teste', especialista_recomendado: 'Clínico geral', nivel_de_suspeicao: 'moderado' }] }, input_tokens: null, output_tokens: null, estimated_cost: null, actual_cost: null, model_name: null, failure_code: null, professional_feedback: null };
 const history = { items: [], pagination: { page: 1, per_page: 20, total: 0, total_pages: 0 } };
 const start = async () => { fireEvent.click(screen.getByRole('button', { name: 'Revisar dados do relatório' })); await screen.findByText('Revise os dados do relatório'); };
 
@@ -28,6 +28,34 @@ describe('jornada completa de relatórios com IA', () => {
  it('destaca o atalho de período selecionado', () => { render(<AiReportsJourney patientId="7"/>); const thirty = screen.getByRole('button',{name:'Últimos 30 dias'}); const ninety = screen.getByRole('button',{name:'Últimos 90 dias'}); const custom = screen.getByRole('button',{name:'Período personalizado'}); expect(thirty.getAttribute('aria-pressed')).toBe('true'); fireEvent.click(ninety); expect(thirty.getAttribute('aria-pressed')).toBe('false'); expect(ninety.getAttribute('aria-pressed')).toBe('true'); fireEvent.change(screen.getByLabelText('Data inicial'),{target:{value:'01012026'}}); expect(ninety.getAttribute('aria-pressed')).toBe('false'); expect(custom.getAttribute('aria-pressed')).toBe('true'); });
  it('filtra e pagina o histórico', async () => { vi.mocked(aiReportsApi.history).mockResolvedValue({items:[report],pagination:{page:1,per_page:20,total:21,total_pages:2}}); render(<AiReportsJourney patientId="7"/>); await screen.findByText('Ver relatório completo'); fireEvent.click(screen.getByRole('button',{name:'Concluídos'})); await waitFor(()=>expect(aiReportsApi.history).toHaveBeenCalledWith('7',1,20,'COMPLETED')); fireEvent.click(screen.getByRole('button',{name:'Próxima'})); await waitFor(()=>expect(aiReportsApi.history).toHaveBeenCalledWith('7',2,20,'COMPLETED')); });
  it('envia feedback do profissional sobre a hipótese e reflete o estado marcado', async () => { render(<AiReportsJourney patientId="7"/>); await start(); fireEvent.click(screen.getByRole('button',{name:'Gerar relatório com IA'})); await screen.findByText('Relatório gerado com sucesso'); const up = screen.getByRole('button',{name:'Útil'}); fireEvent.click(up); await waitFor(() => expect(aiReportsApi.setFeedback).toHaveBeenCalledWith(7,11,'up')); expect(await screen.findByRole('button',{name:'Útil'})).toHaveProperty('ariaPressed','true'); });
+ it('renderiza até 5 hipóteses da avaliação clínica com raciocínio e especialista', async () => {
+   const clinicalReport = { ...report, ai: { hipoteses: [
+     { doenca: 'Refluxo gastroesofágico', raciocinio: 'Queixa recorrente após refeições', especialista_recomendado: 'Gastroenterologista', nivel_de_suspeicao: 'alto' },
+     { doenca: 'Gastrite', raciocinio: 'Sintomas leves e intermitentes', especialista_recomendado: 'Clínico geral', nivel_de_suspeicao: 'baixo' },
+   ], exames_prioritarios: ['Endoscopia'], urgencia: 'media', alerta_legal: 'Hipóteses, não diagnóstico.' } };
+   vi.mocked(aiReportsApi.detail).mockResolvedValue(clinicalReport);
+   vi.mocked(aiReportsApi.history).mockResolvedValue({ items: [clinicalReport], pagination: { page: 1, per_page: 20, total: 1, total_pages: 1 } });
+   render(<AiReportsJourney patientId="7"/>);
+   fireEvent.click(await screen.findByRole('button', { name: 'Ver relatório completo' }));
+   expect(await screen.findByText('Refluxo gastroesofágico')).toBeTruthy();
+   expect(screen.getByText('Gastrite')).toBeTruthy();
+   expect(screen.getByText(/Queixa recorrente após refeições/)).toBeTruthy();
+   expect(screen.getByText(/Gastroenterologista/)).toBeTruthy();
+   expect(screen.getByText('Endoscopia')).toBeTruthy();
+ });
+ it('renderiza riscos de longo prazo da análise preventiva com especialista indicado', async () => {
+   const preventiveReport = { ...report, modo: 'preventivo' as const, ai: {
+     riscos_longo_prazo: [{ condicao: 'Alzheimer', raciocinio: 'Queixas persistentes de memória ao longo de meses', especialista_recomendado: 'Neurologista', nivel_de_atencao: 'moderado' }],
+     alerta_importante: 'Investigar, não é diagnóstico.',
+   } };
+   vi.mocked(aiReportsApi.detail).mockResolvedValue(preventiveReport);
+   vi.mocked(aiReportsApi.history).mockResolvedValue({ items: [preventiveReport], pagination: { page: 1, per_page: 20, total: 1, total_pages: 1 } });
+   render(<AiReportsJourney patientId="7"/>);
+   fireEvent.click(await screen.findByRole('button', { name: 'Ver relatório completo' }));
+   expect(await screen.findByText('Alzheimer')).toBeTruthy();
+   expect(screen.getByText(/Neurologista/)).toBeTruthy();
+   expect(screen.getByText('Investigar, não é diagnóstico.')).toBeTruthy();
+ });
  it('desmarca o feedback ao clicar de novo na mesma opção', async () => { vi.mocked(aiReportsApi.setFeedback).mockResolvedValueOnce({ report_id: 11, professional_feedback: 'up' }).mockResolvedValueOnce({ report_id: 11, professional_feedback: null }); render(<AiReportsJourney patientId="7"/>); await start(); fireEvent.click(screen.getByRole('button',{name:'Gerar relatório com IA'})); await screen.findByText('Relatório gerado com sucesso'); const up = screen.getByRole('button',{name:'Útil'}); fireEvent.click(up); await waitFor(() => expect(up).toHaveProperty('ariaPressed','true')); fireEvent.click(up); await waitFor(() => expect(aiReportsApi.setFeedback).toHaveBeenLastCalledWith(7,11,null)); expect(await screen.findByRole('button',{name:'Útil'})).toHaveProperty('ariaPressed','false'); });
  it('mostra a persistência do sintoma quando há uma sequência de dias seguidos', async () => { vi.mocked(aiReportsApi.preview).mockResolvedValue({ ...eligible, summary: { ...eligible.summary, symptoms: [{ description: 'Cefaleia', occurrences: 3, first_reported_at: '2026-07-10', last_reported_at: '2026-07-12', longest_streak_days: 3 }] } }); render(<AiReportsJourney patientId="7"/>); await start(); expect(screen.getByText(/persistente por até 3 dias seguidos/)).toBeTruthy(); });
  it('não mostra persistência quando o sintoma não tem sequência (streak 1 ou ausente)', async () => { vi.mocked(aiReportsApi.preview).mockResolvedValue({ ...eligible, summary: { ...eligible.summary, symptoms: [{ description: 'Dor no ombro', occurrences: 1, first_reported_at: '2026-07-10', last_reported_at: '2026-07-10', longest_streak_days: 1 }] } }); render(<AiReportsJourney patientId="7"/>); await start(); expect(screen.queryByText(/persistente/)).toBeNull(); });

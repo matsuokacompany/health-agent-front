@@ -198,24 +198,32 @@ export type AiReportMode = 'preventivo' | 'avaliacao_clinica';
 export type SuspicionLevel = 'baixo' | 'moderado' | 'alto';
 export type PriorityLevel = 'baixa' | 'media' | 'alta';
 
-export type ClinicalAiReport = {
-  avaliacao_clinica: {
-    hipotese_principal: string;
-    possiveis_doencas?: string[];
-    nivel_de_suspeicao: SuspicionLevel | string;
-    justificativa: string[];
-  };
+export type ClinicalHypothesis = {
+  doenca: string;
+  raciocinio: string;
   especialista_recomendado: string;
+  nivel_de_suspeicao: SuspicionLevel | string;
+};
+
+// At most 5 -- see InsightService._prompt_avaliacao_clinica on the backend,
+// ordered from most to least likely; fewer than 5 when the model is more
+// confident, never padded with weak guesses just to fill the list.
+export type ClinicalAiReport = {
+  hipoteses: ClinicalHypothesis[];
   exames_prioritarios: string[];
   urgencia: PriorityLevel | string;
   alerta_legal: string;
 };
 
-export type PreventiveAiReport = {
-  cenarios: Record<'otimista' | 'intermediario' | 'grave', { descricao: string; condicoes_para_ocorrer: string; probabilidade: PriorityLevel | string }>;
-  cenario_mais_provavel: 'otimista' | 'intermediario' | 'grave' | string;
+export type LongTermRisk = {
+  condicao: string;
+  raciocinio: string;
   especialista_recomendado: string;
-  exames_sugeridos: string[];
+  nivel_de_atencao: SuspicionLevel | string;
+};
+
+export type PreventiveAiReport = {
+  riscos_longo_prazo: LongTermRisk[];
   alerta_importante: string;
 };
 

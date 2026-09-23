@@ -27,9 +27,9 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
   '/patient/dashboard': [
     { title: 'Bem-vindo à Julha', body: 'Vamos te mostrar rapidamente como acompanhar sua evolução por aqui. Leva menos de um minuto.' },
     { target: '[data-tour="sidebar-nav"]', title: 'Menu de navegação', body: 'Use o menu lateral para acessar seu dashboard, calendário, anamnese, relatórios e assinatura.' },
-    { target: '[data-tour="patient-plan"]', title: 'Seu plano', body: 'Aqui fica o plano de acompanhamento atual, com datas de início e término.' },
-    { target: '[data-tour="patient-summary"]', title: 'Seu progresso', body: 'Acompanhe quantos check-ins você já respondeu e sua taxa de resposta.' },
-    { target: '[data-tour="patient-symptoms"]', title: 'Evolução dos sintomas', body: 'Veja a proporção de dias com e sem sintomas ao longo do acompanhamento.' },
+    { target: '[data-tour="patient-monitoring-status"]', title: 'Status de monitoramento', body: 'Um resumo rápido de sinais de alerta identificados nas suas respostas recentes.' },
+    { target: '[data-tour="patient-timeline"]', title: 'Seu histórico', body: 'Veja seu último registro e os últimos 7 dias de check-ins. Os botões de período abaixo controlam o relatório de evolução mais completo, na sequência.' },
+    { target: '[data-tour="patient-evolution"]', title: 'Evolução e relatório de IA', body: 'Métricas de adesão e sintomas do período selecionado, e o botão para gerar um relatório de IA para levar ao médico.' },
     { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/monitoring': [
@@ -41,7 +41,8 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
     { target: '[data-tour="supplements-list"]', title: 'Seus remédios e suplementos', body: 'Cadastre o que você toma regularmente, com a frequência e por quanto tempo. O check-in diário do WhatsApp usa essa lista para perguntar sobre cada um enquanto o tratamento estiver em curso — clique em "Editar" para corrigir algo ou "Remover" para tirar da lista. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/relatorios': [
-    { target: '[data-tour="relatorios-list"]', title: 'Histórico de resumos', body: 'Cada resumo gerado por IA no Automonitoramento fica registrado aqui, para você acompanhar sua evolução ao longo do tempo. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
+    { target: '[data-tour="relatorios-generate"]', title: 'Gerar relatório de IA', body: 'Escolha o período e gere um novo relatório com base nos seus check-ins e na sua anamnese, pronto para levar ao médico.' },
+    { target: '[data-tour="relatorios-list"]', title: 'Histórico de relatórios', body: 'Cada relatório gerado fica registrado aqui, para você acompanhar sua evolução ao longo do tempo. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/assinatura': [
     { target: '[data-tour="assinatura-status"]', title: 'Status da assinatura', body: 'Veja o status atual da sua assinatura e as ações disponíveis (trocar de plano, cancelar).' },

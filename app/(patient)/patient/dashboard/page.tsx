@@ -1,16 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plant, CalendarBlank, ChatCircleText, CheckCircle, Clock } from '@phosphor-icons/react';
-import { Button, Card, MetricCard } from '@/components/ui/design';
+import { useEffect, useMemo, useState } from 'react';
+import { Plant, CalendarBlank } from '@phosphor-icons/react';
+import { Button, Card } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
-import type { AppNotification, DailyReport, MonitoringPlan } from '@/lib/types';
-import { patientDashboardApi, type PatientDashboardAggregate, type PatientDashboardTimelineDay, type PatientTopSymptomTerm } from '@/services/patientDashboard';
+import { ApiError } from '@/infrastructure/http/ApiClient';
+import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, InsightGenerationCard, PERIOD_PRESETS, PeriodSelector, type PeriodDays } from '@/components/patient/EvolutionReportSection';
+import type { AppNotification, DailyReport, EvolutionReport, MonitoringPlan, SelfMonitoringInsight, SelfMonitoringInsightListItem } from '@/lib/types';
+import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
 import { redFlagCategoryLabel } from '@/lib/redFlagCategories';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
+import { shortcutPeriod } from '@/services/aiReports';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 
 const MONITORING_STATUS_WINDOW_DAYS = 30;
@@ -27,16 +30,8 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat('pt-BR').format(date);
 }
 
-function statusLabel(status?: string | null) {
-  const normalized = String(status ?? '').toLowerCase();
-  if (['active', 'em_andamento', 'ongoing'].includes(normalized)) return '🟢 Em andamento';
-  if (['paused', 'pausado'].includes(normalized)) return '🟡 Pausado';
-  if (['finished', 'completed', 'encerrado'].includes(normalized)) return '⚪ Encerrado';
-  return status ? `🟢 ${status}` : 'Não informado';
-}
-
 function truncate(text?: string | null) {
-  if (!text) return 'Nenhum resumo disponível.';
+  if (!text) return 'Nenhum registro disponível.';
   return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
 }
 
@@ -215,17 +210,13 @@ function NoticesCard() {
 
 function LoadingDashboard() {
   return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando dashboard">
-    <div className="patient-dashboard-top-row">
-      <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
-      <Card className="patient-dashboard-main-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
-      <Card className="patient-dashboard-last-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
-    </div>
+    <Card className="patient-monitoring-status-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <Card className="patient-dashboard-timeline-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <div className="ai-shortcuts">{Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
     <section className="patient-dashboard-summary-grid">
       {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
-    <Card className="patient-dashboard-chart-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-tile" /></Card>
-    <Card className="patient-symptom-terms-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card>
-    <Card className="patient-dashboard-timeline-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock className="sk-action" /></Card>
   </section>;
 }
 
@@ -258,67 +249,6 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
   </Card>;
 }
 
-function SummaryCards({ data }: { data: PatientDashboardAggregate }) {
-  const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Ainda não enviada';
-  return <section className="patient-dashboard-summary-grid" aria-label="Resumo do acompanhamento" data-tour="patient-summary">
-    <MetricCard icon={<CalendarBlank aria-hidden="true" size={22} weight="duotone" />} label="Dias acompanhados" value={data.daysElapsed} description={data.daysTotal ? `de ${data.daysTotal} dias do plano` : 'Plano sem término informado'} />
-    <MetricCard icon={<ChatCircleText aria-hidden="true" size={22} weight="duotone" />} label="Mensagens respondidas" value={data.responses.answered} description={`de ${data.responses.expected} esperadas`} />
-    <MetricCard icon={<CheckCircle aria-hidden="true" size={22} weight="duotone" />} label="Taxa de resposta" value={`${data.responses.rate}%`} tone={data.responses.rate >= 80 ? 'ok' : 'warn'} />
-    <MetricCard icon={<Clock aria-hidden="true" size={22} weight="duotone" />} label="Última resposta enviada" value={<span className="small-metric">{lastDate}</span>} />
-  </section>;
-}
-
-function SymptomsChart({ data }: { data: PatientDashboardAggregate }) {
-  const total = data.symptoms.total || data.responses.answered || 0;
-  const withoutPct = total ? Math.round((data.symptoms.withoutSymptoms / total) * 100) : 0;
-  const withPct = total ? 100 - withoutPct : 0;
-  return <Card className="patient-dashboard-chart-card" data-tour="patient-symptoms"><span className="eyebrow">Evolução</span><h2>Dias com e sem sintomas</h2><div className="patient-donut-wrap"><div className="patient-donut" style={{ background: `conic-gradient(var(--ok) 0 ${withoutPct}%, var(--warn) ${withoutPct}% 100%)` }}><span>{total}<small>respostas</small></span></div><div className="patient-donut-list"><p><i className="ok" />Sem sintomas: <strong>{data.symptoms.withoutSymptoms} dias</strong></p><p><i className="warn" />Com sintomas: <strong>{data.symptoms.withSymptoms + data.symptoms.mildSymptoms} dias</strong></p><p className="muted compact">Percentuais calculados apenas sobre mensagens respondidas ({withPct}% com sintomas).</p></div></div></Card>;
-}
-
-function TopSymptomsCard() {
-  const [terms, setTerms] = useState<PatientTopSymptomTerm[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    patientDashboardApi.getTopSymptomTerms()
-      .then((items) => { if (mounted) setTerms(items); })
-      .catch(() => {})
-      .finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
-  }, []);
-
-  const maxCount = terms.reduce((max, term) => Math.max(max, term.count), 0);
-
-  return (
-    <Card className="patient-symptom-terms-card" data-tour="patient-top-symptoms">
-      <span className="eyebrow">Sintomas</span>
-      <h2>Mais frequentes</h2>
-      {loading ? (
-        <SkeletonBlock className="sk-metric" />
-      ) : terms.length ? (
-        <ul className="patient-symptom-terms-list">
-          {terms.map((term) => (
-            <li key={term.label}>
-              <span className="patient-symptom-term-label">{term.label}</span>
-              <span className="patient-symptom-term-track">
-                <span
-                  className="patient-symptom-term-bar"
-                  style={{ width: maxCount ? `${Math.max((term.count / maxCount) * 100, 6)}%` : '0%' }}
-                  title={`${term.label}: ${term.count} registro(s)`}
-                />
-              </span>
-              <span className="patient-symptom-term-count">{term.count}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="muted compact">Nenhum sintoma registrado ainda — assim que houver check-ins com sintomas, os termos mais frequentes aparecem aqui.</p>
-      )}
-    </Card>
-  );
-}
-
 const timelineMeta: Record<PatientDashboardTimelineDay['status'], { icon: string; label: string; className: string }> = { without_symptoms: { icon: '🟢', label: 'respondeu sem sintomas', className: 'ok' }, mild_symptoms: { icon: '🟡', label: 'respondeu com sintomas leves', className: 'mild' }, with_symptoms: { icon: '🔴', label: 'respondeu com sintomas', className: 'alert' }, no_response: { icon: '⚪', label: 'não respondeu', className: 'empty' } };
 function formatTimelineLabel(value: string) {
   const date = new Date(`${value}T00:00:00`);
@@ -328,19 +258,90 @@ function formatTimelineLabel(value: string) {
   return `${weekday} ${date.getDate()} ${month}`;
 }
 
-function Timeline({ days }: { days: PatientDashboardTimelineDay[] }) {
+function Timeline({
+  days,
+  data,
+  selectedPeriod,
+  onPeriodChange,
+  periodDisabled,
+}: {
+  days: PatientDashboardTimelineDay[];
+  data: PatientDashboardAggregate;
+  selectedPeriod: PeriodDays;
+  onPeriodChange(days: PeriodDays): void;
+  periodDisabled: boolean;
+}) {
   const today = dateKey(new Date());
   const visibleDays = days.filter((day) => day.date.slice(0, 10) < today).slice(-7);
-  return <Card className="patient-dashboard-timeline-card"><span className="eyebrow">Últimos 7 dias</span><h2>Linha do tempo</h2><div className="patient-timeline-grid">{visibleDays.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{formatTimelineLabel(day.date)}</small></span>; })}</div><div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div></Card>;
-}
-
-function LastResponseCard({ data }: { data: PatientDashboardAggregate }) {
-  return <Card className="patient-dashboard-last-card"><span className="eyebrow">Último registro</span><h2>{data.lastResponse?.date ? formatDate(data.lastResponse.date) : 'Sem resposta registrada'}</h2>{data.lastResponse?.time ? <strong>{data.lastResponse.time}</strong> : null}<p>{truncate(data.lastResponse?.summary)}</p></Card>;
+  const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : null;
+  return <Card className="patient-dashboard-timeline-card" data-tour="patient-timeline">
+    <span className="eyebrow">Seu histórico</span>
+    <h2>Linha do tempo</h2>
+    <p className="muted compact">
+      {lastDate ? <>Último registro: <strong>{lastDate}</strong>{data.lastResponse?.time ? ` às ${data.lastResponse.time}` : ''} — {truncate(data.lastResponse?.summary)}</> : 'Nenhum registro enviado ainda.'}
+    </p>
+    <div className="patient-timeline-grid">{visibleDays.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{formatTimelineLabel(day.date)}</small></span>; })}</div>
+    <div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div>
+    <p className="muted compact">Período do relatório de evolução abaixo:</p>
+    <PeriodSelector selected={selectedPeriod} onChange={onPeriodChange} disabled={periodDisabled} />
+  </Card>;
 }
 
 export default function PatientDashboard() {
   const { reports, plans, loading: patientDataLoading, refresh } = usePatientData();
   const dashboard = buildFallbackDashboard(plans, reports);
+
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodDays>(DEFAULT_PERIOD_DAYS);
+  const period = useMemo(() => shortcutPeriod(selectedPeriod), [selectedPeriod]);
+  const [evolutionReport, setEvolutionReport] = useState<EvolutionReport | null>(null);
+  const [evolutionBlocked, setEvolutionBlocked] = useState(false);
+  const [loadingEvolution, setLoadingEvolution] = useState(true);
+  const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
+  const [latestInsight, setLatestInsight] = useState<SelfMonitoringInsightListItem | null>(null);
+  const [insightError, setInsightError] = useState<string | null>(null);
+  const [generatingInsight, setGeneratingInsight] = useState(false);
+
+  useEffect(() => {
+    if (!dashboard.hasActiveMonitoring) return;
+    selfMonitoringApi.listInsights(1, 1)
+      .then((response) => setLatestInsight(response.items[0] ?? null))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboard.hasActiveMonitoring]);
+
+  useEffect(() => {
+    if (!dashboard.hasActiveMonitoring) return;
+    setInsight(null);
+    setInsightError(null);
+    setLoadingEvolution(true);
+    selfMonitoringApi.getEvolutionReport(period)
+      .then((result) => { setEvolutionReport(result); setEvolutionBlocked(false); })
+      .catch((err) => { if (err instanceof ApiError && err.status === 402) { setEvolutionReport(null); setEvolutionBlocked(true); } })
+      .finally(() => setLoadingEvolution(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, dashboard.hasActiveMonitoring]);
+
+  async function generateInsight() {
+    setGeneratingInsight(true);
+    setInsightError(null);
+    try {
+      const result = await selfMonitoringApi.getInsight(period);
+      setInsight(result);
+      if (result.id) {
+        setLatestInsight({
+          id: result.id,
+          start_date: result.start_date,
+          end_date: result.end_date,
+          generated_at: result.generated_at ?? new Date().toISOString(),
+          next_generation_at: result.next_generation_at,
+        });
+      }
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 402)) setInsightError(toFriendlyErrorMessage(err));
+    } finally {
+      setGeneratingInsight(false);
+    }
+  }
 
   if (patientDataLoading) return <LoadingDashboard />;
   if (!dashboard?.hasActiveMonitoring) {
@@ -351,19 +352,29 @@ export default function PatientDashboard() {
   }
 
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
+  const periodLabel = (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
       <NoticesCard />
-      <div className="patient-dashboard-top-row">
-        <MonitoringStatusCard reports={reports} />
-        <Card className="patient-dashboard-main-card" data-tour="patient-plan"><span className="eyebrow">Acompanhamento</span><dl className="patient-objective-list"><div><dt>Plano</dt><dd>{dashboard.goal ?? 'Não informado'}</dd></div><div><dt>Início</dt><dd>{formatDate(dashboard.startDate)}</dd></div><div><dt>Término</dt><dd>{formatDate(dashboard.endDate)}</dd></div><div><dt>Status</dt><dd>{statusLabel(dashboard.status)}</dd></div></dl>
-          {upcomingFirstCheckin ? <p className="notice"><CalendarBlank aria-hidden="true" size={16} weight="duotone" /> Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</p> : null}
-        </Card>
-        <LastResponseCard data={dashboard} />
+      <MonitoringStatusCard reports={reports} />
+      {upcomingFirstCheckin ? <Card className="notice"><CalendarBlank aria-hidden="true" size={16} weight="duotone" /> Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</Card> : null}
+      <Timeline days={dashboard.timeline} data={dashboard} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} periodDisabled={loadingEvolution} />
+      <div className="stack" data-tour="patient-evolution">
+        {evolutionBlocked ? <EvolutionPaywall /> : loadingEvolution ? (
+          <section className="patient-dashboard-summary-grid">{Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
+        ) : evolutionReport ? <EvolutionCard report={evolutionReport} /> : null}
+        {!evolutionBlocked ? (
+          <InsightGenerationCard
+            report={evolutionReport}
+            insight={insight}
+            latestInsight={latestInsight}
+            periodLabel={periodLabel}
+            error={insightError}
+            generating={generatingInsight}
+            onGenerate={() => void generateInsight()}
+            compact
+          />
+        ) : null}
       </div>
-      <SummaryCards data={dashboard} />
-      <SymptomsChart data={dashboard} />
-      <TopSymptomsCard />
-      <Timeline days={dashboard.timeline} />
     </section>;
 }

@@ -40,11 +40,11 @@ describe('página de anamnese do paciente', () => {
     render(<PatientAnamnese />);
     await waitFor(() => expect(supplements.list).toHaveBeenCalled());
 
-    const heading = screen.getByRole('heading', { name: 'Anamnese' });
     const button = screen.getByRole('button', { name: /Baixar resumo para o médico/ });
-    // The action lives in the page header alongside the title, not appended
+    const dietHeading = screen.getByRole('heading', { name: 'Dieta em PDF' });
+    // The action sits before the rest of the page's cards, not appended
     // after every other card on the page.
-    expect(heading.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(button.compareDocumentPosition(dietHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('mostra o editor de autoatendimento quando não há profissional vinculado', async () => {

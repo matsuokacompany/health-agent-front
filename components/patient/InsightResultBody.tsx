@@ -8,10 +8,10 @@ const urgencyLabel: Record<string, string> = {
 };
 const urgencyRiskClass: Record<string, string> = { baixa: 'risk-baixo', moderada: 'risk-moderado', alta: 'risk-alto' };
 
-/** Renders one AI-generated self-monitoring summary's content — shared by
- * the "generate/latest" card on automonitoramento and the report history
- * detail page, so both show the exact same shape and disclaimer. Styled as
- * distinct highlighted sections (not a wall of plain text) so the summary
+/** Renders one AI-generated report's content — shared by the "generate/
+ * latest" card (dashboard and reports module) and the report history detail
+ * page, so all three show the exact same shape and disclaimer. Styled as
+ * distinct highlighted sections (not a wall of plain text) so the report
  * itself reads as something the platform actively put together, not just a
  * dump of the model's raw answer. */
 export function InsightResultBody({ result }: { result: SelfMonitoringInsightResult }) {
@@ -52,7 +52,7 @@ export function InsightResultBody({ result }: { result: SelfMonitoringInsightRes
     ) : null}
     {result.sugestao ? <p className="muted">{result.sugestao}</p> : null}
     <p className="notice compact">
-      Este resumo é gerado por IA a partir dos seus check-ins e da sua anamnese e tem caráter apenas informativo —
+      Este relatório é gerado por IA a partir dos seus check-ins e da sua anamnese e tem caráter apenas informativo —
       não é um diagnóstico nem substitui uma avaliação médica. Em caso de dúvida, piora dos sintomas ou emergência,
       procure atendimento profissional imediatamente.
     </p>

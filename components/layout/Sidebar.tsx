@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ChartBar, Users, User, ClipboardText, Broadcast, FileText, Sparkle, UsersThree, UserPlus,
-  Stethoscope, WhatsappLogo, House, PushPin, GearSix, CreditCard, Heartbeat, Circle,
+  Stethoscope, WhatsappLogo, House, PushPin, GearSix, CreditCard, Circle,
   type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/components/i18n/I18nProvider';
@@ -34,9 +34,6 @@ const icons: Record<string, PhosphorIcon> = {
   Subscription: CreditCard,
   Suscripción: CreditCard,
   Informes: FileText,
-  Automonitoramento: Heartbeat,
-  'Self-monitoring': Heartbeat,
-  Automonitoreo: Heartbeat,
 };
 
 // Each module keeps a distinct accent color on its icon (see .icon-* in
@@ -64,9 +61,6 @@ const iconColors: Record<string, string> = {
   Assinatura: 'icon-gold',
   Subscription: 'icon-gold',
   Suscripción: 'icon-gold',
-  Automonitoramento: 'icon-rose',
-  'Self-monitoring': 'icon-rose',
-  Automonitoreo: 'icon-rose',
 };
 
 type AppSidebarProps = {
