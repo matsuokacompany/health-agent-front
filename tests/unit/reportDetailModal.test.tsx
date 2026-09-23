@@ -1,8 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import PatientRelatorioDetail from '@/app/(patient)/patient/relatorios/[id]/page';
-
-vi.mock('next/navigation', () => ({ useParams: () => ({ id: '3' }) }));
+import { ReportDetailModal } from '@/components/patient/ReportDetailModal';
 
 const selfMonitoring = vi.hoisted(() => ({ getInsightDetail: vi.fn(), getEvolutionReport: vi.fn() }));
 vi.mock('@/services/selfMonitoring', () => ({ selfMonitoringApi: selfMonitoring }));
@@ -42,33 +40,35 @@ const evolutionReport = {
   risk_factors: [],
 };
 
-describe('detalhe do relatório de resumo por IA', () => {
+describe('modal de detalhe do relatório', () => {
   beforeEach(() => {
     selfMonitoring.getInsightDetail.mockReset();
     selfMonitoring.getEvolutionReport.mockReset();
   });
   afterEach(cleanup);
 
-  it('não mostra o título genérico e mostra as métricas do período junto do resumo', async () => {
+  it('não abre quando reportId é null', () => {
+    render(<ReportDetailModal reportId={null} onClose={vi.fn()} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('mostra as métricas do período junto do resumo', async () => {
     selfMonitoring.getInsightDetail.mockResolvedValue(insight);
     selfMonitoring.getEvolutionReport.mockResolvedValue(evolutionReport);
 
-    render(<PatientRelatorioDetail />);
+    render(<ReportDetailModal reportId={3} onClose={vi.fn()} />);
 
     expect(await screen.findByText('Você tem mostrado um bom comprometimento com seus check-ins.')).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Resumo por IA' })).toBeNull();
-    expect(screen.queryByText('Relatórios')).toBeNull();
     await waitFor(() => expect(screen.getByText('Adesão aos check-ins')).toBeTruthy());
     expect(screen.getByText('82.8%')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Baixar PDF/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Voltar ao histórico/ })).toBeTruthy();
   });
 
   it('separa pontos positivos e pontos de atenção em seções próprias', async () => {
     selfMonitoring.getInsightDetail.mockResolvedValue(insight);
     selfMonitoring.getEvolutionReport.mockResolvedValue(evolutionReport);
 
-    render(<PatientRelatorioDetail />);
+    render(<ReportDetailModal reportId={3} onClose={vi.fn()} />);
 
     expect(await screen.findByText('Pontos positivos')).toBeTruthy();
     expect(screen.getByText('Pontos de atenção')).toBeTruthy();
@@ -80,9 +80,20 @@ describe('detalhe do relatório de resumo por IA', () => {
     selfMonitoring.getInsightDetail.mockResolvedValue(insight);
     selfMonitoring.getEvolutionReport.mockRejectedValue(new Error('falha'));
 
-    render(<PatientRelatorioDetail />);
+    render(<ReportDetailModal reportId={3} onClose={vi.fn()} />);
 
     expect(await screen.findByText('Você tem mostrado um bom comprometimento com seus check-ins.')).toBeTruthy();
     expect(screen.queryByText('Adesão aos check-ins')).toBeNull();
+  });
+
+  it('fecha ao clicar no botão de fechar', async () => {
+    selfMonitoring.getInsightDetail.mockResolvedValue(insight);
+    selfMonitoring.getEvolutionReport.mockResolvedValue(evolutionReport);
+    const onClose = vi.fn();
+
+    render(<ReportDetailModal reportId={3} onClose={onClose} />);
+    await screen.findByText('Você tem mostrado um bom comprometimento com seus check-ins.');
+    screen.getByRole('button', { name: 'Fechar modal' }).click();
+    expect(onClose).toHaveBeenCalled();
   });
 });

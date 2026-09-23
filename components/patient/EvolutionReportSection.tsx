@@ -212,6 +212,7 @@ export function InsightGenerationCard({
   error,
   generating,
   onGenerate,
+  onViewReport,
   compact = false,
 }: {
   report: EvolutionReport | null;
@@ -221,6 +222,10 @@ export function InsightGenerationCard({
   error: string | null;
   generating: boolean;
   onGenerate(): void;
+  /** Opens the given report id (e.g. in a modal) -- when omitted, the
+   * "ver relatório mais recente" link falls back to the reports list
+   * instead of a per-report route (there isn't one). */
+  onViewReport?(id: number): void;
   compact?: boolean;
 }) {
   const notEnoughData = Boolean(report && !report.sufficient_data);
@@ -253,7 +258,11 @@ export function InsightGenerationCard({
       <p className="notice compact">
         Você já gerou um relatório recentemente. Um novo relatório pode ser gerado a cada 15 dias. Faltam{' '}
         {daysUntilNext === 1 ? '1 dia' : `${daysUntilNext} dias`} para o próximo.
-        {latestInsight ? <> {' '}<a href={`/patient/relatorios/${latestInsight.id}`}>Ver o relatório mais recente →</a></> : null}
+        {latestInsight ? <> {' '}{onViewReport ? (
+          <button type="button" className="link-button" onClick={() => onViewReport(latestInsight.id)}>Ver o relatório mais recente →</button>
+        ) : (
+          <a href="/patient/relatorios">Ver o relatório mais recente →</a>
+        )}</> : null}
       </p>
     ) : null}
     <div className="page-actions">

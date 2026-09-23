@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
-import { DEFAULT_PERIOD_DAYS, EvolutionPaywall, InsightGenerationCard, PERIOD_PRESETS, PeriodSelector, type PeriodDays } from '@/components/patient/EvolutionReportSection';
+import { DEFAULT_PERIOD_DAYS, EvolutionPaywall, InsightGenerationCard, PERIOD_PRESETS, PeriodSelector, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
+import { ReportDetailModal } from '@/components/patient/ReportDetailModal';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { shortcutPeriod } from '@/services/aiReports';
 import type { EvolutionReport, SelfMonitoringInsight, SelfMonitoringInsightListItem } from '@/lib/types';
@@ -22,7 +22,16 @@ function formatDate(value: string) {
 function LoadingRelatorios() {
   return <section className="stack" aria-busy="true" aria-label="Carregando relatórios">
     <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock className="sk-action" /></Card>
-    <Card><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></Card>
+    <div className="table-wrap">
+      <table>
+        <thead><tr><th>Período</th><th>Gerado em</th><th>Ação</th></tr></thead>
+        <tbody>
+          {Array.from({ length: 3 }, (_, index) => (
+            <tr key={index}><td><SkeletonBlock /></td><td><SkeletonBlock /></td><td><SkeletonBlock className="sk-action" /></td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </section>;
 }
 
@@ -30,9 +39,20 @@ export default function PatientRelatorios() {
   const [items, setItems] = useState<SelfMonitoringInsightListItem[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
+  const [openReportId, setOpenReportId] = useState<number | null>(null);
 
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodDays>(DEFAULT_PERIOD_DAYS);
-  const period = useMemo(() => shortcutPeriod(selectedPeriod), [selectedPeriod]);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD_DAYS);
+  const [customRange, setCustomRange] = useState<CustomRange>({ start_date: '', end_date: '' });
+  const customError = selectedPeriod === 'custom' && customRange.start_date && customRange.end_date
+    ? validateCustomPeriod(customRange.start_date, customRange.end_date)
+    : null;
+  const period = useMemo(() => {
+    if (selectedPeriod === 'custom') {
+      if (!customRange.start_date || !customRange.end_date || validateCustomPeriod(customRange.start_date, customRange.end_date)) return null;
+      return { start_date: customRange.start_date, end_date: customRange.end_date };
+    }
+    return shortcutPeriod(selectedPeriod);
+  }, [selectedPeriod, customRange]);
   const [report, setReport] = useState<EvolutionReport | null>(null);
   const [reportBlocked, setReportBlocked] = useState(false);
   const [loadingReport, setLoadingReport] = useState(true);
@@ -58,6 +78,7 @@ export default function PatientRelatorios() {
   useEffect(() => { void loadList(); }, []);
 
   useEffect(() => {
+    if (!period) { setReport(null); setLoadingReport(false); return; }
     setInsight(null);
     setInsightError(null);
     setLoadingReport(true);
@@ -68,6 +89,7 @@ export default function PatientRelatorios() {
   }, [period]);
 
   async function generateInsight() {
+    if (!period) return;
     setGeneratingInsight(true);
     setInsightError(null);
     try {
@@ -90,12 +112,26 @@ export default function PatientRelatorios() {
     }
   }
 
-  const periodLabel = (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
+  const periodLabel = selectedPeriod === 'custom'
+    ? 'período personalizado'
+    : (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
 
   return (
     <section className="stack" aria-label="Relatórios">
-      <div data-tour="relatorios-generate">
-        {!reportBlocked ? <PeriodSelector selected={selectedPeriod} onChange={setSelectedPeriod} disabled={loadingReport} /> : null}
+      <div className="stack" data-tour="relatorios-generate">
+        {!reportBlocked ? (
+          <div className="relatorios-toolbar">
+            <PeriodSelector
+              selected={selectedPeriod}
+              onChange={setSelectedPeriod}
+              disabled={loadingReport}
+              onSelectCustom={() => setSelectedPeriod('custom')}
+              customRange={customRange}
+              onCustomRangeChange={setCustomRange}
+              customError={customError}
+            />
+          </div>
+        ) : null}
         {reportBlocked ? <EvolutionPaywall /> : (
           <InsightGenerationCard
             report={report}
@@ -105,6 +141,7 @@ export default function PatientRelatorios() {
             error={insightError}
             generating={generatingInsight}
             onGenerate={() => void generateInsight()}
+            onViewReport={setOpenReportId}
           />
         )}
       </div>
@@ -114,18 +151,22 @@ export default function PatientRelatorios() {
         <EmptyState title="Nenhum relatório gerado ainda" description="Gere seu primeiro relatório de IA acima." />
       ) : null}
       {!loadingList && !listError && items?.length ? (
-        <div className="stack" data-tour="relatorios-list">
-          {items.map((item) => (
-            <Link key={item.id} href={`/patient/relatorios/${item.id}` as never} className="card report-history-item">
-              <div>
-                <strong>Relatório de {formatDate(item.start_date)} a {formatDate(item.end_date)}</strong>
-                <p className="muted compact">Gerado em {formatDateTime(item.generated_at)}</p>
-              </div>
-              <span aria-hidden="true">→</span>
-            </Link>
-          ))}
+        <div className="table-wrap" data-tour="relatorios-list">
+          <table>
+            <thead><tr><th>Período</th><th>Gerado em</th><th>Ação</th></tr></thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>{formatDate(item.start_date)} a {formatDate(item.end_date)}</td>
+                  <td className="muted">{formatDateTime(item.generated_at)}</td>
+                  <td><button type="button" className="button secondary" onClick={() => setOpenReportId(item.id)}>Ver relatório</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : null}
+      <ReportDetailModal reportId={openReportId} onClose={() => setOpenReportId(null)} />
     </section>
   );
 }
