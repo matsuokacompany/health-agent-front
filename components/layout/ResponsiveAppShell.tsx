@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './Sidebar';
+import { BreadcrumbTrailProvider } from './BreadcrumbTrail';
 import { TourProvider } from '@/components/tour/TourProvider';
 
 type ResponsiveAppShellProps = {
@@ -66,27 +67,29 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
 
   return (
     <TourProvider>
-      <main className={`app-shell responsive-app-shell ${isCollapsed ? 'is-sidebar-collapsed' : ''} ${className}`.trim()}>
-        <button className={`drawer-backdrop ${isSidebarOpen ? 'is-visible' : ''}`} type="button" aria-label="Fechar menu de navegação" onClick={() => setIsSidebarOpen(false)} />
-        <AppSidebar
-          title={sidebarTitle}
-          marker={marker}
-          links={links}
-          profileHref={profileHref}
-          footerHref={footerHref}
-          footerLabel={footerLabel}
-          mobileOpen={isSidebarOpen}
-          onNavigate={() => setIsSidebarOpen(false)}
-          collapsed={isCollapsed}
-          onToggleCollapse={toggleCollapsed}
-        />
-        <section className="content-shell responsive-content-shell">
-          <AppHeader title={title} links={links} onMenuClick={() => setIsSidebarOpen(true)} />
-          {notice}
-          <div className="page-outlet responsive-page-outlet">{children}</div>
-          {footer}
-        </section>
-      </main>
+      <BreadcrumbTrailProvider>
+        <main className={`app-shell responsive-app-shell ${isCollapsed ? 'is-sidebar-collapsed' : ''} ${className}`.trim()}>
+          <button className={`drawer-backdrop ${isSidebarOpen ? 'is-visible' : ''}`} type="button" aria-label="Fechar menu de navegação" onClick={() => setIsSidebarOpen(false)} />
+          <AppSidebar
+            title={sidebarTitle}
+            marker={marker}
+            links={links}
+            profileHref={profileHref}
+            footerHref={footerHref}
+            footerLabel={footerLabel}
+            mobileOpen={isSidebarOpen}
+            onNavigate={() => setIsSidebarOpen(false)}
+            collapsed={isCollapsed}
+            onToggleCollapse={toggleCollapsed}
+          />
+          <section className="content-shell responsive-content-shell">
+            <AppHeader title={title} links={links} onMenuClick={() => setIsSidebarOpen(true)} />
+            {notice}
+            <div className="page-outlet responsive-page-outlet">{children}</div>
+            {footer}
+          </section>
+        </main>
+      </BreadcrumbTrailProvider>
     </TourProvider>
   );
 }

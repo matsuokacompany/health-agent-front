@@ -1,5 +1,5 @@
 import { ApiError, ForbiddenError } from '@/infrastructure/http/ApiClient';
-import type { Supplement, SupplementInput, SupplementUpdate } from '@/lib/types';
+import type { Allergy, AllergyInput, AllergyUpdate, Supplement, SupplementInput, SupplementUpdate } from '@/lib/types';
 import type { AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 import { api } from './api';
 
@@ -33,6 +33,7 @@ export type CreateProfessionalPatientRequest = {
   plan_start_date?: string;
   plan_end_date?: string;
   supplements?: SupplementInput[];
+  allergies?: AllergyInput[];
 };
 
 export type CreatedPatient = {
@@ -111,6 +112,22 @@ export function deletePatientSupplement(patientId: number | string, supplementId
   return api<void>(`/api/professional/patients/${patientId}/supplements/${supplementId}`, { method: 'DELETE' });
 }
 
+export function getPatientAllergies(patientId: number | string) {
+  return api<Allergy[]>(`/api/professional/patients/${patientId}/allergies`);
+}
+
+export function createPatientAllergy(patientId: number | string, payload: AllergyInput) {
+  return api<Allergy>(`/api/professional/patients/${patientId}/allergies`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updatePatientAllergy(patientId: number | string, allergyId: number, payload: AllergyUpdate) {
+  return api<Allergy>(`/api/professional/patients/${patientId}/allergies/${allergyId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deletePatientAllergy(patientId: number | string, allergyId: number) {
+  return api<void>(`/api/professional/patients/${patientId}/allergies/${allergyId}`, { method: 'DELETE' });
+}
+
 export function createProfessionalPatient(payload: CreateProfessionalPatientRequest) {
   return api<CreateProfessionalPatientResponse>('/api/professional/patients', { method: 'POST', body: JSON.stringify(payload) });
 }
@@ -148,7 +165,8 @@ export type ProfessionalCheckIn = {
   expires_at?: string | null;
 };
 
-export type ProfessionalTopSymptomTerm = { label: string; count: number };
+export type ProfessionalSymptomTermSample = { report_id: number; report_date: string; description: string };
+export type ProfessionalTopSymptomTerm = { label: string; count: number; samples: ProfessionalSymptomTermSample[] };
 
 export type ProfessionalCheckInsParams = {
   page: number;

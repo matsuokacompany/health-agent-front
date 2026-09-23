@@ -9,6 +9,7 @@ import { LanguageSwitcher } from './switchers/LanguageSwitcher';
 import { NotificationBell } from './switchers/NotificationBell';
 import { ThemeSwitcher } from './switchers/ThemeSwitcher';
 import { SupportButton } from '@/components/support/SupportButton';
+import { useBreadcrumbTrail } from './BreadcrumbTrail';
 
 function getInitialIsDark() { if (typeof document === 'undefined') return false; return document.documentElement.dataset.theme === 'dark'; }
 type HeaderProps = { title?: string; onMenuClick?: () => void; links?: string[][] };
@@ -31,17 +32,23 @@ function useBreadcrumb(links: string[][]) {
 function Breadcrumbs({ links }: { links: string[][] }) {
   const { t } = useI18n();
   const crumb = useBreadcrumb(links);
+  const trail = useBreadcrumbTrail();
   if (!crumb) return null;
+  if (crumb.isLeaf) {
+    return <nav className="breadcrumbs header-breadcrumbs" aria-label="Breadcrumb"><span aria-current="page">{crumb.label}</span></nav>;
+  }
+  // A nested page with real identity of its own (e.g. a specific patient,
+  // then which former tab is open) registers a richer trail via
+  // useSetBreadcrumbTrail; otherwise fall back to a generic "Detalhes" leaf.
+  const segments = trail?.length ? trail : [{ label: t('nav.details') }];
   return <nav className="breadcrumbs header-breadcrumbs" aria-label="Breadcrumb">
-    {crumb.isLeaf ? (
-      <span aria-current="page">{crumb.label}</span>
-    ) : (
-      <>
-        <Link href={crumb.href as never}>{crumb.label}</Link>
+    <Link href={crumb.href as never}>{crumb.label}</Link>
+    {segments.map((segment, index) => (
+      <span className="breadcrumb-segment" key={`${segment.label}-${index}`}>
         <span aria-hidden="true">/</span>
-        <span aria-current="page">{t('nav.details')}</span>
-      </>
-    )}
+        {segment.href && index < segments.length - 1 ? <Link href={segment.href as never}>{segment.label}</Link> : <span aria-current="page">{segment.label}</span>}
+      </span>
+    ))}
   </nav>;
 }
 

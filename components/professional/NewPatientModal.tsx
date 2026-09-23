@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { IdentificationCard, CalendarBlank, Pill, ClipboardText } from '@phosphor-icons/react';
+import { IdentificationCard, CalendarBlank, Pill, Warning, ClipboardText } from '@phosphor-icons/react';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { useCreateProfessionalPatient } from '@/hooks/useProfessional';
 import type { CreateProfessionalPatientRequest } from '@/services/professional';
@@ -10,26 +10,32 @@ import { createPatientAnamnese } from '@/services/professional';
 import { Button } from '@/components/ui/design';
 import { DateField } from '@/components/ui/DateField';
 import { Modal } from '@/components/ui/Modal';
+import { RiskFactorChecklist } from '@/components/patient/RiskFactorChecklist';
+import type { AnamneseRiskFactors } from '@/lib/anamneseRiskFactors';
 import { INPUT_LIMITS, normalizeUserText, validateUserText } from '@/lib/clinicalInput';
 import { formatBrazilianPhone, phoneValidationError, toBrazilianPhoneDigits } from '@/lib/phone';
-import type { SupplementDosagePeriod } from '@/lib/types';
+import type { AllergySeverity, SupplementDosagePeriod } from '@/lib/types';
 
 type SupplementDraft = { name: string; dosageTimes: string; dosagePeriod: SupplementDosagePeriod; indeterminate: boolean; durationDays: string };
 const emptySupplementDraft = (): SupplementDraft => ({ name: '', dosageTimes: '1', dosagePeriod: 'DAY', indeterminate: true, durationDays: '30' });
 
-type FormValues = Record<keyof Omit<CreateProfessionalPatientRequest, 'supplements'>, string>;
+type AllergyDraft = { allergen: string; severity: AllergySeverity };
+const emptyAllergyDraft = (): AllergyDraft => ({ allergen: '', severity: 'MODERADA' });
+
+type FormValues = Record<keyof Omit<CreateProfessionalPatientRequest, 'supplements' | 'allergies'>, string>;
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
 const initialValues: FormValues = { name: '', email: '', phone: '+55', cpf: '', birth_date: '', gender: '', city: '', state: '', plan_title: '', plan_description: '', plan_start_date: '', plan_end_date: '' };
 const fieldNames = new Set(Object.keys(initialValues));
 
-type NewPatientTab = 'dados' | 'plano' | 'medicamentos' | 'anamnese';
-const newPatientTabs: Array<{ id: NewPatientTab; label: string; description: string; icon: ReactNode }> = [
-  { id: 'dados', label: 'Dados do paciente', description: 'Identificação e contato', icon: <IdentificationCard aria-hidden="true" weight="duotone" /> },
-  { id: 'plano', label: 'Plano', description: 'Finalidade e datas do acompanhamento', icon: <CalendarBlank aria-hidden="true" weight="duotone" /> },
-  { id: 'medicamentos', label: 'Medicamentos', description: 'Suplementos e doses (opcional)', icon: <Pill aria-hidden="true" weight="duotone" /> },
-  { id: 'anamnese', label: 'Anamnese', description: 'Histórico clínico (opcional)', icon: <ClipboardText aria-hidden="true" weight="duotone" /> },
+type NewPatientStep = 'dados' | 'plano' | 'medicamentos' | 'alergias' | 'anamnese';
+const wizardSteps: Array<{ id: NewPatientStep; label: string; icon: ReactNode }> = [
+  { id: 'dados', label: 'Dados', icon: <IdentificationCard aria-hidden="true" weight="duotone" /> },
+  { id: 'plano', label: 'Plano', icon: <CalendarBlank aria-hidden="true" weight="duotone" /> },
+  { id: 'medicamentos', label: 'Medicamentos', icon: <Pill aria-hidden="true" weight="duotone" /> },
+  { id: 'alergias', label: 'Alergias', icon: <Warning aria-hidden="true" weight="duotone" /> },
+  { id: 'anamnese', label: 'Anamnese', icon: <ClipboardText aria-hidden="true" weight="duotone" /> },
 ];
-const fieldTab: Record<keyof FormValues, NewPatientTab> = {
+const fieldStep: Record<keyof FormValues, NewPatientStep> = {
   name: 'dados', email: 'dados', phone: 'dados', cpf: 'dados', birth_date: 'dados', gender: 'dados', city: 'dados', state: 'dados',
   plan_title: 'plano', plan_description: 'plano', plan_start_date: 'plano', plan_end_date: 'plano',
 };
@@ -89,7 +95,7 @@ function tomorrowIsoDate() {
   return `${year}-${month}-${day}`;
 }
 
-export function toCreatePatientPayload(values: FormValues): CreateProfessionalPatientRequest {
+export function toCreatePatientPayload(values: FormValues): Omit<CreateProfessionalPatientRequest, 'supplements' | 'allergies'> {
   return Object.fromEntries(
     Object.entries(values)
       .map(([key, value]) => {
@@ -98,7 +104,7 @@ export function toCreatePatientPayload(values: FormValues): CreateProfessionalPa
         return [key, value.trim()];
       })
       .filter(([, value]) => value),
-  ) as CreateProfessionalPatientRequest;
+  ) as Omit<CreateProfessionalPatientRequest, 'supplements' | 'allergies'>;
 }
 
 export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -108,14 +114,32 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [errorMessage, setErrorMessage] = useState('');
   const [anamnese, setAnamnese] = useState('');
+  const [riskFactors, setRiskFactors] = useState<AnamneseRiskFactors>({});
   const [isSavingAnamnese, setIsSavingAnamnese] = useState(false);
   const [supplements, setSupplements] = useState<SupplementDraft[]>([]);
-  const [activeTab, setActiveTab] = useState<NewPatientTab>('dados');
+  const [allergies, setAllergies] = useState<AllergyDraft[]>([]);
+  const [stepIndex, setStepIndex] = useState(0);
+  const activeStep = wizardSteps[stepIndex].id;
   const minStartDate = useRef(tomorrowIsoDate()).current;
+  const activeStepButtonRef = useRef<HTMLButtonElement>(null);
 
-  function jumpToFirstErrorTab(fieldErrors: FieldErrors) {
+  // The step nav scrolls horizontally on mobile (more steps than fit) --
+  // without this, jumping to a later step via Avançar/Voltar leaves the
+  // nav still scrolled to wherever it was, so the active step (the one
+  // thing telling the professional which step they're on) can end up
+  // scrolled off-screen.
+  useEffect(() => {
+    activeStepButtonRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
+  }, [stepIndex]);
+
+  function goToStep(id: NewPatientStep) {
+    const index = wizardSteps.findIndex((step) => step.id === id);
+    if (index >= 0) setStepIndex(index);
+  }
+
+  function jumpToFirstErrorStep(fieldErrors: FieldErrors) {
     const firstField = (Object.keys(fieldErrors) as Array<keyof FormValues>).find((name) => fieldErrors[name]);
-    if (firstField) setActiveTab(fieldTab[firstField]);
+    if (firstField) goToStep(fieldStep[firstField]);
   }
 
   const mutation = useCreateProfessionalPatient({
@@ -130,7 +154,7 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
       if (error.status === 422) {
         const mapped = validationErrors(error.payload);
         setErrors(mapped);
-        jumpToFirstErrorTab(mapped);
+        jumpToFirstErrorStep(mapped);
         return setErrorMessage(Object.keys(mapped).length ? 'Revise os campos indicados.' : apiMessage(error.payload) ?? 'Revise os dados informados.');
       }
       if (error.status === 400) return setErrorMessage(apiMessage(error.payload) ?? 'Verifique as datas do plano.');
@@ -152,6 +176,14 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     setSupplements((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
+  function updateAllergy(index: number, patch: Partial<AllergyDraft>) {
+    setAllergies((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
+  }
+
+  function removeAllergy(index: number) {
+    setAllergies((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
   function toSupplementsPayload() {
     return supplements
       .filter((item) => item.name.trim())
@@ -161,6 +193,16 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
         dosage_period: item.dosagePeriod,
         duration_days: item.indeterminate ? null : Number(item.durationDays) || null,
       }));
+  }
+
+  function toAllergiesPayload() {
+    return allergies
+      .filter((item) => item.allergen.trim())
+      .map((item) => ({ allergen: item.allergen.trim(), severity: item.severity }));
+  }
+
+  function hasAnyRiskFactor() {
+    return Object.values(riskFactors).some(Boolean);
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -185,18 +227,18 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
     if (values.plan_start_date && values.plan_end_date && values.plan_end_date < values.plan_start_date) next.plan_end_date = 'A data final não pode ser anterior à data inicial.';
     setErrors(next); if (!anamneseValidationError) setErrorMessage('');
     if (Object.keys(next).length || anamneseValidationError) {
-      if (anamneseValidationError && !Object.keys(next).length) setActiveTab('anamnese');
-      else jumpToFirstErrorTab(next);
+      if (anamneseValidationError && !Object.keys(next).length) goToStep('anamnese');
+      else jumpToFirstErrorStep(next);
       return;
     }
     submitting.current = true;
     try {
-      const response = await mutation.mutateAsync({ ...toCreatePatientPayload(values), supplements: toSupplementsPayload() });
+      const response = await mutation.mutateAsync({ ...toCreatePatientPayload(values), supplements: toSupplementsPayload(), allergies: toAllergiesPayload() });
       const patientId = response.patient.id;
-      if (normalizedAnamnese.trim()) {
+      if (normalizedAnamnese.trim() || hasAnyRiskFactor()) {
         setIsSavingAnamnese(true);
         try {
-          await createPatientAnamnese(patientId, { info: normalizedAnamnese.trim() });
+          await createPatientAnamnese(patientId, { info: normalizedAnamnese.trim(), ...riskFactors });
         } catch {
           router.push(`/professional/patients/${patientId}?created=1&anamneseError=1`);
           onClose();
@@ -211,79 +253,135 @@ export function NewPatientModal({ open, onClose }: { open: boolean; onClose: () 
 
   const input = (name: keyof FormValues, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, formatValue = (value: string) => value) => <label>{label}{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<input {...props} name={name} value={values[name]} onChange={(event) => setValue(name, formatValue(event.target.value))} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name] ? `${name}-error` : undefined} /></label>;
   const dateInput = (name: keyof FormValues, label: string, extra: { min?: string; max?: string } = {}) => <label><span className="field-label-text">{label}</span>{errors[name] ? <span className="field-error" id={`${name}-error`}>{errors[name]}</span> : null}<DateField name={name} value={values[name]} onChange={(iso) => setValue(name, iso)} min={extra.min} max={extra.max} ariaInvalid={Boolean(errors[name])} ariaDescribedBy={errors[name] ? `${name}-error` : undefined} /></label>;
-  return <Modal open={open} title="Novo paciente" onClose={() => { if (!mutation.isPending && !isSavingAnamnese) onClose(); }}><form onSubmit={submit} noValidate>
-    <p className="muted">Cadastre o paciente e crie seu plano inicial de acompanhamento.</p>
-    <nav className="professional-patient-tabs new-patient-tabs" role="tablist" aria-label="Etapas do cadastro">
-      {newPatientTabs.map((tab) => (
-        <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>
-          <span className="tab-icon" aria-hidden="true">{tab.icon}</span>
-          <span>{tab.label}</span>
-          <small>{tab.description}</small>
+
+  const isLastStep = stepIndex === wizardSteps.length - 1;
+
+  return <Modal open={open} title="Novo paciente" className="new-patient-modal" onClose={() => { if (!mutation.isPending && !isSavingAnamnese) onClose(); }}><form onSubmit={submit} noValidate>
+    <p className="muted">Cadastre o paciente e crie seu plano inicial de acompanhamento, em algumas etapas rápidas.</p>
+    <nav className="wizard-steps" aria-label="Etapas do cadastro">
+      {wizardSteps.map((step, index) => (
+        <button
+          key={step.id}
+          type="button"
+          ref={index === stepIndex ? activeStepButtonRef : undefined}
+          className={`${index === stepIndex ? 'active' : ''} ${index < stepIndex ? 'done' : ''}`.trim()}
+          aria-current={index === stepIndex ? 'step' : undefined}
+          onClick={() => goToStep(step.id)}
+        >
+          <span className="wizard-step-icon" aria-hidden="true">{step.icon}</span>
+          <span>{step.label}</span>
         </button>
       ))}
     </nav>
 
-    <div className="professional-tab-panel" hidden={activeTab !== 'dados'}>
-      <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true, maxLength: INPUT_LIMITS.name })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', maxLength: INPUT_LIMITS.phone, placeholder: '+55 (11) 99999-9999' }, formatBrazilianPhone)}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: INPUT_LIMITS.cpf })}{dateInput('birth_date', 'Data de nascimento')}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2', maxLength: INPUT_LIMITS.city })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: INPUT_LIMITS.state, placeholder: 'Estado' })}</div>
-    </div>
-
-    <div className="professional-tab-panel" hidden={activeTab !== 'plano'}>
-      <label htmlFor="plan_title">Finalidade do acompanhamento <span aria-hidden="true">*</span><input id="plan_title" name="plan_title" required maxLength={INPUT_LIMITS.planTitle} value={values.plan_title} onChange={(event) => setValue('plan_title', event.target.value)} placeholder="Ex.: Acompanhar a recuperação após extração de terceiro molar" aria-invalid={Boolean(errors.plan_title)} aria-describedby={errors.plan_title ? 'plan-title-help plan-title-error' : 'plan-title-help'} /> <small className="muted" id="plan-title-help">Descreva, em uma frase, o principal objetivo deste acompanhamento.</small>{errors.plan_title ? <span className="field-error" id="plan-title-error" role="alert">{errors.plan_title}</span> : null}</label>
-      <label htmlFor="plan_description">Contexto clínico e pontos a acompanhar<textarea id="plan_description" name="plan_description" rows={4} maxLength={INPUT_LIMITS.planDescription} value={values.plan_description} onChange={(event) => setValue('plan_description', event.target.value)} placeholder="Ex.: Pós-operatório de extração realizada em 12/08. Acompanhar dor, inchaço, sangramento, alimentação, abertura da boca e possíveis sinais de infecção." aria-invalid={Boolean(errors.plan_description)} aria-describedby={errors.plan_description ? 'plan-description-help plan-description-count plan-description-error' : 'plan-description-help plan-description-count'} /><small className="muted" id="plan-description-help">Inclua o contexto necessário, procedimento ou tratamento relacionado, evolução esperada e os sinais que merecem acompanhamento. Não informe nome, CPF, telefone, endereço ou outros dados pessoais.</small><small className="muted" id="plan-description-count">{values.plan_description.length}/{INPUT_LIMITS.planDescription}</small>{errors.plan_description ? <span className="field-error" id="plan-description-error" role="alert">{errors.plan_description}</span> : null}</label>
-      <p className="notice plan-ai-notice">As informações deste plano organizam o acompanhamento e podem contextualizar relatórios de apoio gerados por IA. Eles não substituem a avaliação do profissional.</p>
-      <div className="new-patient-grid">
-        <label htmlFor="plan_start_date">
-          <span className="field-label-text">Data do 1º check-in por WhatsApp</span>
-          <DateField id="plan_start_date" name="plan_start_date" min={minStartDate} value={values.plan_start_date} onChange={(iso) => setValue('plan_start_date', iso)} ariaInvalid={Boolean(errors.plan_start_date)} ariaDescribedBy={errors.plan_start_date ? 'plan-start-date-help plan-start-date-error' : 'plan-start-date-help'} />
-          <small className="muted" id="plan-start-date-help">O paciente recebe a primeira mensagem por volta das 8h desta data.</small>
-          {errors.plan_start_date ? <span className="field-error" id="plan-start-date-error" role="alert">{errors.plan_start_date}</span> : null}
-        </label>
-        {dateInput('plan_end_date', 'Data final', { min: values.plan_start_date || undefined })}
+    {activeStep === 'dados' ? (
+      <div className="wizard-step-panel">
+        <div className="new-patient-grid">{input('name', 'Nome completo *', { autoComplete: 'name', required: true, maxLength: INPUT_LIMITS.name })}{input('email', 'E-mail *', { autoComplete: 'email', type: 'email', required: true })}{input('phone', 'Telefone', { autoComplete: 'tel', inputMode: 'tel', maxLength: INPUT_LIMITS.phone, placeholder: '+55 (11) 99999-9999' }, formatBrazilianPhone)}{input('cpf', 'CPF', { inputMode: 'numeric', maxLength: INPUT_LIMITS.cpf })}{dateInput('birth_date', 'Data de nascimento')}<label>Gênero<select name="gender" value={values.gender} onChange={(event) => setValue('gender', event.target.value)}><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option><option value="nao_binario">Não binário</option><option value="outro">Outro</option></select></label>{input('city', 'Cidade', { autoComplete: 'address-level2', maxLength: INPUT_LIMITS.city })}{input('state', 'Estado', { autoComplete: 'address-level1', maxLength: INPUT_LIMITS.state, placeholder: 'Estado' })}</div>
       </div>
-    </div>
+    ) : null}
 
-    <div className="professional-tab-panel" hidden={activeTab !== 'medicamentos'}>
-      <p className="muted compact">Opcional. O check-in diário do WhatsApp pergunta especificamente sobre cada um, enquanto o tratamento estiver em curso.</p>
-      <div className="stack compact">
-        {supplements.map((supplement, index) => (
-          <div className="new-patient-grid" key={index}>
-            <label>
-              Nome
-              <input type="text" placeholder="Ex.: Amoxicilina" maxLength={120} value={supplement.name} onChange={(event) => updateSupplement(index, { name: event.target.value })} />
-            </label>
-            <label>
-              Quantas vezes
-              <input type="number" min={1} max={99} value={supplement.dosageTimes} onChange={(event) => updateSupplement(index, { dosageTimes: event.target.value })} />
-            </label>
-            <label>
-              Por
-              <select value={supplement.dosagePeriod} onChange={(event) => updateSupplement(index, { dosagePeriod: event.target.value as SupplementDosagePeriod })}>
-                <option value="DAY">Dia</option>
-                <option value="WEEK">Semana</option>
-                <option value="MONTH">Mês</option>
-              </select>
-            </label>
-            <label>
-              <input type="checkbox" checked={supplement.indeterminate} onChange={(event) => updateSupplement(index, { indeterminate: event.target.checked })} />
-              {' '}Uso contínuo
-            </label>
-            {!supplement.indeterminate ? (
+    {activeStep === 'plano' ? (
+      <div className="wizard-step-panel">
+        <label htmlFor="plan_title">Finalidade do acompanhamento <span aria-hidden="true">*</span><input id="plan_title" name="plan_title" required maxLength={INPUT_LIMITS.planTitle} value={values.plan_title} onChange={(event) => setValue('plan_title', event.target.value)} placeholder="Ex.: Acompanhar a recuperação após extração de terceiro molar" aria-invalid={Boolean(errors.plan_title)} aria-describedby={errors.plan_title ? 'plan-title-help plan-title-error' : 'plan-title-help'} /> <small className="muted" id="plan-title-help">Descreva, em uma frase, o principal objetivo deste acompanhamento.</small>{errors.plan_title ? <span className="field-error" id="plan-title-error" role="alert">{errors.plan_title}</span> : null}</label>
+        <label htmlFor="plan_description">Contexto clínico e pontos a acompanhar<textarea id="plan_description" name="plan_description" rows={4} maxLength={INPUT_LIMITS.planDescription} value={values.plan_description} onChange={(event) => setValue('plan_description', event.target.value)} placeholder="Ex.: Pós-operatório de extração realizada em 12/08. Acompanhar dor, inchaço, sangramento, alimentação, abertura da boca e possíveis sinais de infecção." aria-invalid={Boolean(errors.plan_description)} aria-describedby={errors.plan_description ? 'plan-description-help plan-description-count plan-description-error' : 'plan-description-help plan-description-count'} /><small className="muted" id="plan-description-help">Inclua o contexto necessário, procedimento ou tratamento relacionado, evolução esperada e os sinais que merecem acompanhamento. Não informe nome, CPF, telefone, endereço ou outros dados pessoais.</small><small className="muted" id="plan-description-count">{values.plan_description.length}/{INPUT_LIMITS.planDescription}</small>{errors.plan_description ? <span className="field-error" id="plan-description-error" role="alert">{errors.plan_description}</span> : null}</label>
+        <p className="notice plan-ai-notice">As informações deste plano organizam o acompanhamento e podem contextualizar relatórios de apoio gerados por IA. Eles não substituem a avaliação do profissional.</p>
+        <div className="new-patient-grid">
+          <label htmlFor="plan_start_date">
+            <span className="field-label-text">Data do 1º check-in por WhatsApp</span>
+            <DateField id="plan_start_date" name="plan_start_date" min={minStartDate} value={values.plan_start_date} onChange={(iso) => setValue('plan_start_date', iso)} ariaInvalid={Boolean(errors.plan_start_date)} ariaDescribedBy={errors.plan_start_date ? 'plan-start-date-help plan-start-date-error' : 'plan-start-date-help'} />
+            <small className="muted" id="plan-start-date-help">O paciente recebe a primeira mensagem por volta das 8h desta data.</small>
+            {errors.plan_start_date ? <span className="field-error" id="plan-start-date-error" role="alert">{errors.plan_start_date}</span> : null}
+          </label>
+          {dateInput('plan_end_date', 'Data final', { min: values.plan_start_date || undefined })}
+        </div>
+      </div>
+    ) : null}
+
+    {activeStep === 'medicamentos' ? (
+      <div className="wizard-step-panel">
+        <p className="muted compact">Opcional. O check-in diário do WhatsApp pergunta especificamente sobre cada um, enquanto o tratamento estiver em curso.</p>
+        <div className="stack compact">
+          {supplements.map((supplement, index) => (
+            <div className="new-patient-grid" key={index}>
               <label>
-                Por quantos dias
-                <input type="number" min={1} max={3650} value={supplement.durationDays} onChange={(event) => updateSupplement(index, { durationDays: event.target.value })} />
+                Nome
+                <input type="text" placeholder="Ex.: Amoxicilina" maxLength={120} value={supplement.name} onChange={(event) => updateSupplement(index, { name: event.target.value })} />
               </label>
-            ) : null}
-            <Button variant="ghost" type="button" onClick={() => removeSupplement(index)}>Remover</Button>
-          </div>
-        ))}
-        <Button variant="secondary" type="button" onClick={() => setSupplements((current) => [...current, emptySupplementDraft()])}>Adicionar medicamento/suplemento</Button>
+              <label>
+                Quantas vezes
+                <input type="number" min={1} max={99} value={supplement.dosageTimes} onChange={(event) => updateSupplement(index, { dosageTimes: event.target.value })} />
+              </label>
+              <label>
+                Por
+                <select value={supplement.dosagePeriod} onChange={(event) => updateSupplement(index, { dosagePeriod: event.target.value as SupplementDosagePeriod })}>
+                  <option value="DAY">Dia</option>
+                  <option value="WEEK">Semana</option>
+                  <option value="MONTH">Mês</option>
+                </select>
+              </label>
+              <label>
+                <input type="checkbox" checked={supplement.indeterminate} onChange={(event) => updateSupplement(index, { indeterminate: event.target.checked })} />
+                {' '}Uso contínuo
+              </label>
+              {!supplement.indeterminate ? (
+                <label>
+                  Por quantos dias
+                  <input type="number" min={1} max={3650} value={supplement.durationDays} onChange={(event) => updateSupplement(index, { durationDays: event.target.value })} />
+                </label>
+              ) : null}
+              <Button variant="ghost" type="button" onClick={() => removeSupplement(index)}>Remover</Button>
+            </div>
+          ))}
+          <Button variant="secondary" type="button" onClick={() => setSupplements((current) => [...current, emptySupplementDraft()])}>Adicionar medicamento/suplemento</Button>
+        </div>
+      </div>
+    ) : null}
+
+    {activeStep === 'alergias' ? (
+      <div className="wizard-step-panel">
+        <p className="muted compact">Opcional. Uma alergia com risco de morte (ex.: anafilaxia a frutos do mar) fica destacada no prontuário para qualquer profissional que o acesse.</p>
+        <div className="stack compact">
+          {allergies.map((allergy, index) => (
+            <div className="new-patient-grid" key={index}>
+              <label>
+                Alergia a
+                <input type="text" placeholder="Ex.: Frutos do mar" maxLength={120} value={allergy.allergen} onChange={(event) => updateAllergy(index, { allergen: event.target.value })} />
+              </label>
+              <label>
+                Intensidade
+                <select value={allergy.severity} onChange={(event) => updateAllergy(index, { severity: event.target.value as AllergySeverity })}>
+                  <option value="LEVE">Leve</option>
+                  <option value="MODERADA">Moderada</option>
+                  <option value="GRAVE">Grave</option>
+                  <option value="RISCO_DE_MORTE">Risco de morte</option>
+                </select>
+              </label>
+              <Button variant="ghost" type="button" onClick={() => removeAllergy(index)}>Remover</Button>
+            </div>
+          ))}
+          <Button variant="secondary" type="button" onClick={() => setAllergies((current) => [...current, emptyAllergyDraft()])}>Adicionar alergia</Button>
+        </div>
+      </div>
+    ) : null}
+
+    {activeStep === 'anamnese' ? (
+      <div className="wizard-step-panel">
+        <label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos e demais observações relevantes.</small></label>
+        <RiskFactorChecklist values={riskFactors} onChange={(field, checked) => setRiskFactors((current) => ({ ...current, [field]: checked }))} />
+      </div>
+    ) : null}
+
+    {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}
+    <div className="modal-actions wizard-actions">
+      <Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button>
+      <div className="wizard-actions-nav">
+        {stepIndex > 0 ? <Button variant="secondary" type="button" onClick={() => setStepIndex((current) => current - 1)} disabled={mutation.isPending || isSavingAnamnese}>Voltar</Button> : null}
+        {isLastStep ? (
+          <Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button>
+        ) : (
+          <Button type="button" onClick={() => setStepIndex((current) => current + 1)}>Avançar</Button>
+        )}
       </div>
     </div>
-
-    <div className="professional-tab-panel" hidden={activeTab !== 'anamnese'}>
-      <label>Anamnese<textarea name="anamnese" rows={8} maxLength={INPUT_LIMITS.anamnesis} value={anamnese} onChange={(event) => setAnamnese(event.target.value)} placeholder="Registre as informações clínicas relevantes." /><small className="muted">{anamnese.length.toLocaleString('pt-BR')} / {INPUT_LIMITS.anamnesis.toLocaleString('pt-BR')} caracteres. Registre a queixa principal, histórico clínico, antecedentes, medicamentos, alergias e demais observações relevantes.</small></label>
-    </div>
-
-    {errorMessage ? <p className="notice danger" role="alert">{errorMessage}</p> : null}<div className="modal-actions"><Button variant="secondary" onClick={onClose} disabled={mutation.isPending || isSavingAnamnese}>Cancelar</Button><Button type="submit" loading={mutation.isPending || isSavingAnamnese} loadingLabel={isSavingAnamnese ? 'Salvando anamnese...' : 'Cadastrando...'}>Cadastrar paciente</Button></div>
   </form></Modal>;
 }
