@@ -6,7 +6,6 @@ import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
 import { SelfAnamneseEditor } from '@/components/patient/SelfAnamneseEditor';
 import { SupplementsList } from '@/components/patient/SupplementsList';
 import { DietDocumentUpload } from '@/components/patient/DietDocumentUpload';
-import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { anamnesesApi } from '@/services/anamnese';
@@ -61,7 +60,6 @@ export default function PatientAnamnese() {
 
   return (
     <section className="stack">
-      {patientId ? <div className="page-actions"><PatientHandoffButton patientId={patientId} patientName={user?.name} /></div> : null}
       {hasProfessional ? (
         <ReadOnlyAnamnese
           info={info}
