@@ -8,12 +8,13 @@ import { ErrorState, EmptyState } from '@/components/ui/states';
 import { NewPatientModal } from '@/components/professional/NewPatientModal';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { TableSkeleton } from '@/components/ui/Loading';
-import { UsersThree, Stethoscope } from '@phosphor-icons/react';
+import { UsersThree, Stethoscope, ClipboardText, ChatCircleText, Sparkle } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { MetricCard } from '@/components/ui/design';
 
-function LoadingPatients() {
+function LoadingPatients({ isProfessional }: { isProfessional: boolean }) {
   return <div aria-busy="true" aria-label="Carregando pacientes monitorados">
+    {isProfessional ? <div className="page-actions professional-patients-actions"><SkeletonBlock className="sk-action" /></div> : null}
     <section className="grid">
       <MetricCardSkeleton />
       <MetricCardSkeleton />
@@ -34,6 +35,13 @@ const DAILY_REPORT_STATUS_LABELS: Record<string, string> = {
 function formatDate(value?: string | null) { return value ? new Intl.DateTimeFormat('pt-BR').format(new Date(value)) : '—'; }
 function statusLabel(status?: string | null) { return status ? DAILY_REPORT_STATUS_LABELS[status] ?? status.replace(/_/g, ' ') : 'Sem check-in'; }
 
+const patientRowActions: Array<{ suffix: string; label: string; icon: React.ReactNode }> = [
+  { suffix: '', label: 'Visão geral', icon: <ClipboardText aria-hidden="true" size={18} weight="duotone" /> },
+  { suffix: '/checkins', label: 'Check-ins', icon: <ChatCircleText aria-hidden="true" size={18} weight="duotone" /> },
+  { suffix: '/clinical', label: 'Dados clínicos', icon: <Stethoscope aria-hidden="true" size={18} weight="duotone" /> },
+  { suffix: '/reports', label: 'Relatórios IA', icon: <Sparkle aria-hidden="true" size={18} weight="duotone" /> },
+];
+
 export default function Patients() {
   const { isProfessional } = useAuth();
   const searchParams = useSearchParams();
@@ -45,13 +53,13 @@ export default function Patients() {
   const activeCount = (data ?? []).filter((patient) => patient.active).length;
   const symptomCount = (data ?? []).reduce((sum, patient) => sum + (patient.symptom_reports_count ?? 0), 0);
 
-  if (isLoading) return <LoadingPatients />;
+  if (isLoading) return <LoadingPatients isProfessional={isProfessional} />;
   if (error) return <ErrorState message={error.message} />;
 
   return <>
     {isProfessional ? <div className="page-actions professional-patients-actions"><button type="button" data-tour="new-patient" onClick={() => setNewPatientOpen(true)}>Novo paciente</button></div> : null}
     <section className="grid" data-tour="patients-metrics"><MetricCard icon={<UsersThree aria-hidden="true" size={22} weight="duotone" />} label="Pacientes ativos" value={activeCount} tone="info" /><MetricCard icon={<Stethoscope aria-hidden="true" size={22} weight="duotone" />} label="Relatos de sintomas" value={symptomCount} tone={symptomCount > 0 ? 'warn' : 'ok'} /><article className="card"><label>Buscar paciente<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nome ou e-mail" /></label></article></section>
-    {patients.length ? <div className="table-wrap" data-tour="patients-table"><table><thead><tr><th>Paciente</th><th>Plano</th><th>Último check-in</th><th>Sintomas</th><th>Ações</th></tr></thead><tbody>{patients.map((patient) => <tr key={patient.patient_id}><td><strong>{patient.name}</strong><br /><span className="muted">{patient.email ?? patient.phone ?? 'Sem contato'}</span></td><td><span className={patient.active ? 'badge success' : 'badge'}>{patient.active ? 'Ativo' : 'Inativo'}</span>{patient.has_own_subscription ? <span className="badge" title="Este paciente já paga sua própria assinatura do assistente de IA — não conta na sua cota de pacientes.">Já assina</span> : null}<br />{patient.plan_title ?? `Plano #${patient.monitoring_plan_id}`}</td><td>{formatDate(patient.last_checkin_at)}<br /><span className="muted">{statusLabel(patient.last_status)}</span></td><td>{patient.symptom_reports_count}</td><td><Link className="button" href={`/professional/patients/${patient.patient_id}`}>Ver prontuário</Link></td></tr>)}</tbody></table></div> : <EmptyState description="Nenhum paciente monitorado encontrado." />}
+    {patients.length ? <div className="table-wrap" data-tour="patients-table"><table><thead><tr><th>Paciente</th><th>Plano</th><th>Último check-in</th><th>Sintomas</th><th>Ações</th></tr></thead><tbody>{patients.map((patient) => <tr key={patient.patient_id}><td><strong>{patient.name}</strong><br /><span className="muted">{patient.email ?? patient.phone ?? 'Sem contato'}</span></td><td><span className={patient.active ? 'badge success' : 'badge'}>{patient.active ? 'Ativo' : 'Inativo'}</span>{patient.has_own_subscription ? <span className="badge" title="Este paciente já paga sua própria assinatura do assistente de IA — não conta na sua cota de pacientes.">Já assina</span> : null}<br />{patient.plan_title ?? `Plano #${patient.monitoring_plan_id}`}</td><td>{formatDate(patient.last_checkin_at)}<br /><span className="muted">{statusLabel(patient.last_status)}</span></td><td>{patient.symptom_reports_count}</td><td><div className="patient-row-actions">{patientRowActions.map((action) => <Link key={action.suffix} className="button secondary icon-button" href={`/professional/patients/${patient.patient_id}${action.suffix}` as never} aria-label={`${action.label} — ${patient.name}`} title={action.label}>{action.icon}</Link>)}</div></td></tr>)}</tbody></table></div> : <EmptyState description="Nenhum paciente monitorado encontrado." />}
     {isProfessional ? <NewPatientModal open={newPatientOpen} onClose={() => setNewPatientOpen(false)} /> : null}
   </>;
 }

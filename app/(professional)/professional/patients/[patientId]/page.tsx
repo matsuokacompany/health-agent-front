@@ -1,56 +1,15 @@
 'use client';
-import Link from 'next/link';
-import { use, useState, type ReactNode } from 'react';
+import { use } from 'react';
 
-import { useProfessionalCheckIns, useProfessionalDashboard } from '@/hooks/useProfessional';
-import type { ProfessionalCheckIn } from '@/services/professional';
-import { AiReportsJourney } from '@/components/professional/AiReportsJourney';
-import { PatientAnamneseEditor } from '@/components/professional/PatientAnamneseEditor';
-import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
-import { PatientMonitoringCalendar } from '@/components/professional/PatientMonitoringCalendar';
-import { PatientSupplementsEditor } from '@/components/professional/PatientSupplementsEditor';
-import { PatientSymptomTermsCard } from '@/components/professional/PatientSymptomTermsCard';
-import { CheckinDetailModal } from '@/components/professional/CheckinDetailModal';
-import { StatusBadge, DAILY_REPORT_STATUS_LABELS } from '@/components/professional/StatusBadge';
-import { SensitivePlaceholder } from '@/components/professional/SensitivePlaceholder';
-import { ErrorState, EmptyState } from '@/components/ui/states';
-import { CalendarSkeleton, MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
-import { TableSkeleton } from '@/components/ui/Loading';
-import { ClinicalImagesSection } from '@/components/clinical-images/ClinicalImagesSection';
-import { ClipboardText, ChatCircleText, Stethoscope, Sparkle, CheckCircle } from '@phosphor-icons/react';
+import { useProfessionalDashboard } from '@/hooks/useProfessional';
+import { DAILY_REPORT_STATUS_LABELS } from '@/components/professional/StatusBadge';
+import { ErrorState } from '@/components/ui/states';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
+import { Stethoscope, CheckCircle } from '@phosphor-icons/react';
 import { MetricCard } from '@/components/ui/design';
-import { redFlagCategoryLabel } from '@/lib/redFlagCategories';
-import { truncate } from '@/lib/text';
 
-type PatientDetailTab = 'overview' | 'checkins' | 'clinical' | 'reports';
-
-const patientDetailTabs: Array<{ id: PatientDetailTab; label: string; description: string; icon: ReactNode }> = [
-  { id: 'overview', label: 'Visão geral', description: 'Plano, adesão e situação de hoje', icon: <ClipboardText aria-hidden="true" weight="duotone" /> },
-  { id: 'checkins', label: 'Check-ins', description: 'Histórico e sintomas', icon: <ChatCircleText aria-hidden="true" weight="duotone" /> },
-  { id: 'clinical', label: 'Dados clínicos', description: 'Anamnese e imagens', icon: <Stethoscope aria-hidden="true" weight="duotone" /> },
-  { id: 'reports', label: 'Relatórios IA', description: 'Análises de apoio clínico', icon: <Sparkle aria-hidden="true" weight="duotone" /> },
-];
-
-/** Data hasn't arrived yet, but which tab is open has -- the professional can
- * already switch tabs while loading, so the placeholder should match
- * whichever one is active instead of a single generic shape. */
-function TabPanelSkeleton({ tab }: { tab: PatientDetailTab }) {
-  if (tab === 'checkins') return <div className="professional-tab-content">
-    <CalendarSkeleton />
-    <section className="card patient-table-section professional-detail-section">
-      <div className="professional-section-heading"><div><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-page-copy" /></div></div>
-      <div className="patient-filter-grid compact"><SkeletonBlock className="sk-action" /><SkeletonBlock className="sk-action" /><SkeletonBlock className="sk-action" /></div>
-      <TableSkeleton rows={6} columns={4} />
-    </section>
-  </div>;
-  if (tab === 'clinical') return <div className="professional-tab-content professional-clinical-content">
-    <article className="card"><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></article>
-    <article className="card"><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-tile" /></article>
-  </div>;
-  if (tab === 'reports') return <section className="card ai-reports-section">
-    <SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock className="sk-action" />
-  </section>;
-  return <div className="professional-tab-content">
+function LoadingOverview() {
+  return <div className="professional-tab-content" aria-busy="true" aria-label="Carregando visão geral">
     <section className="grid professional-detail-section">
       <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></article>
       <MetricCardSkeleton />
@@ -64,53 +23,57 @@ function TabPanelSkeleton({ tab }: { tab: PatientDetailTab }) {
 }
 
 function fmt(value?: string | null) { return value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: value.includes('T') ? 'short' : undefined }).format(new Date(value)) : '—'; }
+
+// The scheduler creates each day's check-in for the *previous* calendar
+// day, run every morning — so the first one a brand-new plan is eligible
+// for lands the day after start_date, not on start_date itself. Format in
+// UTC since start_date arrives as a date-only string (parsed as UTC
+// midnight); formatting in the viewer's local timezone could shift it back
+// a day for negative UTC offsets like America/Sao_Paulo.
 function firstCheckinDate(startDate?: string | null) {
   if (!startDate) return null;
-  // The scheduler creates each day's check-in for the *previous* calendar
-  // day, run every morning — so the first one a brand-new plan is eligible
-  // for lands the day after start_date, not on start_date itself. Format in
-  // UTC since start_date arrives as a date-only string (parsed as UTC
-  // midnight); formatting in the viewer's local timezone could shift it back
-  // a day for negative UTC offsets like America/Sao_Paulo.
   const date = new Date(startDate.length <= 10 ? `${startDate}T00:00:00Z` : startDate);
   if (Number.isNaN(date.getTime())) return null;
   date.setUTCDate(date.getUTCDate() + 1);
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeZone: 'UTC' }).format(date);
 }
-export default function PatientDetail({ params, searchParams }: { params: Promise<{ patientId: string }>; searchParams: Promise<{ created?: string; anamneseError?: string }> }) {
+
+export default function PatientOverview({ params, searchParams }: { params: Promise<{ patientId: string }>; searchParams: Promise<{ created?: string; anamneseError?: string }> }) {
   const { patientId } = use(params);
-  const selectedPatientId = Number(patientId);
   const { created, anamneseError } = use(searchParams);
   const dashboard = useProfessionalDashboard(patientId);
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState('');
-  const [hadSymptoms, setHadSymptoms] = useState<'' | boolean>('');
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-  const checkins = useProfessionalCheckIns(patientId, { page, per_page: 10, status, had_symptoms: hadSymptoms, order });
-  const [showSymptomDescriptions, setShowSymptomDescriptions] = useState(true);
-  const [activeTab, setActiveTab] = useState<PatientDetailTab>('overview');
-  const [selectedCheckin, setSelectedCheckin] = useState<ProfessionalCheckIn | null>(null);
 
   if (dashboard.error) return <ErrorState message={dashboard.error.message} />;
+  if (dashboard.isLoading) return <LoadingOverview />;
+
   const data = dashboard.data;
   const stats = data?.statistics;
 
-  const displayName = data?.user?.name ?? 'Prontuário do paciente';
-
-  return <div className="professional-patient-detail">
-    {created === '1' ? <p className="notice success" role="status">Paciente cadastrado. O acesso à conta será vinculado pelo fluxo de autenticação/convite da plataforma. {(() => { const label = firstCheckinDate(data?.monitoring?.start_date); return label ? `A primeira mensagem de check-in por WhatsApp chega em ${label}, por volta das 8h.` : null; })()}</p> : null}
-    {anamneseError === '1' ? <p className="notice danger" role="alert">Paciente cadastrado com sucesso, mas não foi possível salvar a anamnese. Você poderá adicioná-la posteriormente na edição do paciente.</p> : null}
-    <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/professional/patients">Pacientes</Link><span>/</span><span>{dashboard.isLoading ? <SkeletonBlock className="sk-eyebrow" /> : displayName}</span></nav>
-    <nav className="professional-patient-tabs" aria-label="Seções do prontuário" role="tablist">
-      {patientDetailTabs.map((tab) => <button id={`patient-tab-${tab.id}`} className={activeTab === tab.id ? 'active' : ''} key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`patient-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)}><span className="tab-icon" aria-hidden="true">{tab.icon}</span><span>{tab.label}</span><small>{tab.description}</small></button>)}
-    </nav>
-    <div id={`patient-panel-${activeTab}`} className="professional-tab-panel" role="tabpanel" aria-labelledby={`patient-tab-${activeTab}`}>
-      {dashboard.isLoading ? <TabPanelSkeleton tab={activeTab} /> : <>
-        {activeTab === 'overview' ? <div className="professional-tab-content"><section className="grid professional-detail-section"><article className="card"><span className={data?.monitoring?.active ? 'badge success' : 'badge'}>{data?.monitoring?.active ? 'Plano ativo' : 'Plano inativo'}</span><h2>{data?.monitoring?.title ?? 'Plano de acompanhamento'}</h2><p className="muted">Início: {fmt(data?.monitoring?.start_date)} · Fim: {fmt(data?.monitoring?.end_date)}</p></article><MetricCard icon={<CheckCircle aria-hidden="true" size={22} weight="duotone" />} label="Aderência" value={`${stats?.adherence ?? 0}%`} description={`${stats?.answered ?? 0} respondidos de ${stats?.total ?? 0}`} tone={(stats?.adherence ?? 0) >= 80 ? 'ok' : 'warn'} /><MetricCard icon={<Stethoscope aria-hidden="true" size={22} weight="duotone" />} label="Sintomas" value={stats?.with_symptoms ?? 0} description={`${stats?.missed ?? 0} check-ins perdidos`} tone={(stats?.with_symptoms ?? 0) > 0 ? 'warn' : 'ok'} /></section><section className="split professional-detail-section"><article className="card"><span className="badge">Check-in de hoje</span><h2>{data?.today?.status ? DAILY_REPORT_STATUS_LABELS[data.today.status] ?? data.today.status : 'Sem status'}</h2><p className="muted">Respondido: {data?.today?.completed ? 'Sim' : 'Não'} · Próximo: {fmt(data?.next_checkin?.scheduled_at)}</p></article><article className="card"><span className="badge">Anamnese</span><h2>Resumo clínico</h2><p>{Array.isArray(data?.anamnesis_summary?.preview) ? data?.anamnesis_summary?.preview.join(', ') : data?.anamnesis_summary?.preview || 'Resumo não disponível.'}</p></article></section></div> : null}
-        {activeTab === 'checkins' ? <div className="professional-tab-content"><PatientMonitoringCalendar patientId={patientId} revealSensitive={showSymptomDescriptions} /><PatientSymptomTermsCard patientId={patientId} /><section id="patient-checkins" className="card patient-table-section professional-detail-section"><div className="professional-section-heading"><div><h2>Check-ins</h2><p className="muted compact">Filtre o histórico, clique num dia para ver o detalhe completo e controle a exibição das informações sensíveis.</p></div><button className="button secondary" type="button" onClick={() => setShowSymptomDescriptions((current) => !current)}>{showSymptomDescriptions ? 'Ocultar informações sensíveis' : 'Exibir informações sensíveis'}</button></div><div className="patient-filter-grid compact"><label>Status<select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="">Todos</option><option value="PENDING">Pendente</option><option value="AWAITING_SYMPTOM_DESCRIPTION">Aguardando sintomas</option><option value="AWAITING_CAUSE">Aguardando causa (legado)</option><option value="COMPLETED">Concluído</option><option value="EXPIRED">Expirado</option></select></label><label>Sintomas<select value={String(hadSymptoms)} onChange={(event) => { setHadSymptoms(event.target.value === '' ? '' : event.target.value === 'true'); setPage(1); }}><option value="">Todos</option><option value="true">Com sintomas</option><option value="false">Sem sintomas</option></select></label><label>Ordem<select value={order} onChange={(event) => setOrder(event.target.value as 'asc' | 'desc')}><option value="desc">Mais recentes</option><option value="asc">Mais antigos</option></select></label></div>{checkins.isLoading ? <TableSkeleton rows={6} columns={4} /> : checkins.data?.items.length ? <><div className="table-wrap"><table className="checkins-table"><thead><tr><th>Data</th><th>Status</th><th>Sintomas</th><th>Descrição dos sintomas</th><th>Alerta</th></tr></thead><tbody>{checkins.data.items.map((item) => <tr key={item.id} role="button" tabIndex={0} onClick={() => setSelectedCheckin(item)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedCheckin(item); } }}><td>{fmt(item.report_date)}</td><td><StatusBadge status={item.status} /></td><td>{item.had_symptoms === true ? 'Sim' : item.had_symptoms === false ? 'Não' : '—'}</td><td>{showSymptomDescriptions ? (item.symptom_description ? <span className="cell-truncate" title={item.symptom_description}>{truncate(item.symptom_description)}</span> : '—') : <SensitivePlaceholder label="Descrição oculta" />}</td><td>{item.red_flag_category ? <span className="badge risk-alto">{redFlagCategoryLabel(item.red_flag_category)}</span> : '—'}</td></tr>)}</tbody></table></div><div className="patient-pagination"><button className="button secondary" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Anterior</button><span>Página {checkins.data.pagination.page} de {checkins.data.pagination.total_pages}</span><button className="button secondary" disabled={page >= checkins.data.pagination.total_pages} onClick={() => setPage((current) => current + 1)}>Próxima</button></div></> : <EmptyState description="Nenhum check-in encontrado." />}</section><CheckinDetailModal item={selectedCheckin} onClose={() => setSelectedCheckin(null)} revealSensitive={showSymptomDescriptions} /></div> : null}
-        {activeTab === 'clinical' ? <div className="professional-tab-content professional-clinical-content"><PatientAnamneseEditor patientId={patientId} /><PatientSupplementsEditor patientId={patientId} />{Number.isSafeInteger(selectedPatientId) && selectedPatientId > 0 ? <ClinicalImagesSection patientId={selectedPatientId} /> : <ErrorState message="Paciente inválido." />}{Number.isSafeInteger(selectedPatientId) && selectedPatientId > 0 ? <PatientHandoffButton patientId={selectedPatientId} patientName={displayName} forProfessional /> : null}</div> : null}
-        {activeTab === 'reports' ? <AiReportsJourney patientId={patientId} monitoringStart={data?.monitoring?.start_date} patientName={displayName} /> : null}
-      </>}
+  return (
+    <div className="professional-tab-content">
+      {created === '1' ? <p className="notice success" role="status">Paciente cadastrado. O acesso à conta será vinculado pelo fluxo de autenticação/convite da plataforma. {(() => { const label = firstCheckinDate(data?.monitoring?.start_date); return label ? `A primeira mensagem de check-in por WhatsApp chega em ${label}, por volta das 8h.` : null; })()}</p> : null}
+      {anamneseError === '1' ? <p className="notice danger" role="alert">Paciente cadastrado com sucesso, mas não foi possível salvar a anamnese. Você poderá adicioná-la posteriormente na edição do paciente.</p> : null}
+      <section className="grid professional-detail-section">
+        <article className="card">
+          <span className={data?.monitoring?.active ? 'badge success' : 'badge'}>{data?.monitoring?.active ? 'Plano ativo' : 'Plano inativo'}</span>
+          <h2>{data?.monitoring?.title ?? 'Plano de acompanhamento'}</h2>
+          <p className="muted">Início: {fmt(data?.monitoring?.start_date)} · Fim: {fmt(data?.monitoring?.end_date)}</p>
+        </article>
+        <MetricCard icon={<CheckCircle aria-hidden="true" size={22} weight="duotone" />} label="Aderência" value={`${stats?.adherence ?? 0}%`} description={`${stats?.answered ?? 0} respondidos de ${stats?.total ?? 0}`} tone={(stats?.adherence ?? 0) >= 80 ? 'ok' : 'warn'} />
+        <MetricCard icon={<Stethoscope aria-hidden="true" size={22} weight="duotone" />} label="Sintomas" value={stats?.with_symptoms ?? 0} description={`${stats?.missed ?? 0} check-ins perdidos`} tone={(stats?.with_symptoms ?? 0) > 0 ? 'warn' : 'ok'} />
+      </section>
+      <section className="split professional-detail-section">
+        <article className="card">
+          <span className="badge">Check-in de hoje</span>
+          <h2>{data?.today?.status ? DAILY_REPORT_STATUS_LABELS[data.today.status] ?? data.today.status : 'Sem status'}</h2>
+          <p className="muted">Respondido: {data?.today?.completed ? 'Sim' : 'Não'} · Próximo: {fmt(data?.next_checkin?.scheduled_at)}</p>
+        </article>
+        <article className="card">
+          <span className="badge">Anamnese</span>
+          <h2>Resumo clínico</h2>
+          <p>{Array.isArray(data?.anamnesis_summary?.preview) ? data?.anamnesis_summary?.preview.join(', ') : data?.anamnesis_summary?.preview || 'Resumo não disponível.'}</p>
+        </article>
+      </section>
     </div>
-  </div>;
+  );
 }

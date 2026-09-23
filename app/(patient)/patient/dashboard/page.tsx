@@ -5,11 +5,13 @@ import { Plant, CalendarBlank } from '@phosphor-icons/react';
 import { Button, Card } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
 import { ApiError } from '@/infrastructure/http/ApiClient';
-import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, InsightGenerationCard, PERIOD_PRESETS, PeriodSelector, type PeriodDays } from '@/components/patient/EvolutionReportSection';
-import type { AppNotification, DailyReport, EvolutionReport, MonitoringPlan, SelfMonitoringInsight, SelfMonitoringInsightListItem } from '@/lib/types';
-import type { PatientDashboardAggregate, PatientDashboardTimelineDay } from '@/services/patientDashboard';
+import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
+import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, PeriodSelector, SymptomsCard, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
+import type { AppNotification, DailyReport, EvolutionReport, MonitoringPlan } from '@/lib/types';
+import type { PatientDashboardAggregate } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
 import { redFlagCategoryLabel } from '@/lib/redFlagCategories';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
@@ -28,11 +30,6 @@ function formatDate(value?: string | null) {
   const date = new Date(value.length <= 10 ? `${value}T00:00:00` : value);
   if (Number.isNaN(date.getTime())) return 'Não informado';
   return new Intl.DateTimeFormat('pt-BR').format(date);
-}
-
-function truncate(text?: string | null) {
-  if (!text) return 'Nenhum registro disponível.';
-  return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
 }
 
 function firstCheckinDate(startDate?: string | null) {
@@ -87,7 +84,7 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
     day.setDate(day.getDate() - (7 - index));
     const key = dateKey(day);
     const report = reportsByDate.get(key);
-    let status: PatientDashboardTimelineDay['status'] = 'no_response';
+    let status: PatientDashboardAggregate['timeline'][number]['status'] = 'no_response';
     if (report && completedReport(report)) status = report.had_symptoms ? 'with_symptoms' : 'without_symptoms';
     if (report && !completedReport(report) && report.had_symptoms === true) status = 'mild_symptoms';
     return { date: key, status };
@@ -210,13 +207,14 @@ function NoticesCard() {
 
 function LoadingDashboard() {
   return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando dashboard">
+    <div className="patient-dashboard-controls-row">
+      <div className="ai-shortcuts">{Array.from({ length: 5 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
+      <SkeletonBlock className="sk-action" />
+    </div>
     <Card className="patient-monitoring-status-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
-    <Card className="patient-dashboard-timeline-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
-    <div className="ai-shortcuts">{Array.from({ length: 4 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
     <section className="patient-dashboard-summary-grid">
-      {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
+      {Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
-    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock className="sk-action" /></Card>
   </section>;
 }
 
@@ -249,70 +247,31 @@ function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Pr
   </Card>;
 }
 
-const timelineMeta: Record<PatientDashboardTimelineDay['status'], { icon: string; label: string; className: string }> = { without_symptoms: { icon: '🟢', label: 'respondeu sem sintomas', className: 'ok' }, mild_symptoms: { icon: '🟡', label: 'respondeu com sintomas leves', className: 'mild' }, with_symptoms: { icon: '🔴', label: 'respondeu com sintomas', className: 'alert' }, no_response: { icon: '⚪', label: 'não respondeu', className: 'empty' } };
-function formatTimelineLabel(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '');
-  const month = new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date).replace('.', '');
-  return `${weekday} ${date.getDate()} ${month}`;
-}
-
-function Timeline({
-  days,
-  data,
-  selectedPeriod,
-  onPeriodChange,
-  periodDisabled,
-}: {
-  days: PatientDashboardTimelineDay[];
-  data: PatientDashboardAggregate;
-  selectedPeriod: PeriodDays;
-  onPeriodChange(days: PeriodDays): void;
-  periodDisabled: boolean;
-}) {
-  const today = dateKey(new Date());
-  const visibleDays = days.filter((day) => day.date.slice(0, 10) < today).slice(-7);
-  const lastDate = data.lastResponse?.date ? formatDate(data.lastResponse.date) : null;
-  return <Card className="patient-dashboard-timeline-card" data-tour="patient-timeline">
-    <span className="eyebrow">Seu histórico</span>
-    <h2>Linha do tempo</h2>
-    <p className="muted compact">
-      {lastDate ? <>Último registro: <strong>{lastDate}</strong>{data.lastResponse?.time ? ` às ${data.lastResponse.time}` : ''} — {truncate(data.lastResponse?.summary)}</> : 'Nenhum registro enviado ainda.'}
-    </p>
-    <div className="patient-timeline-grid">{visibleDays.map((day) => { const meta = timelineMeta[day.status] ?? timelineMeta.no_response; return <span key={day.date} className={meta.className} title={`${formatDate(day.date)}: ${day.label ?? meta.label}`} aria-label={`${formatDate(day.date)}: ${meta.label}`}>{meta.icon}<small>{formatTimelineLabel(day.date)}</small></span>; })}</div>
-    <div className="patient-timeline-legend"><span>🟢 sem sintomas</span><span>🟡 leves</span><span>🔴 com sintomas</span><span>⚪ não respondeu</span></div>
-    <p className="muted compact">Período do relatório de evolução abaixo:</p>
-    <PeriodSelector selected={selectedPeriod} onChange={onPeriodChange} disabled={periodDisabled} />
-  </Card>;
-}
-
 export default function PatientDashboard() {
   const { reports, plans, loading: patientDataLoading, refresh } = usePatientData();
+  const { user } = useAuth();
+  const patientId = user ? Number(user.id) : undefined;
   const dashboard = buildFallbackDashboard(plans, reports);
 
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodDays>(DEFAULT_PERIOD_DAYS);
-  const period = useMemo(() => shortcutPeriod(selectedPeriod), [selectedPeriod]);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD_DAYS);
+  const [customRange, setCustomRange] = useState<CustomRange>({ start_date: '', end_date: '' });
+  const customError = selectedPeriod === 'custom' && customRange.start_date && customRange.end_date
+    ? validateCustomPeriod(customRange.start_date, customRange.end_date)
+    : null;
+  const period = useMemo(() => {
+    if (selectedPeriod === 'custom') {
+      if (!customRange.start_date || !customRange.end_date || validateCustomPeriod(customRange.start_date, customRange.end_date)) return null;
+      return { start_date: customRange.start_date, end_date: customRange.end_date };
+    }
+    return shortcutPeriod(selectedPeriod);
+  }, [selectedPeriod, customRange]);
   const [evolutionReport, setEvolutionReport] = useState<EvolutionReport | null>(null);
   const [evolutionBlocked, setEvolutionBlocked] = useState(false);
   const [loadingEvolution, setLoadingEvolution] = useState(true);
-  const [insight, setInsight] = useState<SelfMonitoringInsight | null>(null);
-  const [latestInsight, setLatestInsight] = useState<SelfMonitoringInsightListItem | null>(null);
-  const [insightError, setInsightError] = useState<string | null>(null);
-  const [generatingInsight, setGeneratingInsight] = useState(false);
 
   useEffect(() => {
     if (!dashboard.hasActiveMonitoring) return;
-    selfMonitoringApi.listInsights(1, 1)
-      .then((response) => setLatestInsight(response.items[0] ?? null))
-      .catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboard.hasActiveMonitoring]);
-
-  useEffect(() => {
-    if (!dashboard.hasActiveMonitoring) return;
-    setInsight(null);
-    setInsightError(null);
+    if (!period) { setEvolutionReport(null); setLoadingEvolution(false); return; }
     setLoadingEvolution(true);
     selfMonitoringApi.getEvolutionReport(period)
       .then((result) => { setEvolutionReport(result); setEvolutionBlocked(false); })
@@ -320,28 +279,6 @@ export default function PatientDashboard() {
       .finally(() => setLoadingEvolution(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, dashboard.hasActiveMonitoring]);
-
-  async function generateInsight() {
-    setGeneratingInsight(true);
-    setInsightError(null);
-    try {
-      const result = await selfMonitoringApi.getInsight(period);
-      setInsight(result);
-      if (result.id) {
-        setLatestInsight({
-          id: result.id,
-          start_date: result.start_date,
-          end_date: result.end_date,
-          generated_at: result.generated_at ?? new Date().toISOString(),
-          next_generation_at: result.next_generation_at,
-        });
-      }
-    } catch (err) {
-      if (!(err instanceof ApiError && err.status === 402)) setInsightError(toFriendlyErrorMessage(err));
-    } finally {
-      setGeneratingInsight(false);
-    }
-  }
 
   if (patientDataLoading) return <LoadingDashboard />;
   if (!dashboard?.hasActiveMonitoring) {
@@ -352,29 +289,43 @@ export default function PatientDashboard() {
   }
 
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
-  const periodLabel = (PERIOD_PRESETS.find(([days]) => days === selectedPeriod)?.[1] ?? '').toLowerCase();
+  const symptoms = evolutionReport?.sufficient_data ? evolutionReport.symptoms : [];
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
       <NoticesCard />
-      <MonitoringStatusCard reports={reports} />
       {upcomingFirstCheckin ? <Card className="notice"><CalendarBlank aria-hidden="true" size={16} weight="duotone" /> Sua primeira mensagem de check-in por WhatsApp chega em {upcomingFirstCheckin}, por volta das 8h.</Card> : null}
-      <Timeline days={dashboard.timeline} data={dashboard} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} periodDisabled={loadingEvolution} />
-      <div className="stack" data-tour="patient-evolution">
-        {evolutionBlocked ? <EvolutionPaywall /> : loadingEvolution ? (
-          <section className="patient-dashboard-summary-grid">{Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
-        ) : evolutionReport ? <EvolutionCard report={evolutionReport} /> : null}
-        {!evolutionBlocked ? (
-          <InsightGenerationCard
-            report={evolutionReport}
-            insight={insight}
-            latestInsight={latestInsight}
-            periodLabel={periodLabel}
-            error={insightError}
-            generating={generatingInsight}
-            onGenerate={() => void generateInsight()}
-            compact
+      <div className="patient-dashboard-controls-row" data-tour="patient-period-controls">
+        <PeriodSelector
+          selected={selectedPeriod}
+          onChange={setSelectedPeriod}
+          disabled={loadingEvolution}
+          onSelectCustom={() => setSelectedPeriod('custom')}
+          customRange={customRange}
+          onCustomRangeChange={setCustomRange}
+          customError={customError}
+        />
+        {patientId ? (
+          <PatientHandoffButton
+            patientId={patientId}
+            patientName={user?.name}
+            startDate={period?.start_date}
+            endDate={period?.end_date}
+            disabled={selectedPeriod === 'custom' && !period}
           />
         ) : null}
+      </div>
+      {symptoms.length ? (
+        <div className="patient-dashboard-row-2">
+          <MonitoringStatusCard reports={reports} />
+          <SymptomsCard symptoms={symptoms} />
+        </div>
+      ) : (
+        <MonitoringStatusCard reports={reports} />
+      )}
+      <div className="stack" data-tour="patient-evolution">
+        {evolutionBlocked ? <EvolutionPaywall /> : loadingEvolution ? (
+          <section className="patient-dashboard-summary-grid">{Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
+        ) : evolutionReport ? <EvolutionCard report={evolutionReport} hideSymptoms /> : null}
       </div>
     </section>;
 }

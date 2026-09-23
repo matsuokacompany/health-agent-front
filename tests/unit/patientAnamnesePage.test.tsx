@@ -15,36 +15,31 @@ vi.mock('@/components/patient/PatientDataProvider', () => ({ usePatientData: () 
 const supplements = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock('@/services/supplements', () => ({ supplementsApi: { list: supplements.list, create: vi.fn(), update: vi.fn(), remove: vi.fn() } }));
 
+const allergies = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock('@/services/allergies', () => ({ allergiesApi: { list: allergies.list, create: vi.fn(), update: vi.fn(), remove: vi.fn() } }));
+
 const dietDocument = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock('@/services/dietDocument', async (original) => ({
   ...(await original<typeof import('@/services/dietDocument')>()),
   dietDocumentApi: { get: dietDocument.get, upload: vi.fn(), remove: vi.fn(), view: vi.fn() },
 }));
 
-const patientHandoff = vi.hoisted(() => ({ me: vi.fn(), forPatient: vi.fn() }));
-vi.mock('@/services/patientHandoff', () => ({ patientHandoffApi: { me: patientHandoff.me, forPatient: patientHandoff.forPatient } }));
-
 describe('página de anamnese do paciente', () => {
   beforeEach(() => {
     anamnese.me.mockReset();
     supplements.list.mockReset().mockResolvedValue([]);
+    allergies.list.mockReset().mockResolvedValue([]);
     dietDocument.get.mockReset().mockRejectedValue(new ApiError('não encontrado', 404));
-    patientHandoff.me.mockReset();
     patientData.plans = [];
     patientData.loading = false;
     auth.user = { id: 10, name: 'Paciente' };
   });
   afterEach(cleanup);
 
-  it('mostra o botão de baixar resumo no topo da página, não no final', async () => {
+  it('não mostra mais o botão de baixar resumo (removido do módulo de anamnese)', async () => {
     render(<PatientAnamnese />);
     await waitFor(() => expect(supplements.list).toHaveBeenCalled());
-
-    const button = screen.getByRole('button', { name: /Baixar resumo para o médico/ });
-    const dietHeading = screen.getByRole('heading', { name: 'Dieta em PDF' });
-    // The action sits before the rest of the page's cards, not appended
-    // after every other card on the page.
-    expect(button.compareDocumentPosition(dietHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Baixar resumo para o médico/ })).toBeNull();
   });
 
   it('mostra o editor de autoatendimento quando não há profissional vinculado', async () => {

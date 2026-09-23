@@ -1,12 +1,14 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PatientDashboard from '@/app/(patient)/patient/dashboard/page';
 
 const notifications = vi.hoisted(() => ({ list: vi.fn(), markAllRead: vi.fn(), markRead: vi.fn() }));
 vi.mock('@/services/notifications', () => ({ notificationsApi: notifications }));
 
-const selfMonitoring = vi.hoisted(() => ({ getEvolutionReport: vi.fn(), getInsight: vi.fn(), listInsights: vi.fn(), createPlan: vi.fn() }));
+const selfMonitoring = vi.hoisted(() => ({ getEvolutionReport: vi.fn(), createPlan: vi.fn() }));
 vi.mock('@/services/selfMonitoring', () => ({ selfMonitoringApi: selfMonitoring }));
+
+vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 10, name: 'Paciente' } }) }));
 
 const plan = { id: 1, title: 'Plano', active: true, start_date: '2026-08-01', end_date: null };
 vi.mock('@/components/patient/PatientDataProvider', () => ({
@@ -41,12 +43,17 @@ const baseReport = {
   risk_factors: ['Doença cardíaca', 'Diabetes'],
 };
 
+function digits(date: Date) {
+  return `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
+}
+function iso(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 describe('evolução no dashboard do paciente', () => {
   beforeEach(() => {
     notifications.list.mockReset().mockResolvedValue({ items: [], unread_count: 0 });
     selfMonitoring.getEvolutionReport.mockReset();
-    selfMonitoring.getInsight.mockReset();
-    selfMonitoring.listInsights.mockReset().mockResolvedValue({ items: [], pagination: { page: 1, per_page: 1, total: 0, total_pages: 0 } });
   });
   afterEach(cleanup);
 
@@ -67,19 +74,37 @@ describe('evolução no dashboard do paciente', () => {
     expect(spanDays).toBe(364);
   });
 
-  it('desabilita a geração do relatório e explica o cooldown quando já existe um relatório recente', async () => {
+  it('combina Status de monitoramento e Sintomas mais frequentes na mesma linha quando há sintomas no período', async () => {
     selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
-    const nextGenerationAt = new Date(Date.now() + 5 * 86_400_000).toISOString();
-    selfMonitoring.listInsights.mockResolvedValue({
-      items: [{ id: 42, start_date: '2025-09-23', end_date: '2026-09-23', generated_at: '2026-09-23T12:00:00Z', next_generation_at: nextGenerationAt }],
-      pagination: { page: 1, per_page: 1, total: 1, total_pages: 1 },
-    });
 
     render(<PatientDashboard />);
 
-    await waitFor(() => expect(selfMonitoring.getEvolutionReport).toHaveBeenCalled());
-    expect(await screen.findByText('Faltam 5 dias para o próximo.', { exact: false })).toBeTruthy();
-    const button = screen.getByRole('button', { name: 'Disponível novamente em breve' }) as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
+    expect(await screen.findByText('Sintomas mais frequentes')).toBeTruthy();
+    expect(screen.getByText('Status de monitoramento')).toBeTruthy();
+    expect(screen.getByText('Dor de cabeça')).toBeTruthy();
+  });
+
+  it('período personalizado exige as duas datas antes de liberar o resumo para o médico', async () => {
+    selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
+    render(<PatientDashboard />);
+    await screen.findByText('Sinais cardiorrespiratórios');
+    selfMonitoring.getEvolutionReport.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Período personalizado' }));
+    const handoffButton = screen.getByRole('button', { name: 'Baixar resumo para o médico' }) as HTMLButtonElement;
+    expect(handoffButton.disabled).toBe(true);
+    expect(selfMonitoring.getEvolutionReport).not.toHaveBeenCalled();
+
+    const end = new Date();
+    end.setDate(end.getDate() - 1);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 30);
+
+    fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: digits(start) } });
+    expect(handoffButton.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Data final'), { target: { value: digits(end) } });
+
+    await waitFor(() => expect(selfMonitoring.getEvolutionReport).toHaveBeenCalledWith({ start_date: iso(start), end_date: iso(end) }));
+    expect(handoffButton.disabled).toBe(false);
   });
 });

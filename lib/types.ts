@@ -89,6 +89,16 @@ export type SupplementInput = {
 };
 export type SupplementUpdate = Partial<SupplementInput>;
 
+export type AllergySeverity = 'LEVE' | 'MODERADA' | 'GRAVE' | 'RISCO_DE_MORTE';
+export type Allergy = {
+  id: number;
+  allergen: string;
+  severity: AllergySeverity;
+  created_at: string;
+};
+export type AllergyInput = { allergen: string; severity?: AllergySeverity };
+export type AllergyUpdate = Partial<AllergyInput>;
+
 export type ProfessionalProfile = {
   id: number;
   user_id?: number | null;

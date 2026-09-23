@@ -27,9 +27,9 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
   '/patient/dashboard': [
     { title: 'Bem-vindo à Julha', body: 'Vamos te mostrar rapidamente como acompanhar sua evolução por aqui. Leva menos de um minuto.' },
     { target: '[data-tour="sidebar-nav"]', title: 'Menu de navegação', body: 'Use o menu lateral para acessar seu dashboard, calendário, anamnese, relatórios e assinatura.' },
-    { target: '[data-tour="patient-monitoring-status"]', title: 'Status de monitoramento', body: 'Um resumo rápido de sinais de alerta identificados nas suas respostas recentes.' },
-    { target: '[data-tour="patient-timeline"]', title: 'Seu histórico', body: 'Veja seu último registro e os últimos 7 dias de check-ins. Os botões de período abaixo controlam o relatório de evolução mais completo, na sequência.' },
-    { target: '[data-tour="patient-evolution"]', title: 'Evolução e relatório de IA', body: 'Métricas de adesão e sintomas do período selecionado, e o botão para gerar um relatório de IA para levar ao médico.' },
+    { target: '[data-tour="patient-period-controls"]', title: 'Período e resumo para o médico', body: 'Escolha o período (inclusive um período personalizado) que os cartões abaixo vão considerar, e baixe um resumo para levar ao médico no mesmo período.' },
+    { target: '[data-tour="patient-monitoring-status"]', title: 'Status de monitoramento', body: 'Um resumo rápido de sinais de alerta identificados nas suas respostas recentes, ao lado dos sintomas mais frequentes do período selecionado.' },
+    { target: '[data-tour="patient-evolution"]', title: 'Sua evolução', body: 'Métricas de adesão, sinais de alerta e fatores de risco do período selecionado.' },
     { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
   '/patient/monitoring': [

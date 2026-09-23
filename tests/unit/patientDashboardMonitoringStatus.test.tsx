@@ -14,6 +14,8 @@ vi.mock('@/components/patient/PatientDataProvider', () => ({
   usePatientData: () => ({ reports: mockReports, plans: [plan], loading: false, refresh: vi.fn() }),
 }));
 
+vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 10, name: 'Paciente' } }) }));
+
 describe('status de monitoramento no dashboard do paciente', () => {
   beforeEach(() => {
     notifications.list.mockReset();

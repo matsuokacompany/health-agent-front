@@ -5,8 +5,8 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
 import { SelfAnamneseEditor } from '@/components/patient/SelfAnamneseEditor';
 import { SupplementsList } from '@/components/patient/SupplementsList';
+import { AllergiesList } from '@/components/patient/AllergiesList';
 import { DietDocumentUpload } from '@/components/patient/DietDocumentUpload';
-import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
 import { usePatientData } from '@/components/patient/PatientDataProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { anamnesesApi } from '@/services/anamnese';
@@ -19,7 +19,10 @@ function LoadingAnamnese() {
       <SkeletonBlock className="sk-action" />
     </div>
     <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock className="sk-tile" /></div>
-    <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
+    <div className="patient-anamnese-grid">
+      <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
+      <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
+    </div>
     <div className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
   </section>;
 }
@@ -61,7 +64,6 @@ export default function PatientAnamnese() {
 
   return (
     <section className="stack">
-      {patientId ? <div className="page-actions"><PatientHandoffButton patientId={patientId} patientName={user?.name} /></div> : null}
       {hasProfessional ? (
         <ReadOnlyAnamnese
           info={info}
@@ -73,7 +75,10 @@ export default function PatientAnamnese() {
       ) : (
         <SelfAnamneseEditor />
       )}
-      <SupplementsList />
+      <div className="patient-anamnese-grid">
+        <SupplementsList />
+        <AllergiesList />
+      </div>
       {patientId ? <DietDocumentUpload patientId={patientId} /> : null}
     </section>
   );
