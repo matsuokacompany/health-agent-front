@@ -11,8 +11,12 @@ export default function PatientReports({ params }: { params: Promise<{ patientId
   const dashboard = useProfessionalDashboard(patientId);
 
   if (dashboard.error) return <ErrorState message={dashboard.error.message} />;
-  if (dashboard.isLoading) return <section className="card ai-reports-section" aria-busy="true" aria-label="Carregando relatórios">
-    <SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock className="sk-action" />
+  if (dashboard.isLoading) return <section className="ai-reports-section professional-detail-section" aria-busy="true" aria-label="Carregando relatórios">
+    <SkeletonBlock className="sk-eyebrow" />
+    <article className="card ai-config-card">
+      <SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock />
+      <SkeletonBlock className="sk-action" />
+    </article>
   </section>;
 
   const displayName = dashboard.data?.user?.name ?? 'Prontuário do paciente';
