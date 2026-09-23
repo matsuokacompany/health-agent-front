@@ -20,9 +20,24 @@ type ResponsiveAppShellProps = {
   footer?: React.ReactNode;
 };
 
+const SIDEBAR_COLLAPSED_KEY = 'julha.sidebarCollapsed';
+
 export function ResponsiveAppShell({ children, title, sidebarTitle, marker, links, profileHref, footerHref, footerLabel, className = '', notice, footer }: ResponsiveAppShellProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    setIsCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
+  }, []);
+
+  function toggleCollapsed() {
+    setIsCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+      return next;
+    });
+  }
 
   useEffect(() => {
     setIsSidebarOpen(false);
@@ -51,7 +66,7 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
 
   return (
     <TourProvider>
-      <main className={`app-shell responsive-app-shell ${className}`.trim()}>
+      <main className={`app-shell responsive-app-shell ${isCollapsed ? 'is-sidebar-collapsed' : ''} ${className}`.trim()}>
         <button className={`drawer-backdrop ${isSidebarOpen ? 'is-visible' : ''}`} type="button" aria-label="Fechar menu de navegação" onClick={() => setIsSidebarOpen(false)} />
         <AppSidebar
           title={sidebarTitle}
@@ -62,9 +77,11 @@ export function ResponsiveAppShell({ children, title, sidebarTitle, marker, link
           footerLabel={footerLabel}
           mobileOpen={isSidebarOpen}
           onNavigate={() => setIsSidebarOpen(false)}
+          collapsed={isCollapsed}
+          onToggleCollapse={toggleCollapsed}
         />
         <section className="content-shell responsive-content-shell">
-          <AppHeader title={title} onMenuClick={() => setIsSidebarOpen(true)} />
+          <AppHeader title={title} links={links} onMenuClick={() => setIsSidebarOpen(true)} />
           {notice}
           <div className="page-outlet responsive-page-outlet">{children}</div>
           {footer}

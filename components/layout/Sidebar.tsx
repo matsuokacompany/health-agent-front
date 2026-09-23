@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ChartBar, Users, User, ClipboardText, Broadcast, FileText, Sparkle, UsersThree, UserPlus,
-  Stethoscope, WhatsappLogo, House, PushPin, GearSix, CreditCard, Circle,
+  Stethoscope, WhatsappLogo, House, PushPin, GearSix, CreditCard, Circle, CaretDoubleLeft, CaretDoubleRight,
   type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/components/i18n/I18nProvider';
@@ -72,20 +72,32 @@ type AppSidebarProps = {
   footerLabel: string;
   mobileOpen?: boolean;
   onNavigate?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 };
 
-export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, mobileOpen = false, onNavigate }: AppSidebarProps) {
+export function AppSidebar({ title, marker, links, profileHref, footerHref, footerLabel, mobileOpen = false, onNavigate, collapsed = false, onToggleCollapse }: AppSidebarProps) {
   const pathname = usePathname();
   const { t } = useI18n();
-  return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
+  return <aside className={`sidebar app-sidebar ${mobileOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`.trim()} aria-label={t('nav.mainMenu')}>
     <div className="brand-mark sidebar-brand">
       <div className="sidebar-brand-main">
-        <span className="sidebar-logo-slot">
-          <img className="brand-logo-light" src="/brand/julha-logo-light.png" alt="Julha" />
-          <img className="brand-logo-dark" src="/brand/julha-logo-dark.png" alt="Julha" />
+        <span className="sidebar-logo-slot" title={title}>
+          <img className="brand-logo-light" src="/brand/julha-logo-light.png" alt={title} />
+          <img className="brand-logo-dark" src="/brand/julha-logo-dark.png" alt={title} />
         </span>
-        <span className="sidebar-label">{title}</span>
       </div>
+      {onToggleCollapse ? (
+        <button
+          type="button"
+          className="sidebar-collapse-button"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
+          aria-pressed={collapsed}
+        >
+          {collapsed ? <CaretDoubleRight aria-hidden="true" size={16} weight="bold" /> : <CaretDoubleLeft aria-hidden="true" size={16} weight="bold" />}
+        </button>
+      ) : null}
     </div>
     <nav className="menu" aria-label={t('nav.mainMenu')} data-tour="sidebar-nav">
       {links.map(([href,label]) => { const Icon = icons[label] ?? Circle; return <Link className={pathname === href ? 'is-current' : ''} key={href} href={href as never} onClick={onNavigate} title={label}><Icon aria-hidden="true" size={20} weight="duotone" className={iconColors[label]} /><span className="sidebar-label">{label}</span></Link>; })}
