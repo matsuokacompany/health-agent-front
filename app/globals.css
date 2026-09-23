@@ -361,7 +361,7 @@ img.brand-logo-dark{display:none}
 .sidebar-profile-menu{position:relative}
 .sidebar-profile-menu .nav-action{width:100%;justify-content:flex-start}
 .sidebar-profile-caret{margin-left:auto;color:var(--muted)}
-.sidebar-profile-flyout{position:absolute;left:100%;top:0;margin-left:8px;z-index:30;display:grid;min-width:220px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 18px 60px rgb(0 0 0 / 18%)}
+.sidebar-profile-flyout{position:absolute;left:100%;bottom:0;margin-left:8px;z-index:30;display:grid;min-width:220px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 18px 60px rgb(0 0 0 / 18%)}
 .sidebar-profile-flyout a{display:flex;align-items:center;gap:8px;justify-content:flex-start;width:100%;min-height:38px;padding:8px 10px;border-radius:8px;color:var(--ink);font-weight:700;text-decoration:none}
 .sidebar-profile-flyout a:hover{background:var(--surface-soft);color:var(--brand)}
 @media (max-width:860px){.sidebar-profile-flyout{left:auto;right:0;top:calc(100% + 8px);margin-left:0}}

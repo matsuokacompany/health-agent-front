@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ReadOnlyAnamnese } from '@/components/patient/ReadOnlyAnamnese';
 import { SelfAnamneseEditor } from '@/components/patient/SelfAnamneseEditor';
@@ -62,12 +61,7 @@ export default function PatientAnamnese() {
 
   return (
     <section className="stack">
-      <PageHeader
-        eyebrow="Sua saúde"
-        title="Anamnese"
-        description="Seu histórico de saúde, alergias, suplementos e plano alimentar — tudo num só lugar, pronto para levar a uma consulta."
-        action={patientId ? <PatientHandoffButton patientId={patientId} patientName={user?.name} /> : null}
-      />
+      {patientId ? <div className="page-actions"><PatientHandoffButton patientId={patientId} patientName={user?.name} /></div> : null}
       {hasProfessional ? (
         <ReadOnlyAnamnese
           info={info}

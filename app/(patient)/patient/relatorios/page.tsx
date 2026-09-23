@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, PageHeader } from '@/components/ui/design';
+import { Card } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
@@ -42,11 +42,6 @@ export default function PatientRelatorios() {
 
   return (
     <section className="stack" aria-label="Relatórios">
-      <PageHeader
-        eyebrow="Relatórios"
-        title="Histórico de resumos por IA"
-        description="Cada resumo gerado em Automonitoramento fica registrado aqui, para você acompanhar como sua avaliação evoluiu ao longo do tempo."
-      />
       {loading ? <LoadingRelatorios /> : null}
       {!loading && error ? <ErrorState message={error} /> : null}
       {!loading && !error && items?.length === 0 ? (
