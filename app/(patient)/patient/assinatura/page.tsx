@@ -61,13 +61,6 @@ export default function PatientAssinatura() {
             histórico de relatórios estão liberados para você sem custo adicional.
           </p>
         </Card>
-        <p className="muted compact legal-links">
-          <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
-          {' · '}
-          <a href="/politica-de-privacidade" rel="noopener noreferrer" target="_blank">Política de Privacidade</a>
-          {' · '}
-          <a href="/politica-de-reembolso" rel="noopener noreferrer" target="_blank">Política de Reembolso</a>
-        </p>
       </section>
     );
   }
@@ -90,13 +83,6 @@ export default function PatientAssinatura() {
       ) : (
         <Card><p className="notice">Nenhum plano configurado ainda. Fale com o suporte da Julha.</p></Card>
       )}
-      <p className="muted compact legal-links">
-        <a href="/termos-de-uso" rel="noopener noreferrer" target="_blank">Termos de Uso</a>
-        {' · '}
-        <a href="/politica-de-privacidade" rel="noopener noreferrer" target="_blank">Política de Privacidade</a>
-        {' · '}
-        <a href="/politica-de-reembolso" rel="noopener noreferrer" target="_blank">Política de Reembolso</a>
-      </p>
     </section>
   );
 }

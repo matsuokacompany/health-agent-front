@@ -21,7 +21,7 @@ const EMPTY_FORM: AllergyFormValues = { allergen: '', severity: 'MODERADA' };
 
 function SeverityField({ values, onChange }: { values: AllergyFormValues; onChange: (values: AllergyFormValues) => void }) {
   return (
-    <label className="supplement-field supplement-field-period">
+    <label className="supplement-field supplement-field-severity">
       Intensidade
       <select value={values.severity} onChange={(event) => onChange({ ...values, severity: event.target.value as AllergySeverity })} aria-label="Intensidade da alergia">
         <option value="LEVE">Leve</option>
@@ -138,7 +138,7 @@ export function PatientAllergiesEditor({ patientId }: { patientId: string }) {
             allergies.map((allergy) =>
               editingId === allergy.id ? (
                 <form key={allergy.id} className="supplement-item is-editing supplement-form-row" onSubmit={(event) => void handleSaveEdit(event, allergy.id)}>
-                  <label className="supplement-field supplement-field-name">
+                  <label className="supplement-field supplement-field-allergen">
                     Alergia a
                     <input
                       type="text"
@@ -178,7 +178,7 @@ export function PatientAllergiesEditor({ patientId }: { patientId: string }) {
       )}
       {error ? <p className="notice danger" role="alert">{error}</p> : null}
       <form className="supplement-form-row" onSubmit={(event) => void handleAdd(event)}>
-        <label className="supplement-field supplement-field-name">
+        <label className="supplement-field supplement-field-allergen">
           Alergia a
           <input
             type="text"

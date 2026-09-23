@@ -3,6 +3,7 @@
 import { RequireAccessContext } from '@/components/auth/guards';
 import { useI18n } from '@/components/i18n/I18nProvider';
 import { PatientDataProvider, usePatientData } from '@/components/patient/PatientDataProvider';
+import { LegalLinks } from './LegalLinks';
 import { ResponsiveAppShell } from './ResponsiveAppShell';
 
 function PatientShell({ children }: { children: React.ReactNode }) {
@@ -20,7 +21,7 @@ function PatientShell({ children }: { children: React.ReactNode }) {
     ['/patient/relatorios', t('nav.reports')],
     ['/patient/assinatura', t('nav.subscription')],
   ];
-  const footer = <footer className="app-footer">{t('app.footer')}</footer>;
+  const footer = <footer className="app-footer">{t('app.footer')}<LegalLinks /></footer>;
 
   return <ResponsiveAppShell title={t('app.patientPortal')} sidebarTitle="Julha" marker="+" links={links} profileHref="/patient/profile" footerHref="/logout" footerLabel={t('nav.logout')} className="patient-shell" footer={footer}>{children}</ResponsiveAppShell>;
 }

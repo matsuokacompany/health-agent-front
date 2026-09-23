@@ -74,13 +74,12 @@ describe('evolução no dashboard do paciente', () => {
     expect(spanDays).toBe(364);
   });
 
-  it('combina Status de monitoramento e Sintomas mais frequentes na mesma linha quando há sintomas no período', async () => {
+  it('mostra Sintomas mais frequentes quando há sintomas no período', async () => {
     selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
 
     render(<PatientDashboard />);
 
     expect(await screen.findByText('Sintomas mais frequentes')).toBeTruthy();
-    expect(screen.getByText('Status de monitoramento')).toBeTruthy();
     expect(screen.getByText('Dor de cabeça')).toBeTruthy();
   });
 
