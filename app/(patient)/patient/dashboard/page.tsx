@@ -207,10 +207,13 @@ function NoticesCard() {
 
 function LoadingDashboard() {
   return <section className="patient-dashboard-v2" aria-busy="true" aria-label="Carregando dashboard">
-    <div className="ai-shortcuts">{Array.from({ length: 5 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
+    <div className="patient-dashboard-controls-row">
+      <div className="ai-shortcuts">{Array.from({ length: 5 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
+      <SkeletonBlock className="sk-action" />
+    </div>
     <Card className="patient-monitoring-status-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
     <section className="patient-dashboard-summary-grid">
-      {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
+      {Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
   </section>;
 }
@@ -321,7 +324,7 @@ export default function PatientDashboard() {
       )}
       <div className="stack" data-tour="patient-evolution">
         {evolutionBlocked ? <EvolutionPaywall /> : loadingEvolution ? (
-          <section className="patient-dashboard-summary-grid">{Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
+          <section className="patient-dashboard-summary-grid">{Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
         ) : evolutionReport ? <EvolutionCard report={evolutionReport} hideSymptoms /> : null}
       </div>
     </section>;

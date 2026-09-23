@@ -21,7 +21,17 @@ function planForm(plan: MonitoringPlan): PlanForm { return { title: plan.title ?
 function PlanListSkeleton() {
   return <section className="stack" aria-busy="true" aria-label="Carregando planos">
     {Array.from({ length: 2 }, (_, index) => (
-      <article className="card" key={index}><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /><SkeletonBlock /></article>
+      <article className="card" key={index}>
+        <div className="page-actions">
+          <div><SkeletonBlock className="sk-title" /><SkeletonBlock /></div>
+          <SkeletonBlock className="sk-action" />
+        </div>
+        <SkeletonBlock className="sk-title" /><SkeletonBlock />
+        <dl className="patient-info-list">
+          <div><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock /></div>
+          <div><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock /></div>
+        </dl>
+      </article>
     ))}
   </section>;
 }

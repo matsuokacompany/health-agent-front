@@ -12,8 +12,9 @@ import { UsersThree, Stethoscope } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { MetricCard } from '@/components/ui/design';
 
-function LoadingPatients() {
+function LoadingPatients({ isProfessional }: { isProfessional: boolean }) {
   return <div aria-busy="true" aria-label="Carregando pacientes monitorados">
+    {isProfessional ? <div className="page-actions professional-patients-actions"><SkeletonBlock className="sk-action" /></div> : null}
     <section className="grid">
       <MetricCardSkeleton />
       <MetricCardSkeleton />
@@ -45,7 +46,7 @@ export default function Patients() {
   const activeCount = (data ?? []).filter((patient) => patient.active).length;
   const symptomCount = (data ?? []).reduce((sum, patient) => sum + (patient.symptom_reports_count ?? 0), 0);
 
-  if (isLoading) return <LoadingPatients />;
+  if (isLoading) return <LoadingPatients isProfessional={isProfessional} />;
   if (error) return <ErrorState message={error.message} />;
 
   return <>
