@@ -14,10 +14,12 @@ export default function PatientClinical({ params }: { params: Promise<{ patientI
 
   return (
     <div className="professional-tab-content professional-clinical-content">
-      <PatientAnamneseEditor patientId={patientId} />
-      <div className="patient-anamnese-grid">
-        <PatientSupplementsEditor patientId={patientId} />
-        <PatientAllergiesEditor patientId={patientId} />
+      <div className="professional-clinical-main">
+        <PatientAnamneseEditor patientId={patientId} />
+        <div className="patient-anamnese-grid">
+          <PatientSupplementsEditor patientId={patientId} />
+          <PatientAllergiesEditor patientId={patientId} />
+        </div>
       </div>
       {isValidPatientId ? <ClinicalImagesSection patientId={selectedPatientId} /> : <ErrorState message="Paciente inválido." />}
     </div>

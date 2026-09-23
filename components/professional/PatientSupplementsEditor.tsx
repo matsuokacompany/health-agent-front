@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { PencilSimple, Trash } from '@phosphor-icons/react';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { Button } from '@/components/ui/design';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -201,8 +202,12 @@ export function PatientSupplementsEditor({ patientId }: { patientId: string }) {
                     ) : null}
                   </div>
                   <div className="page-actions">
-                    <Button variant="secondary" onClick={() => startEditing(supplement)} disabled={removingId === supplement.id}>Editar</Button>
-                    <Button variant="ghost" loading={removingId === supplement.id} loadingLabel="Removendo..." onClick={() => void handleRemove(supplement.id)}>Remover</Button>
+                    <button type="button" className="button secondary icon-button" onClick={() => startEditing(supplement)} disabled={removingId === supplement.id} aria-label="Editar medicamento" title="Editar">
+                      <PencilSimple aria-hidden="true" size={16} />
+                    </button>
+                    <button type="button" className="button ghost icon-button" onClick={() => void handleRemove(supplement.id)} disabled={removingId === supplement.id} aria-label="Remover medicamento" title="Remover">
+                      {removingId === supplement.id ? <span className="spinner" aria-hidden="true" /> : <Trash aria-hidden="true" size={16} />}
+                    </button>
                   </div>
                 </div>
               ),
