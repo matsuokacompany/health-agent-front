@@ -5,6 +5,9 @@ import PatientDashboard from '@/app/(patient)/patient/dashboard/page';
 const notifications = vi.hoisted(() => ({ list: vi.fn(), markAllRead: vi.fn(), markRead: vi.fn() }));
 vi.mock('@/services/notifications', () => ({ notificationsApi: notifications }));
 
+const selfMonitoring = vi.hoisted(() => ({ getEvolutionReport: vi.fn(), getInsight: vi.fn(), listInsights: vi.fn(), createPlan: vi.fn() }));
+vi.mock('@/services/selfMonitoring', () => ({ selfMonitoringApi: selfMonitoring }));
+
 const plan = { id: 1, title: 'Plano', active: true, start_date: '2026-08-01', end_date: null };
 let mockReports: Array<Record<string, unknown>> = [];
 vi.mock('@/components/patient/PatientDataProvider', () => ({
@@ -15,6 +18,8 @@ describe('status de monitoramento no dashboard do paciente', () => {
   beforeEach(() => {
     notifications.list.mockReset();
     notifications.list.mockResolvedValue({ items: [], unread_count: 0 });
+    selfMonitoring.getEvolutionReport.mockReset().mockResolvedValue({ sufficient_data: false, minimum_completed_checkins: 10, metrics: { completed_checkins: 0 } });
+    selfMonitoring.listInsights.mockReset().mockResolvedValue({ items: [], pagination: { page: 1, per_page: 1, total: 0, total_pages: 0 } });
     mockReports = [];
   });
   afterEach(cleanup);

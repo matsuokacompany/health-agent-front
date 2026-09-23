@@ -209,7 +209,7 @@ export default function AdminCostsPage() {
       <section className="grid admin-metrics-grid admin-section-offset" data-tour="custos-metrics">
         <MetricCard icon={<Money aria-hidden="true" size={22} weight="duotone" />} label="Total em reais (período)" value={formatBrlFromCents(totalBrlCents)} description="WhatsApp estimado + lançamentos manuais" tone="info" />
         <MetricCard icon={<Robot aria-hidden="true" size={22} weight="duotone" />} label="Relatórios de IA gerados" value={summary.ai_report_count} description={`${formatUsd(summary.ai_report_cost_usd)} — custo real cobrado pela OpenAI`} />
-        <MetricCard icon={<NotePencil aria-hidden="true" size={22} weight="duotone" />} label="Resumos de automonitoramento gerados" value={summary.self_monitoring_report_count} description={`${formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Resumo por IA")`} />
+        <MetricCard icon={<NotePencil aria-hidden="true" size={22} weight="duotone" />} label="Relatórios de automonitoramento gerados" value={summary.self_monitoring_report_count} description={`${formatUsd(summary.self_monitoring_cost_usd)} — custo real cobrado pela OpenAI (pacientes, "Relatório de IA")`} />
         <MetricCard
           icon={<WhatsappLogo aria-hidden="true" size={22} weight="duotone" />}
           label="Mensagens de WhatsApp enviadas"
