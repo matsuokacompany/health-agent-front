@@ -65,4 +65,55 @@ describe('dashboard do profissional', () => {
     render(<ProfessionalDashboard />);
     expect(screen.getByLabelText('Carregando dashboard')).toBeTruthy();
   });
+
+  it('mostra o gráfico de adesão dos pacientes', () => {
+    useProfessionalDashboardOverview.mockReturnValue({
+      data: {
+        active_patients: 2,
+        red_flags: [],
+        top_symptoms: [],
+        adherence: [
+          { patient_id: 10, patient_name: 'Maria Silva', adherence_percentage: 40 },
+          { patient_id: 11, patient_name: 'João Souza', adherence_percentage: 90 },
+        ],
+        symptoms_by_month: [],
+      },
+      isLoading: false,
+      error: null,
+    });
+    render(<ProfessionalDashboard />);
+    expect(screen.getByText('Adesão dos pacientes')).toBeTruthy();
+    expect(screen.getByText('Maria Silva')).toBeTruthy();
+    expect(screen.getByText('40%')).toBeTruthy();
+    expect(screen.getByText('João Souza')).toBeTruthy();
+    expect(screen.getByText('90%')).toBeTruthy();
+  });
+
+  it('mostra o gráfico de sintomas por mês', () => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    useProfessionalDashboardOverview.mockReturnValue({
+      data: {
+        active_patients: 1,
+        red_flags: [],
+        top_symptoms: [],
+        adherence: [],
+        symptoms_by_month: [{ month: currentMonth, count: 7 }],
+      },
+      isLoading: false,
+      error: null,
+    });
+    render(<ProfessionalDashboard />);
+    expect(screen.getByText('Sintomas por mês')).toBeTruthy();
+    expect(screen.getByText('7 registros de sintomas no período, somando todos os pacientes.')).toBeTruthy();
+  });
+
+  it('mostra estados vazios para adesão quando não há check-ins', () => {
+    useProfessionalDashboardOverview.mockReturnValue({
+      data: { active_patients: 0, red_flags: [], top_symptoms: [], adherence: [], symptoms_by_month: [] },
+      isLoading: false,
+      error: null,
+    });
+    render(<ProfessionalDashboard />);
+    expect(screen.getByText(/Nenhum check-in registrado pelos seus pacientes/)).toBeTruthy();
+  });
 });

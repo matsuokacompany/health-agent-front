@@ -4,7 +4,6 @@ import { usePathname } from 'next/navigation';
 import { use, useEffect, useRef } from 'react';
 import { useProfessionalDashboard } from '@/hooks/useProfessional';
 import { useSetBreadcrumbTrail } from '@/components/layout/BreadcrumbTrail';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/states';
 import { ClipboardText, ChatCircleText, Stethoscope, Sparkle, Images } from '@phosphor-icons/react';
 
@@ -48,11 +47,6 @@ export default function PatientDetailLayout({ children, params }: { children: Re
 
   return (
     <div className="professional-patient-detail">
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href="/professional/patients">Pacientes</Link>
-        <span aria-hidden="true">/</span>
-        <span>{dashboard.isLoading ? <SkeletonBlock className="sk-eyebrow" /> : displayName}</span>
-      </nav>
       <nav className="patient-section-switch" aria-label="Seções do prontuário">
         {items.map((item) => (
           <Link

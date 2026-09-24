@@ -5,14 +5,18 @@ import { ErrorState, EmptyState } from '@/components/ui/states';
 import { MetricCard } from '@/components/ui/design';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { UsersThree, Warning } from '@phosphor-icons/react';
-import type { ProfessionalDashboardRedFlag } from '@/services/professional';
+import type { ProfessionalDashboardAdherenceEntry, ProfessionalDashboardMonthlySymptomCount, ProfessionalDashboardRedFlag } from '@/services/professional';
 
 function LoadingDashboard() {
   return <div aria-busy="true" aria-label="Carregando dashboard">
-    <section className="grid">
+    <section className="split professional-detail-section">
       <MetricCardSkeleton />
+      <article><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-chart" /></article>
     </section>
-    <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-chart" /></article>
+    <section className="split professional-detail-section">
+      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></article>
+      <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-chart" /></article>
+    </section>
     <section className="split professional-detail-section">
       <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></article>
       <article className="card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></article>
@@ -48,7 +52,7 @@ function RedFlagsTrendChart({ redFlags }: { redFlags: ProfessionalDashboardRedFl
   const total = days.reduce((sum, day) => sum + (counts.get(day.key) ?? 0), 0);
 
   return (
-    <article className="card professional-trend-chart">
+    <article className="professional-trend-chart">
       <span className="eyebrow">Últimos {TREND_WINDOW_DAYS} dias</span>
       <h2>Sinais de risco por dia</h2>
       <p className="muted compact">{total} {total === 1 ? 'sinal relatado' : 'sinais relatados'} no período, somando todos os pacientes.</p>
@@ -78,6 +82,91 @@ function RedFlagsTrendChart({ redFlags }: { redFlags: ProfessionalDashboardRedFl
   );
 }
 
+const SYMPTOMS_MONTHS_WINDOW = 6;
+const DASHBOARD_ADHERENCE_WINDOW_DAYS = 30;
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function monthLabel(key: string) {
+  const [year, month] = key.split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(new Date(year, month - 1, 1)).replace('.', '');
+}
+
+/** Monthly count of symptom reports over the trend window, oldest first --
+ * complements the daily red-flags chart with a longer-range view of overall
+ * symptom volume across the professional's whole patient panel. */
+function SymptomsByMonthChart({ data }: { data: ProfessionalDashboardMonthlySymptomCount[] }) {
+  const months = Array.from({ length: SYMPTOMS_MONTHS_WINDOW }, (_, index) => {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - (SYMPTOMS_MONTHS_WINDOW - 1 - index));
+    return monthKey(date);
+  });
+  const counts = new Map(data.map((entry) => [entry.month, entry.count]));
+  const maxCount = Math.max(1, ...months.map((month) => counts.get(month) ?? 0));
+  const total = months.reduce((sum, month) => sum + (counts.get(month) ?? 0), 0);
+
+  return (
+    <article className="card professional-trend-chart">
+      <span className="eyebrow">Últimos {SYMPTOMS_MONTHS_WINDOW} meses</span>
+      <h2>Sintomas por mês</h2>
+      <p className="muted compact">{total} {total === 1 ? 'registro' : 'registros'} de sintomas no período, somando todos os pacientes.</p>
+      <figure className="trend-chart-figure" aria-label={`Sintomas por mês nos últimos ${SYMPTOMS_MONTHS_WINDOW} meses: ${total} no total`}>
+        <div className="trend-chart-bars" aria-hidden="true">
+          {months.map((month) => {
+            const count = counts.get(month) ?? 0;
+            const heightPct = Math.max((count / maxCount) * 100, count > 0 ? 10 : 3);
+            return (
+              <div className="trend-chart-column" key={month} title={`${monthLabel(month)}: ${count} ${count === 1 ? 'registro' : 'registros'}`}>
+                {count > 0 ? <span className="trend-chart-value">{count}</span> : null}
+                <span className="trend-chart-track"><span className="trend-chart-bar" style={{ height: `${heightPct}%` }} /></span>
+                <span className="trend-chart-day">{monthLabel(month)}</span>
+              </div>
+            );
+          })}
+        </div>
+        <table className="sr-only">
+          <caption>Sintomas por mês, últimos {SYMPTOMS_MONTHS_WINDOW} meses</caption>
+          <thead><tr><th>Mês</th><th>Sintomas</th></tr></thead>
+          <tbody>
+            {months.map((month) => <tr key={month}><td>{monthLabel(month)}</td><td>{counts.get(month) ?? 0}</td></tr>)}
+          </tbody>
+        </table>
+      </figure>
+    </article>
+  );
+}
+
+/** Per-patient check-in adherence over a rolling window, lowest first so the
+ * patients most likely to need a follow-up nudge surface at the top. */
+function PatientAdherenceChart({ data }: { data: ProfessionalDashboardAdherenceEntry[] }) {
+  return (
+    <article className="card">
+      <span className="eyebrow">Últimos {DASHBOARD_ADHERENCE_WINDOW_DAYS} dias</span>
+      <h2>Adesão dos pacientes</h2>
+      {data.length ? (
+        <ul className="patient-symptom-terms-list">
+          {data.map((entry) => (
+            <li key={entry.patient_id} title={`${entry.patient_name}: ${entry.adherence_percentage}%`}>
+              <span className="patient-symptom-term-row patient-adherence-row">
+                <span className="patient-symptom-term-label">{entry.patient_name}</span>
+                <span className="patient-symptom-term-track">
+                  <span className="patient-symptom-term-bar" style={{ width: `${Math.max(entry.adherence_percentage, 2)}%` }} />
+                </span>
+                <span className="patient-symptom-term-count">{entry.adherence_percentage}%</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState description="Nenhum check-in registrado pelos seus pacientes no período." />
+      )}
+    </article>
+  );
+}
+
 export default function ProfessionalDashboard() {
   const { data, isLoading, error } = useProfessionalDashboardOverview();
 
@@ -86,14 +175,20 @@ export default function ProfessionalDashboard() {
 
   const redFlags = data?.red_flags ?? [];
   const topSymptoms = data?.top_symptoms ?? [];
+  const adherence = data?.adherence ?? [];
+  const symptomsByMonth = data?.symptoms_by_month ?? [];
   const maxCount = topSymptoms.reduce((max, term) => Math.max(max, term.count), 0);
 
   return (
     <div className="stack">
-      <section className="grid">
+      <section className="split professional-detail-section">
         <MetricCard icon={<UsersThree aria-hidden="true" size={22} weight="duotone" />} label="Pacientes ativos" value={data?.active_patients ?? 0} tone="info" />
+        <RedFlagsTrendChart redFlags={redFlags} />
       </section>
-      <RedFlagsTrendChart redFlags={redFlags} />
+      <section className="split professional-detail-section">
+        <PatientAdherenceChart data={adherence} />
+        <SymptomsByMonthChart data={symptomsByMonth} />
+      </section>
       <section className="split professional-detail-section">
         <article className="card">
           <span className="eyebrow">Últimos 14 dias</span>
