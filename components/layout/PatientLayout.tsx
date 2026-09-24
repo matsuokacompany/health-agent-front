@@ -23,7 +23,7 @@ function PatientShell({ children }: { children: React.ReactNode }) {
   ];
   const footer = <footer className="app-footer">{t('app.footer')}<LegalLinks /></footer>;
 
-  return <ResponsiveAppShell title={t('app.patientPortal')} sidebarTitle="Julha" marker="+" links={links} profileHref="/patient/profile" footerHref="/logout" footerLabel={t('nav.logout')} className="patient-shell" footer={footer}>{children}</ResponsiveAppShell>;
+  return <ResponsiveAppShell title={t('app.patientPortal')} sidebarTitle="Julha" marker="+" links={links} profileHref="/patient/profile" footerHref="/logout" footerLabel={t('nav.logout')} footer={footer}>{children}</ResponsiveAppShell>;
 }
 
 export function PatientLayout({ children }: { children: React.ReactNode }) {

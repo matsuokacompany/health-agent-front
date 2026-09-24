@@ -75,6 +75,20 @@ describe('evolução no dashboard do paciente', () => {
     expect(spanDays).toBe(364);
   });
 
+  it('mantém o skeleton de página inteira até o relatório de evolução carregar, sem trocar para outro skeleton no meio', async () => {
+    let resolveReport!: (value: typeof baseReport) => void;
+    selfMonitoring.getEvolutionReport.mockReturnValue(new Promise((resolve) => { resolveReport = resolve; }));
+
+    render(<PatientDashboard />);
+
+    expect(screen.getByLabelText('Carregando dashboard')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Último ano' })).toBeNull();
+
+    resolveReport(baseReport);
+    expect(await screen.findByRole('button', { name: 'Último ano' })).toBeTruthy();
+    expect(screen.queryByLabelText('Carregando dashboard')).toBeNull();
+  });
+
   it('mostra Sintomas mais frequentes quando há sintomas no período', async () => {
     selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
 

@@ -253,15 +253,21 @@ export default function PatientDashboard() {
   const [evolutionReport, setEvolutionReport] = useState<EvolutionReport | null>(null);
   const [evolutionBlocked, setEvolutionBlocked] = useState(false);
   const [loadingEvolution, setLoadingEvolution] = useState(true);
+  // Tracks the first evolution fetch specifically, so the full-page skeleton
+  // stays up through both async loads (patient data, then the evolution
+  // report) instead of swapping to a second, different-looking skeleton
+  // mid-load -- later period changes just use the smaller inline skeleton
+  // in the real shell below, which is the expected/lighter refresh.
+  const [initialEvolutionLoaded, setInitialEvolutionLoaded] = useState(false);
 
   useEffect(() => {
     if (!dashboard.hasActiveMonitoring) return;
-    if (!period) { setEvolutionReport(null); setLoadingEvolution(false); return; }
+    if (!period) { setEvolutionReport(null); setLoadingEvolution(false); setInitialEvolutionLoaded(true); return; }
     setLoadingEvolution(true);
     selfMonitoringApi.getEvolutionReport(period)
       .then((result) => { setEvolutionReport(result); setEvolutionBlocked(false); })
       .catch((err) => { if (err instanceof ApiError && err.status === 402) { setEvolutionReport(null); setEvolutionBlocked(true); } })
-      .finally(() => setLoadingEvolution(false));
+      .finally(() => { setLoadingEvolution(false); setInitialEvolutionLoaded(true); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, dashboard.hasActiveMonitoring]);
 
@@ -272,6 +278,7 @@ export default function PatientDashboard() {
       await refresh(true);
     }} />;
   }
+  if (!initialEvolutionLoaded) return <LoadingDashboard />;
 
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
 
