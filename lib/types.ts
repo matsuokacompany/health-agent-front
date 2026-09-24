@@ -248,6 +248,7 @@ export type EvolutionReport = {
   sufficient_data: boolean;
   metrics: EvolutionMetrics;
   symptom_trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data';
+  symptom_trend_change_percentage_points: number | null;
   longest_gap_days: number;
   symptoms: EvolutionSymptomOccurrence[];
   timeline: EvolutionTimelineGroup[];

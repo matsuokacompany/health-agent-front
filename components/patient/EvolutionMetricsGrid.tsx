@@ -3,15 +3,24 @@ import { CheckCircle, Equals, ForkKnife, HourglassHigh, Leaf, PersonSimpleRun, P
 import { MetricCard } from '@/components/ui/design';
 import type { EvolutionReport } from '@/lib/types';
 
-const trendMeta: Record<EvolutionReport['symptom_trend'], { icon: ReactNode; value: string; description: string; tone?: 'ok' | 'warn' }> = {
-  increasing: { icon: <TrendUp aria-hidden="true" size={22} weight="duotone" />, value: 'Em alta', description: 'Sintomas em alta no período', tone: 'warn' },
-  decreasing: { icon: <TrendDown aria-hidden="true" size={22} weight="duotone" />, value: 'Em queda', description: 'Sintomas em queda no período', tone: 'ok' },
-  stable: { icon: <Equals aria-hidden="true" size={22} weight="duotone" />, value: 'Estável', description: 'Sem mudança relevante no período', tone: 'ok' },
-  insufficient_data: { icon: <Question aria-hidden="true" size={22} weight="duotone" />, value: 'Sem dados', description: 'Dados insuficientes para calcular tendência' },
+const trendMeta: Record<EvolutionReport['symptom_trend'], { icon: ReactNode; description: string; tone?: 'ok' | 'warn' }> = {
+  increasing: { icon: <TrendUp aria-hidden="true" size={22} weight="duotone" />, description: 'Sintomas em alta no período', tone: 'warn' },
+  decreasing: { icon: <TrendDown aria-hidden="true" size={22} weight="duotone" />, description: 'Sintomas em queda no período', tone: 'ok' },
+  stable: { icon: <Equals aria-hidden="true" size={22} weight="duotone" />, description: 'Sem mudança relevante no período', tone: 'ok' },
+  insufficient_data: { icon: <Question aria-hidden="true" size={22} weight="duotone" />, description: 'Dados insuficientes para calcular tendência' },
 };
 
 function percentageValue(value: number | null) {
   return value === null ? 'Não se aplica' : `${value}%`;
+}
+
+/** The number behind the trend label -- the percentage-point change in the
+ * symptom-report rate between the first and second half of the period, so
+ * this card reads a title + a number like every other one in the grid
+ * instead of standing out as the only word-based value. */
+function trendChangeValue(change: number | null) {
+  if (change === null) return '—';
+  return `${change > 0 ? '+' : ''}${change} p.p.`;
 }
 
 /** The at-a-glance adherence/symptom/trend metrics shared by the live
@@ -30,7 +39,7 @@ export function EvolutionMetricsGrid({ report }: { report: EvolutionReport }) {
     <MetricCard icon={<Stethoscope aria-hidden="true" size={22} weight="duotone" />} label="Dias com sintomas" value={report.metrics.checkins_with_symptoms} tone={report.metrics.checkins_with_symptoms > 0 ? 'warn' : 'ok'} />
     <MetricCard icon={<Leaf aria-hidden="true" size={22} weight="duotone" />} label="Dias sem sintomas" value={report.metrics.checkins_without_symptoms} tone="ok" />
     <MetricCard icon={<HourglassHigh aria-hidden="true" size={22} weight="duotone" />} label="Maior intervalo sem responder" value={`${report.longest_gap_days} dias`} tone={report.longest_gap_days > 2 ? 'warn' : undefined} />
-    <MetricCard icon={trend.icon} label="Tendência" value={trend.value} description={trend.description} tone={trend.tone} />
+    <MetricCard icon={trend.icon} label="Tendência de sintomas" value={trendChangeValue(report.symptom_trend_change_percentage_points)} description={trend.description} tone={trend.tone} />
     <MetricCard icon={<ForkKnife aria-hidden="true" size={22} weight="duotone" />} label="Adesão à dieta" value={percentageValue(adherence.diet_percentage)} tone={adherence.diet_percentage !== null ? (adherence.diet_percentage >= 80 ? 'ok' : 'warn') : undefined} />
     <MetricCard icon={<PersonSimpleRun aria-hidden="true" size={22} weight="duotone" />} label="Adesão ao exercício" value={percentageValue(adherence.exercise_percentage)} tone={adherence.exercise_percentage !== null ? (adherence.exercise_percentage >= 80 ? 'ok' : 'warn') : undefined} />
     <MetricCard icon={<Pill aria-hidden="true" size={22} weight="duotone" />} label="Adesão à medicação/suplemento" value={percentageValue(adherence.medication_percentage)} tone={adherence.medication_percentage !== null ? (adherence.medication_percentage >= 80 ? 'ok' : 'warn') : undefined} />

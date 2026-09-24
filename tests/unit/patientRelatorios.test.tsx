@@ -15,6 +15,7 @@ const baseReport = {
   sufficient_data: true,
   metrics: { total_checkins: 30, completed_checkins: 28, pending_checkins: 2, checkins_with_symptoms: 5, checkins_without_symptoms: 23, days_with_checkins: 28, adherence_percentage: 93.3, symptom_rate_percentage: 17.9, calendar_coverage_percentage: 93.3 },
   symptom_trend: 'stable' as const,
+  symptom_trend_change_percentage_points: 1.2,
   longest_gap_days: 2,
   symptoms: [],
   timeline: [],
