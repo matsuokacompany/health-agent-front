@@ -276,6 +276,5 @@ export function InsightGenerationCard({
         {cooldownActive ? 'Disponível novamente em breve' : result ? 'Atualizar relatório' : 'Gerar relatório de IA'}
       </Button>
     </div>
-    {!compact ? <p className="muted compact"><a href="/patient/relatorios">Ver histórico completo de relatórios →</a></p> : null}
   </Card>;
 }

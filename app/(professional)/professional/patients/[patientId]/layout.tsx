@@ -6,7 +6,7 @@ import { useProfessionalDashboard } from '@/hooks/useProfessional';
 import { useSetBreadcrumbTrail } from '@/components/layout/BreadcrumbTrail';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/states';
-import { ClipboardText, ChatCircleText, Stethoscope, Sparkle } from '@phosphor-icons/react';
+import { ClipboardText, ChatCircleText, Stethoscope, Sparkle, Images } from '@phosphor-icons/react';
 
 type PatientSection = { href: string; label: string; icon: React.ReactNode };
 
@@ -16,6 +16,7 @@ function sections(patientId: string): PatientSection[] {
     { href: base, label: 'Visão geral', icon: <ClipboardText aria-hidden="true" weight="duotone" /> },
     { href: `${base}/checkins`, label: 'Check-ins', icon: <ChatCircleText aria-hidden="true" weight="duotone" /> },
     { href: `${base}/clinical`, label: 'Dados clínicos', icon: <Stethoscope aria-hidden="true" weight="duotone" /> },
+    { href: `${base}/images`, label: 'Imagens', icon: <Images aria-hidden="true" weight="duotone" /> },
     { href: `${base}/reports`, label: 'Relatórios IA', icon: <Sparkle aria-hidden="true" weight="duotone" /> },
   ];
 }

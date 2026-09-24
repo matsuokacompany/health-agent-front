@@ -13,24 +13,9 @@ import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, PeriodSelector, S
 import type { AppNotification, DailyReport, EvolutionReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
-import { redFlagCategoryLabel } from '@/lib/redFlagCategories';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { shortcutPeriod } from '@/services/aiReports';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
-
-const MONITORING_STATUS_WINDOW_DAYS = 30;
-// Matches the longest window among ORANGE_COMBINATION_RULES on the backend
-// (app/services/red_flag_symptoms.py) -- a laranja notification older than
-// this is outside the pattern's own detection window and shouldn't still
-// read as "current" on this standing indicator.
-const ORANGE_STATUS_WINDOW_DAYS = 21;
-
-function formatDate(value?: string | null) {
-  if (!value) return 'Não informado';
-  const date = new Date(value.length <= 10 ? `${value}T00:00:00` : value);
-  if (Number.isNaN(date.getTime())) return 'Não informado';
-  return new Intl.DateTimeFormat('pt-BR').format(date);
-}
 
 function firstCheckinDate(startDate?: string | null) {
   if (!startDate) return null;
@@ -105,63 +90,6 @@ function buildFallbackDashboard(plans: MonitoringPlan[], reports: DailyReport[])
     lastResponse: last ? { date: last.report_date ?? last.updated_at ?? null, time: last.updated_at ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(last.updated_at)) : null, summary: last.symptom_description ?? last.cause ?? (last.had_symptoms ? 'Paciente registrou sintomas.' : 'Paciente respondeu sem sintomas.') } : null,
     nextPrompt: null,
   };
-}
-
-function MonitoringStatusCard({ reports }: { reports: DailyReport[] }) {
-  // The laranja (orange combination) tier isn't stored on any DailyReport --
-  // it's patient-history-based, not tied to a single check-in -- so it only
-  // ever surfaces as a Notification (see notify_symptom_combination_alert on
-  // the backend). Fetched independently from `reports`, same pattern as
-  // NoticesCard below.
-  const [orangeNotice, setOrangeNotice] = useState<AppNotification | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const windowStartMs = Date.now() - ORANGE_STATUS_WINDOW_DAYS * 86_400_000;
-    notificationsApi.list()
-      .then((result) => {
-        if (!mounted) return;
-        const match = result.items.find(
-          (item) => item.kind === 'SYMPTOM_CLUSTER_ALERT' && new Date(item.created_at).getTime() >= windowStartMs,
-        );
-        setOrangeNotice(match ?? null);
-      })
-      .catch(() => {});
-    return () => { mounted = false; };
-  }, []);
-
-  const windowStart = dateKey(new Date(Date.now() - (MONITORING_STATUS_WINDOW_DAYS - 1) * 86_400_000));
-  const latestRed = reports
-    .filter((report) => report.red_flag_category && String(report.report_date ?? '').slice(0, 10) >= windowStart)
-    .sort((a, b) => String(b.report_date ?? '').localeCompare(String(a.report_date ?? '')))[0];
-
-  // Priority vermelho > laranja > verde -- a possible emergency always
-  // takes the card over a "worth a short-term evaluation" pattern.
-  const cardClassName = latestRed
-    ? 'patient-monitoring-status-card has-alert'
-    : orangeNotice
-      ? 'patient-monitoring-status-card has-orange-alert'
-      : 'patient-monitoring-status-card';
-
-  return <Card className={cardClassName} data-tour="patient-monitoring-status">
-    <span className="eyebrow">Status de monitoramento</span>
-    {latestRed ? (
-      <>
-        <h2>🔴 Sinal de alerta identificado</h2>
-        <p className="muted">{redFlagCategoryLabel(latestRed.red_flag_category!)} — {formatDate(latestRed.report_date)}</p>
-      </>
-    ) : orangeNotice ? (
-      <>
-        <h2>🟠 Padrão de sinais em observação</h2>
-        <p className="muted">{orangeNotice.message}</p>
-      </>
-    ) : (
-      <>
-        <h2>🟢 Sem sinais de alerta</h2>
-        <p className="muted">Nenhum sinal de alerta identificado nos últimos {MONITORING_STATUS_WINDOW_DAYS} dias.</p>
-      </>
-    )}
-  </Card>;
 }
 
 function NoticesCard() {
@@ -314,14 +242,7 @@ export default function PatientDashboard() {
           />
         ) : null}
       </div>
-      {symptoms.length ? (
-        <div className="patient-dashboard-row-2">
-          <MonitoringStatusCard reports={reports} />
-          <SymptomsCard symptoms={symptoms} />
-        </div>
-      ) : (
-        <MonitoringStatusCard reports={reports} />
-      )}
+      {symptoms.length ? <SymptomsCard symptoms={symptoms} /> : null}
       <div className="stack" data-tour="patient-evolution">
         {evolutionBlocked ? <EvolutionPaywall /> : loadingEvolution ? (
           <section className="patient-dashboard-summary-grid">{Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>

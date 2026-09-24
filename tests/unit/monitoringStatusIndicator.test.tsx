@@ -1,27 +1,19 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import PatientDashboard from '@/app/(patient)/patient/dashboard/page';
+import { MonitoringStatusIndicator } from '@/components/patient/MonitoringStatusIndicator';
 
-const notifications = vi.hoisted(() => ({ list: vi.fn(), markAllRead: vi.fn(), markRead: vi.fn() }));
+const notifications = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock('@/services/notifications', () => ({ notificationsApi: notifications }));
 
-const selfMonitoring = vi.hoisted(() => ({ getEvolutionReport: vi.fn(), getInsight: vi.fn(), listInsights: vi.fn(), createPlan: vi.fn() }));
-vi.mock('@/services/selfMonitoring', () => ({ selfMonitoringApi: selfMonitoring }));
-
-const plan = { id: 1, title: 'Plano', active: true, start_date: '2026-08-01', end_date: null };
 let mockReports: Array<Record<string, unknown>> = [];
 vi.mock('@/components/patient/PatientDataProvider', () => ({
-  usePatientData: () => ({ reports: mockReports, plans: [plan], loading: false, refresh: vi.fn() }),
+  usePatientData: () => ({ reports: mockReports }),
 }));
 
-vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 10, name: 'Paciente' } }) }));
-
-describe('status de monitoramento no dashboard do paciente', () => {
+describe('status de monitoramento no header', () => {
   beforeEach(() => {
     notifications.list.mockReset();
     notifications.list.mockResolvedValue({ items: [], unread_count: 0 });
-    selfMonitoring.getEvolutionReport.mockReset().mockResolvedValue({ sufficient_data: false, minimum_completed_checkins: 10, metrics: { completed_checkins: 0 } });
-    selfMonitoring.listInsights.mockReset().mockResolvedValue({ items: [], pagination: { page: 1, per_page: 1, total: 0, total_pages: 0 } });
     mockReports = [];
   });
   afterEach(cleanup);
@@ -32,7 +24,7 @@ describe('status de monitoramento no dashboard do paciente', () => {
       { id: 2, report_date: '2026-09-05', completed: true, red_flag_category: 'cardiorrespiratorio' },
     ];
 
-    render(<PatientDashboard />);
+    render(<MonitoringStatusIndicator />);
 
     expect(await screen.findByText('🔴 Sinal de alerta identificado')).toBeTruthy();
     expect(screen.getByText(/Sinais cardiorrespiratórios/)).toBeTruthy();
@@ -41,7 +33,7 @@ describe('status de monitoramento no dashboard do paciente', () => {
   it('mostra status tranquilo quando não há sinais de alerta recentes', async () => {
     mockReports = [{ id: 1, report_date: '2026-09-05', completed: true, had_symptoms: false }];
 
-    render(<PatientDashboard />);
+    render(<MonitoringStatusIndicator />);
 
     expect(await screen.findByText('🟢 Sem sinais de alerta')).toBeTruthy();
   });
@@ -49,7 +41,7 @@ describe('status de monitoramento no dashboard do paciente', () => {
   it('ignora sinais de alerta fora da janela de 30 dias', async () => {
     mockReports = [{ id: 1, report_date: '2026-01-01', completed: true, red_flag_category: 'febre' }];
 
-    render(<PatientDashboard />);
+    render(<MonitoringStatusIndicator />);
 
     expect(await screen.findByText('🟢 Sem sinais de alerta')).toBeTruthy();
   });
@@ -68,11 +60,8 @@ describe('status de monitoramento no dashboard do paciente', () => {
       unread_count: 1,
     });
 
-    render(<PatientDashboard />);
+    render(<MonitoringStatusIndicator />);
 
-    // The same unread notification also renders inside NoticesCard's own
-    // list, so the message text isn't unique on the page -- the heading
-    // alone is enough to confirm the status card picked it up.
     expect(await screen.findByText('🟠 Padrão de sinais em observação')).toBeTruthy();
   });
 
@@ -83,7 +72,7 @@ describe('status de monitoramento no dashboard do paciente', () => {
       unread_count: 1,
     });
 
-    render(<PatientDashboard />);
+    render(<MonitoringStatusIndicator />);
 
     expect(await screen.findByText('🔴 Sinal de alerta identificado')).toBeTruthy();
     expect(screen.queryByText('🟠 Padrão de sinais em observação')).toBeNull();
@@ -96,7 +85,7 @@ describe('status de monitoramento no dashboard do paciente', () => {
       unread_count: 1,
     });
 
-    render(<PatientDashboard />);
+    render(<MonitoringStatusIndicator />);
 
     expect(await screen.findByText('🟢 Sem sinais de alerta')).toBeTruthy();
   });

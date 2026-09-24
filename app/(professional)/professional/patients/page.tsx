@@ -8,7 +8,7 @@ import { ErrorState, EmptyState } from '@/components/ui/states';
 import { NewPatientModal } from '@/components/professional/NewPatientModal';
 import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { TableSkeleton } from '@/components/ui/Loading';
-import { UsersThree, Stethoscope, ClipboardText, ChatCircleText, Sparkle } from '@phosphor-icons/react';
+import { UsersThree, Stethoscope, ClipboardText, ChatCircleText, Images, Sparkle } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { MetricCard } from '@/components/ui/design';
 
@@ -39,6 +39,7 @@ const patientRowActions: Array<{ suffix: string; label: string; icon: React.Reac
   { suffix: '', label: 'Visão geral', icon: <ClipboardText aria-hidden="true" size={18} weight="duotone" /> },
   { suffix: '/checkins', label: 'Check-ins', icon: <ChatCircleText aria-hidden="true" size={18} weight="duotone" /> },
   { suffix: '/clinical', label: 'Dados clínicos', icon: <Stethoscope aria-hidden="true" size={18} weight="duotone" /> },
+  { suffix: '/images', label: 'Imagens', icon: <Images aria-hidden="true" size={18} weight="duotone" /> },
   { suffix: '/reports', label: 'Relatórios IA', icon: <Sparkle aria-hidden="true" size={18} weight="duotone" /> },
 ];
 
