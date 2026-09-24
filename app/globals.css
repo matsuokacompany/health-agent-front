@@ -404,7 +404,9 @@ img.brand-logo-dark{display:none}
 .patient-symptom-term-samples{display:grid;gap:6px;margin:8px 0 0;padding:2px 0 2px 14px;border-left:2px solid var(--line);list-style:none}
 .patient-symptom-term-samples li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;font-size:.82rem;color:var(--ink)}
 .patient-symptom-term-sample-date{color:var(--muted);font-weight:800;white-space:nowrap}
-@media (max-width:640px){.patient-symptom-term-row{grid-template-columns:minmax(70px,.6fr) minmax(0,1fr) 24px}.patient-symptom-term-samples li{grid-template-columns:1fr}}
+.patient-adherence-row{grid-template-columns:minmax(90px,.55fr) minmax(0,1fr) 46px}
+.patient-adherence-row .patient-symptom-term-count{white-space:nowrap}
+@media (max-width:640px){.patient-symptom-term-row{grid-template-columns:minmax(70px,.6fr) minmax(0,1fr) 24px}.patient-adherence-row{grid-template-columns:minmax(70px,.6fr) minmax(0,1fr) 40px}.patient-symptom-term-samples li{grid-template-columns:1fr}}
 .professional-red-flags-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:0;padding:0;list-style:none}
 .professional-red-flags-list a{display:flex;flex-direction:column;align-items:flex-start;gap:6px;height:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;color:var(--ink);box-sizing:border-box}
 .professional-red-flags-list a:hover{border-color:var(--danger);background:var(--danger-soft)}

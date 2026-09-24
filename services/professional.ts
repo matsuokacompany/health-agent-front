@@ -176,10 +176,14 @@ export type ProfessionalDashboardRedFlag = {
   category_label: string;
   tier: 'absoluto' | 'contextual';
 };
+export type ProfessionalDashboardAdherenceEntry = { patient_id: number; patient_name: string; adherence_percentage: number };
+export type ProfessionalDashboardMonthlySymptomCount = { month: string; count: number };
 export type ProfessionalDashboardOverview = {
   active_patients: number;
   red_flags: ProfessionalDashboardRedFlag[];
   top_symptoms: ProfessionalTopSymptomTerm[];
+  adherence: ProfessionalDashboardAdherenceEntry[];
+  symptoms_by_month: ProfessionalDashboardMonthlySymptomCount[];
 };
 
 export type ProfessionalCheckInsParams = {
