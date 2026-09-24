@@ -189,15 +189,17 @@ function SymptomRateTrendChart({ report }: { report: EvolutionReport }) {
             );
           })}
         </div>
-        <table className="sr-only">
-          <caption>Percentual de check-ins com sintomas por {noun}</caption>
-          <thead><tr><th>Período</th><th>Com sintomas</th></tr></thead>
-          <tbody>
-            {groups.map((group) => (
-              <tr key={group.start_date}><td>{formatReportDate(group.start_date)} a {formatReportDate(group.end_date)}</td><td>{group.metrics.symptom_rate_percentage}%</td></tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="sr-only">
+          <table>
+            <caption>Percentual de check-ins com sintomas por {noun}</caption>
+            <thead><tr><th>Período</th><th>Com sintomas</th></tr></thead>
+            <tbody>
+              {groups.map((group) => (
+                <tr key={group.start_date}><td>{formatReportDate(group.start_date)} a {formatReportDate(group.end_date)}</td><td>{group.metrics.symptom_rate_percentage}%</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </figure>
     </article>
   );

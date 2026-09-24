@@ -148,13 +148,15 @@ function SymptomsByMonthChart({ data }: { data: ProfessionalDashboardMonthlySymp
         <div className="line-chart-axis" aria-hidden="true">
           {points.map((point) => <span key={point.month}>{monthLabel(point.month)}</span>)}
         </div>
-        <table className="sr-only">
-          <caption>Sintomas por mês, últimos {SYMPTOMS_MONTHS_WINDOW} meses</caption>
-          <thead><tr><th>Mês</th><th>Sintomas</th></tr></thead>
-          <tbody>
-            {points.map((point) => <tr key={point.month}><td>{monthRangeLabel(point.month)}</td><td>{point.count}</td></tr>)}
-          </tbody>
-        </table>
+        <div className="sr-only">
+          <table>
+            <caption>Sintomas por mês, últimos {SYMPTOMS_MONTHS_WINDOW} meses</caption>
+            <thead><tr><th>Mês</th><th>Sintomas</th></tr></thead>
+            <tbody>
+              {points.map((point) => <tr key={point.month}><td>{monthRangeLabel(point.month)}</td><td>{point.count}</td></tr>)}
+            </tbody>
+          </table>
+        </div>
       </figure>
     </article>
   );
@@ -280,15 +282,17 @@ function PatientAdherenceChart({ data }: { data: ProfessionalDashboardAdherenceE
             </li>
           ))}
         </ul>
-        <table className="sr-only">
-          <caption>Adesão semanal por paciente, últimos {ADHERENCE_WINDOW_DAYS} dias</caption>
-          <thead><tr><th>Paciente</th><th>Semana</th><th>Adesão</th></tr></thead>
-          <tbody>
-            {series.flatMap((line) => line.points.map((point) => (
-              <tr key={`${line.key}-row-${point.index}`}><td>{line.name}</td><td>{weekLabel(weeks[point.index])}</td><td>{point.value}%</td></tr>
-            )))}
-          </tbody>
-        </table>
+        <div className="sr-only">
+          <table>
+            <caption>Adesão semanal por paciente, últimos {ADHERENCE_WINDOW_DAYS} dias</caption>
+            <thead><tr><th>Paciente</th><th>Semana</th><th>Adesão</th></tr></thead>
+            <tbody>
+              {series.flatMap((line) => line.points.map((point) => (
+                <tr key={`${line.key}-row-${point.index}`}><td>{line.name}</td><td>{weekLabel(weeks[point.index])}</td><td>{point.value}%</td></tr>
+              )))}
+            </tbody>
+          </table>
+        </div>
       </figure>
     </article>
   );
