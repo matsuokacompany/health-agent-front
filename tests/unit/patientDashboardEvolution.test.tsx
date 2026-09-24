@@ -35,6 +35,7 @@ const baseReport = {
     calendar_coverage_percentage: 93.3,
   },
   symptom_trend: 'stable' as const,
+  symptom_trend_change_percentage_points: 1.2,
   longest_gap_days: 2,
   symptoms: [{ description: 'Dor de cabeça', occurrences: 3, first_reported_at: '2026-08-15', last_reported_at: '2026-09-01' }],
   timeline: [],
@@ -105,5 +106,34 @@ describe('evolução no dashboard do paciente', () => {
 
     await waitFor(() => expect(selfMonitoring.getEvolutionReport).toHaveBeenCalledWith({ start_date: iso(start), end_date: iso(end) }));
     expect(handoffButton.disabled).toBe(false);
+  });
+
+  it('não mostra o gráfico de sintomas ao longo do tempo sem histórico suficiente', async () => {
+    selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
+    render(<PatientDashboard />);
+    await screen.findByText('Sinais cardiorrespiratórios');
+    expect(screen.queryByText('Sintomas ao longo do tempo')).toBeNull();
+  });
+
+  it('mostra o gráfico de sintomas ao longo do tempo quando há histórico suficiente', async () => {
+    selfMonitoring.getEvolutionReport.mockResolvedValue({
+      ...baseReport,
+      timeline: [
+        { start_date: '2026-08-01', end_date: '2026-08-07', metrics: { ...baseReport.metrics, symptom_rate_percentage: 10 } },
+        { start_date: '2026-08-08', end_date: '2026-08-14', metrics: { ...baseReport.metrics, symptom_rate_percentage: 40 } },
+      ],
+    });
+    render(<PatientDashboard />);
+    expect(await screen.findByText('Sintomas ao longo do tempo')).toBeTruthy();
+    expect(screen.getAllByText('10%').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('40%').length).toBeGreaterThan(0);
+  });
+
+  it('mostra a variação numérica no card de tendência', async () => {
+    selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
+    render(<PatientDashboard />);
+    await screen.findByText('Sinais cardiorrespiratórios');
+    expect(screen.getByText('Tendência de sintomas')).toBeTruthy();
+    expect(screen.getByText('+1.2 p.p.')).toBeTruthy();
   });
 });

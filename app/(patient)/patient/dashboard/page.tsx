@@ -9,7 +9,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
-import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, PeriodSelector, SymptomsCard, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
+import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, formatReportDate, PeriodSelector, SymptomsCard, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
 import type { AppNotification, DailyReport, EvolutionReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
@@ -139,11 +139,68 @@ function LoadingDashboard() {
       <div className="ai-shortcuts">{Array.from({ length: 5 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
       <SkeletonBlock className="sk-action" />
     </div>
-    <Card className="patient-monitoring-status-card"><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /></Card>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
     <section className="patient-dashboard-summary-grid">
       {Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-chart" /></Card>
   </section>;
+}
+
+const AGGREGATION_NOUN: Record<EvolutionReport['aggregation'], string> = { weekly: 'semana', monthly: 'mês', yearly: 'ano' };
+
+function shortDate(value: string) {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(`${value.slice(0, 10)}T12:00:00`));
+}
+
+/** Symptom-report rate per period bucket (the same weekly/monthly/yearly
+ * groups already computed for the evolution report), so a patient can see
+ * whether things are trending up or down over the selected period, not
+ * just the single before/after number on the Tendência card. */
+function SymptomRateTrendChart({ report }: { report: EvolutionReport }) {
+  const groups = report.timeline;
+  if (!report.sufficient_data || groups.length < 2) return null;
+  const maxValue = Math.max(10, ...groups.map((group) => group.metrics.symptom_rate_percentage));
+  const noun = AGGREGATION_NOUN[report.aggregation];
+
+  return (
+    <article className="card professional-trend-chart">
+      <span className="eyebrow">Ao longo do período</span>
+      <h2>Sintomas ao longo do tempo</h2>
+      <p className="muted compact">Percentual de check-ins com sintomas, por {noun}.</p>
+      <figure className="trend-chart-figure" aria-label="Percentual de check-ins com sintomas ao longo do período">
+        <div className="trend-chart-bars" aria-hidden="true">
+          {groups.map((group) => {
+            const value = group.metrics.symptom_rate_percentage;
+            const heightPct = Math.max((value / maxValue) * 100, value > 0 ? 10 : 3);
+            return (
+              <div className="trend-chart-column" key={group.start_date}>
+                {value > 0 ? <span className="trend-chart-value">{value}%</span> : null}
+                <span className="trend-chart-track">
+                  <span className="trend-chart-bar chart-tooltip-trigger" style={{ height: `${heightPct}%` }} tabIndex={0}>
+                    <span className="chart-tooltip" role="tooltip">
+                      <strong>{value}% com sintomas</strong>
+                      <span>{formatReportDate(group.start_date)} a {formatReportDate(group.end_date)}</span>
+                    </span>
+                  </span>
+                </span>
+                <span className="trend-chart-day">{shortDate(group.start_date)}</span>
+              </div>
+            );
+          })}
+        </div>
+        <table className="sr-only">
+          <caption>Percentual de check-ins com sintomas por {noun}</caption>
+          <thead><tr><th>Período</th><th>Com sintomas</th></tr></thead>
+          <tbody>
+            {groups.map((group) => (
+              <tr key={group.start_date}><td>{formatReportDate(group.start_date)} a {formatReportDate(group.end_date)}</td><td>{group.metrics.symptom_rate_percentage}%</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </figure>
+    </article>
+  );
 }
 
 function EmptyDashboard({ onStartSelfMonitoring }: { onStartSelfMonitoring(): Promise<void> }) {
@@ -248,5 +305,6 @@ export default function PatientDashboard() {
           <section className="patient-dashboard-summary-grid">{Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
         ) : evolutionReport ? <EvolutionCard report={evolutionReport} hideSymptoms /> : null}
       </div>
+      {evolutionReport ? <SymptomRateTrendChart report={evolutionReport} /> : null}
     </section>;
 }
