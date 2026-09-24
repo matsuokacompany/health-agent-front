@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/design';
-import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { MetricCardSkeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { toFriendlyErrorMessage } from '@/components/ui/errors';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { DEFAULT_PERIOD_DAYS, EvolutionPaywall, InsightGenerationCard, PERIOD_PRESETS, PeriodSelector, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
+import { EvolutionMetricsGrid } from '@/components/patient/EvolutionMetricsGrid';
 import { ReportDetailModal } from '@/components/patient/ReportDetailModal';
 import { selfMonitoringApi } from '@/services/selfMonitoring';
 import { shortcutPeriod } from '@/services/aiReports';
@@ -132,6 +133,12 @@ export default function PatientRelatorios() {
             />
           </div>
         ) : null}
+        {!reportBlocked && loadingReport ? (
+          <section className="patient-dashboard-summary-grid" aria-busy="true" aria-label="Carregando métricas do período">
+            {Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}
+          </section>
+        ) : null}
+        {!reportBlocked && !loadingReport && report?.sufficient_data ? <EvolutionMetricsGrid report={report} /> : null}
         {reportBlocked ? <EvolutionPaywall /> : (
           <InsightGenerationCard
             report={report}
