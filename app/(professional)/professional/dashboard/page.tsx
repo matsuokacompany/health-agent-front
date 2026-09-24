@@ -62,6 +62,9 @@ function ActivePatientsCard({ activePatients, redFlags }: { activePatients: numb
 }
 
 const SYMPTOMS_MONTHS_WINDOW = 6;
+const SYMPTOMS_CHART_WIDTH = 640;
+const SYMPTOMS_CHART_HEIGHT = 180;
+const SYMPTOMS_PADDING = { top: 28, right: 16, bottom: 8, left: 16 };
 
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -79,7 +82,8 @@ function monthRangeLabel(key: string) {
 
 /** Monthly count of symptom reports over the trend window, oldest first,
  * last on the dashboard and full-width -- the longest-range view, so it
- * gets the most room. */
+ * gets the most room. A single series, so it's a line: the value moving
+ * over time is the point, not comparing categories. */
 function SymptomsByMonthChart({ data }: { data: ProfessionalDashboardMonthlySymptomCount[] }) {
   const months = Array.from({ length: SYMPTOMS_MONTHS_WINDOW }, (_, index) => {
     const date = new Date();
@@ -91,37 +95,64 @@ function SymptomsByMonthChart({ data }: { data: ProfessionalDashboardMonthlySymp
   const maxCount = Math.max(1, ...months.map((month) => counts.get(month) ?? 0));
   const total = months.reduce((sum, month) => sum + (counts.get(month) ?? 0), 0);
 
+  const plotWidth = SYMPTOMS_CHART_WIDTH - SYMPTOMS_PADDING.left - SYMPTOMS_PADDING.right;
+  const plotHeight = SYMPTOMS_CHART_HEIGHT - SYMPTOMS_PADDING.top - SYMPTOMS_PADDING.bottom;
+  const xFor = (index: number) => SYMPTOMS_PADDING.left + (months.length === 1 ? plotWidth / 2 : (index / (months.length - 1)) * plotWidth);
+  const yFor = (count: number) => SYMPTOMS_PADDING.top + (1 - count / maxCount) * plotHeight;
+  const points = months.map((month, index) => ({ month, index, count: counts.get(month) ?? 0 }));
+
   return (
     <article className="card professional-trend-chart">
       <span className="eyebrow">Últimos {SYMPTOMS_MONTHS_WINDOW} meses</span>
       <h2>Sintomas por mês</h2>
       <p className="muted compact">{total} {total === 1 ? 'registro' : 'registros'} de sintomas no período, somando todos os pacientes.</p>
-      <figure className="trend-chart-figure" aria-label={`Sintomas por mês nos últimos ${SYMPTOMS_MONTHS_WINDOW} meses: ${total} no total`}>
-        <div className="trend-chart-bars" aria-hidden="true">
-          {months.map((month) => {
-            const count = counts.get(month) ?? 0;
-            const heightPct = Math.max((count / maxCount) * 100, count > 0 ? 10 : 3);
-            return (
-              <div className="trend-chart-column" key={month}>
-                {count > 0 ? <span className="trend-chart-value">{count}</span> : null}
-                <span className="trend-chart-track">
-                  <span className="trend-chart-bar chart-tooltip-trigger" style={{ height: `${heightPct}%` }} tabIndex={0}>
-                    <span className="chart-tooltip" role="tooltip">
-                      <strong>{count} {count === 1 ? 'registro' : 'registros'}</strong>
-                      <span>{monthRangeLabel(month)}</span>
-                    </span>
-                  </span>
-                </span>
-                <span className="trend-chart-day">{monthLabel(month)}</span>
-              </div>
-            );
-          })}
+      <figure className="line-chart-figure" aria-label={`Sintomas por mês nos últimos ${SYMPTOMS_MONTHS_WINDOW} meses: ${total} no total`}>
+        <div className="line-chart-plot" style={{ aspectRatio: `${SYMPTOMS_CHART_WIDTH} / ${SYMPTOMS_CHART_HEIGHT}` }}>
+          <svg viewBox={`0 0 ${SYMPTOMS_CHART_WIDTH} ${SYMPTOMS_CHART_HEIGHT}`} className="line-chart-svg" aria-hidden="true">
+            <polyline
+              points={points.map((point) => `${xFor(point.index)},${yFor(point.count)}`).join(' ')}
+              fill="none"
+              stroke="var(--danger)"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {points.map((point) => (
+              <circle key={point.month} cx={xFor(point.index)} cy={yFor(point.count)} r={4} fill="var(--danger)" stroke="var(--surface)" strokeWidth={2} />
+            ))}
+            {points.length ? (
+              <text
+                x={xFor(points[points.length - 1].index)}
+                y={yFor(points[points.length - 1].count) - 10}
+                textAnchor="end"
+                className="line-chart-endpoint-label"
+              >
+                {points[points.length - 1].count}
+              </text>
+            ) : null}
+          </svg>
+          {points.map((point) => (
+            <span
+              key={`${point.month}-hit`}
+              className="chart-point-hit chart-tooltip-trigger"
+              tabIndex={0}
+              style={{ left: `${(xFor(point.index) / SYMPTOMS_CHART_WIDTH) * 100}%`, top: `${(yFor(point.count) / SYMPTOMS_CHART_HEIGHT) * 100}%` }}
+            >
+              <span className="chart-tooltip" role="tooltip">
+                <strong>{point.count} {point.count === 1 ? 'registro' : 'registros'}</strong>
+                <span>{monthRangeLabel(point.month)}</span>
+              </span>
+            </span>
+          ))}
+        </div>
+        <div className="line-chart-axis" aria-hidden="true">
+          {points.map((point) => <span key={point.month}>{monthLabel(point.month)}</span>)}
         </div>
         <table className="sr-only">
           <caption>Sintomas por mês, últimos {SYMPTOMS_MONTHS_WINDOW} meses</caption>
           <thead><tr><th>Mês</th><th>Sintomas</th></tr></thead>
           <tbody>
-            {months.map((month) => <tr key={month}><td>{monthRangeLabel(month)}</td><td>{counts.get(month) ?? 0}</td></tr>)}
+            {points.map((point) => <tr key={point.month}><td>{monthRangeLabel(point.month)}</td><td>{point.count}</td></tr>)}
           </tbody>
         </table>
       </figure>
@@ -132,14 +163,11 @@ function SymptomsByMonthChart({ data }: { data: ProfessionalDashboardMonthlySymp
 const ADHERENCE_WINDOW_DAYS = 30;
 const ADHERENCE_BUCKET_DAYS = 7;
 const ADHERENCE_BUCKET_COUNT = Math.ceil(ADHERENCE_WINDOW_DAYS / ADHERENCE_BUCKET_DAYS);
-// Every line beyond this many patients folds into a single "Outros
-// pacientes" average line, colored gray instead of minting a new hue --
-// past this count no fixed categorical order can keep every pair of lines
+// Every bar beyond this many patients folds into a single "Outros
+// pacientes" average bar, colored gray instead of minting a new hue --
+// past this count no fixed categorical order can keep every pair of bars
 // distinguishable.
 const ADHERENCE_MAX_SERIES = 8;
-const ADHERENCE_CHART_WIDTH = 640;
-const ADHERENCE_CHART_HEIGHT = 220;
-const ADHERENCE_PADDING = { top: 16, right: 16, bottom: 28, left: 16 };
 
 function dateKeyOf(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -161,10 +189,12 @@ function weekLabel(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(`${value}T12:00:00`));
 }
 
-/** Per-patient check-in adherence as a line per patient over the last
- * {ADHERENCE_WINDOW_DAYS} days, so a professional can see who is trending
- * down, not just who is lowest right now. */
-function PatientAdherenceLineChart({ data }: { data: ProfessionalDashboardAdherenceEntry[] }) {
+/** Per-patient check-in adherence as one bar per patient within each
+ * weekly group over the last {ADHERENCE_WINDOW_DAYS} days -- comparing
+ * patients against each other is the job here, so grouped bars (not a
+ * shared line each) keep each patient's value easy to read off at a
+ * glance for any given week. */
+function PatientAdherenceChart({ data }: { data: ProfessionalDashboardAdherenceEntry[] }) {
   if (!data.length) {
     return (
       <article className="card">
@@ -178,11 +208,6 @@ function PatientAdherenceLineChart({ data }: { data: ProfessionalDashboardAdhere
   const weeks = buildAdherenceWeeks();
   const shown = data.slice(0, ADHERENCE_MAX_SERIES);
   const overflow = data.slice(ADHERENCE_MAX_SERIES);
-
-  const plotWidth = ADHERENCE_CHART_WIDTH - ADHERENCE_PADDING.left - ADHERENCE_PADDING.right;
-  const plotHeight = ADHERENCE_CHART_HEIGHT - ADHERENCE_PADDING.top - ADHERENCE_PADDING.bottom;
-  const xFor = (index: number) => ADHERENCE_PADDING.left + (weeks.length === 1 ? plotWidth / 2 : (index / (weeks.length - 1)) * plotWidth);
-  const yFor = (value: number) => ADHERENCE_PADDING.top + (1 - value / 100) * plotHeight;
 
   type Series = { key: string; name: string; color: string; points: { index: number; value: number }[] };
   const series: Series[] = shown.map((entry, seriesIndex) => ({
@@ -213,62 +238,44 @@ function PatientAdherenceLineChart({ data }: { data: ProfessionalDashboardAdhere
     });
   }
 
-  const gridLines = [0, 25, 50, 75, 100];
-
   return (
     <article className="card">
       <span className="eyebrow">Últimos {ADHERENCE_WINDOW_DAYS} dias</span>
       <h2>Adesão dos pacientes</h2>
       <p className="muted compact">Percentual de check-ins concluídos por semana, por paciente.</p>
-      <figure className="patient-adherence-figure" aria-label={`Adesão semanal dos pacientes nos últimos ${ADHERENCE_WINDOW_DAYS} dias`}>
-        <div className="patient-adherence-plot" style={{ aspectRatio: `${ADHERENCE_CHART_WIDTH} / ${ADHERENCE_CHART_HEIGHT}` }}>
-          <svg viewBox={`0 0 ${ADHERENCE_CHART_WIDTH} ${ADHERENCE_CHART_HEIGHT}`} className="patient-adherence-svg" aria-hidden="true">
-            {gridLines.map((line) => (
-              <line
-                key={line}
-                x1={ADHERENCE_PADDING.left}
-                x2={ADHERENCE_CHART_WIDTH - ADHERENCE_PADDING.right}
-                y1={yFor(line)}
-                y2={yFor(line)}
-                className="patient-adherence-gridline"
-              />
-            ))}
-            {series.map((line) => (
-              line.points.length > 1 ? (
-                <polyline
-                  key={line.key}
-                  points={line.points.map((point) => `${xFor(point.index)},${yFor(point.value)}`).join(' ')}
-                  fill="none"
-                  stroke={line.color}
-                  strokeWidth={2}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              ) : null
-            ))}
-            {series.map((line) => line.points.map((point) => (
-              <circle key={`${line.key}-${point.index}`} cx={xFor(point.index)} cy={yFor(point.value)} r={4} fill={line.color} stroke="var(--surface)" strokeWidth={2} />
-            )))}
-          </svg>
-          {series.map((line) => line.points.map((point) => (
-            <span
-              key={`${line.key}-hit-${point.index}`}
-              className="chart-point-hit chart-tooltip-trigger"
-              tabIndex={0}
-              style={{ left: `${(xFor(point.index) / ADHERENCE_CHART_WIDTH) * 100}%`, top: `${(yFor(point.value) / ADHERENCE_CHART_HEIGHT) * 100}%` }}
-            >
-              <span className="chart-tooltip" role="tooltip">
-                <strong>{point.value}%</strong>
-                <span>{line.name}</span>
-                <span className="muted">semana de {weekLabel(weeks[point.index])}</span>
-              </span>
-            </span>
-          )))}
+      <figure className="trend-chart-figure" aria-label={`Adesão semanal dos pacientes nos últimos ${ADHERENCE_WINDOW_DAYS} dias`}>
+        <div className="trend-chart-bars" aria-hidden="true">
+          {weeks.map((week, weekIndex) => (
+            <div className="trend-chart-column" key={week}>
+              <div className="trend-chart-group">
+                {series.map((line) => {
+                  const point = line.points.find((candidate) => candidate.index === weekIndex);
+                  if (!point) return null;
+                  const heightPct = Math.max(point.value, point.value > 0 ? 6 : 2);
+                  return (
+                    <span
+                      key={line.key}
+                      className="trend-chart-group-bar chart-tooltip-trigger"
+                      style={{ height: `${heightPct}%`, background: line.color }}
+                      tabIndex={0}
+                    >
+                      <span className="chart-tooltip" role="tooltip">
+                        <strong>{point.value}%</strong>
+                        <span>{line.name}</span>
+                        <span className="muted">semana de {weekLabel(week)}</span>
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+              <span className="trend-chart-day">{weekLabel(week)}</span>
+            </div>
+          ))}
         </div>
         <ul className="chart-legend">
           {series.map((line) => (
             <li key={line.key}>
-              <span className="chart-legend-swatch" style={{ background: line.color }} aria-hidden="true" />
+              <span className="chart-legend-swatch chart-legend-swatch-bar" style={{ background: line.color }} aria-hidden="true" />
               {line.name}
             </li>
           ))}
@@ -303,7 +310,7 @@ export default function ProfessionalDashboard() {
     <div className="stack">
       <ActivePatientsCard activePatients={data?.active_patients ?? 0} redFlags={redFlags} />
       <section className="split professional-detail-section">
-        <PatientAdherenceLineChart data={adherence} />
+        <PatientAdherenceChart data={adherence} />
         <article className="card">
           <span className="eyebrow">Todos os pacientes</span>
           <h2>Sintomas mais relatados</h2>

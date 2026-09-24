@@ -86,7 +86,7 @@ describe('dashboard do profissional', () => {
     expect(screen.getByLabelText('Carregando dashboard')).toBeTruthy();
   });
 
-  it('mostra o gráfico de adesão dos pacientes como linhas, com legenda', () => {
+  it('mostra o gráfico de adesão dos pacientes como barras agrupadas, com legenda', () => {
     useProfessionalDashboardOverview.mockReturnValue({
       data: {
         active_patients: 2,
@@ -108,6 +108,10 @@ describe('dashboard do profissional', () => {
     expect(screen.getAllByText('João Souza').length).toBeGreaterThan(0);
     expect(screen.getAllByText('40%').length).toBeGreaterThan(0);
     expect(screen.getAllByText('90%').length).toBeGreaterThan(0);
+    // Adherence is bars now, not an SVG line chart.
+    const adherenceCard = screen.getByText('Adesão dos pacientes').closest('article');
+    expect(adherenceCard?.querySelector('.trend-chart-group-bar')).toBeTruthy();
+    expect(adherenceCard?.querySelector('svg polyline')).toBeNull();
   });
 
   it('agrupa pacientes além do limite de séries em uma linha "Outros"', () => {
@@ -139,9 +143,12 @@ describe('dashboard do profissional', () => {
       isLoading: false,
       error: null,
     });
-    render(<ProfessionalDashboard />);
+    const { container } = render(<ProfessionalDashboard />);
     expect(screen.getByText('Sintomas por mês')).toBeTruthy();
     expect(screen.getByText('7 registros de sintomas no período, somando todos os pacientes.')).toBeTruthy();
+    // Sintomas por mês is a line now, not grouped bars.
+    expect(container.querySelector('.line-chart-svg polyline')).toBeTruthy();
+    expect(container.querySelector('.trend-chart-group-bar')).toBeNull();
   });
 
   it('mostra estados vazios para adesão quando não há check-ins', () => {
