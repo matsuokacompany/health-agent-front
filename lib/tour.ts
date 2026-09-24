@@ -20,6 +20,14 @@ export const TOUR_STEPS: Record<string, TourStep[]> = {
     { target: '[data-tour="patients-table"]', title: 'Prontuário do paciente', body: 'Clique em "Ver prontuário" para abrir o histórico completo de check-ins, dados clínicos e relatórios de IA de cada paciente.' },
     { title: 'Pronto!', body: 'Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
   ],
+  '/professional/dashboard': [
+    { title: 'Bem-vindo à Julha', body: 'Vamos te mostrar rapidamente o painel do profissional. Leva menos de um minuto.' },
+    { target: '[data-tour="sidebar-nav"]', title: 'Menu de navegação', body: 'Use o menu lateral para transitar entre Dashboard, Pacientes e Assinatura a qualquer momento.' },
+    { target: '[data-tour="professional-dashboard-patients"]', title: 'Pacientes ativos e sinais de risco', body: 'Veja quantos pacientes estão ativos e os sintomas de risco relatados por eles nos últimos dias, com link direto para o prontuário.' },
+    { target: '[data-tour="professional-dashboard-adherence"]', title: 'Adesão dos pacientes', body: 'Percentual de check-ins concluídos por semana, com uma linha por paciente. Passe o mouse (ou toque) nas barras para ver os detalhes.' },
+    { target: '[data-tour="professional-dashboard-top-symptoms"]', title: 'Sintomas mais relatados', body: 'Os sintomas mais frequentes entre todos os seus pacientes no período.' },
+    { target: '[data-tour="professional-dashboard-monthly"]', title: 'Sintomas por mês', body: 'A evolução do total de sintomas relatados nos últimos meses, somando todos os pacientes. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },
+  ],
   '/professional/assinatura': [
     { target: '[data-tour="assinatura-status"]', title: 'Status da assinatura', body: 'Veja o status atual, quantos pacientes você já usa do seu limite e as ações disponíveis (trocar de plano, cancelar).' },
     { target: '[data-tour="assinatura-plans"]', title: 'Planos disponíveis', body: 'Compare os planos e clique em "Assinar agora" ou "Trocar para este plano" para mudar a qualquer momento. Você pode reabrir este tour quando quiser clicando em "Tour guiado" no menu lateral.' },

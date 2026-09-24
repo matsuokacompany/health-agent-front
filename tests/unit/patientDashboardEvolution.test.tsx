@@ -129,11 +129,22 @@ describe('evolução no dashboard do paciente', () => {
     expect(screen.getAllByText('40%').length).toBeGreaterThan(0);
   });
 
-  it('mostra a variação numérica no card de tendência', async () => {
+  it('não mostra mais o card de tendência de sintomas', async () => {
     selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
     render(<PatientDashboard />);
     await screen.findByText('Sinais cardiorrespiratórios');
-    expect(screen.getByText('Tendência de sintomas')).toBeTruthy();
-    expect(screen.getByText('+1.2 p.p.')).toBeTruthy();
+    expect(screen.queryByText('Tendência de sintomas')).toBeNull();
+  });
+
+  it('mostra as métricas e os fatores de risco logo após os filtros de período', async () => {
+    selfMonitoring.getEvolutionReport.mockResolvedValue(baseReport);
+    render(<PatientDashboard />);
+    await screen.findByText('Sinais cardiorrespiratórios');
+
+    const controls = screen.getByText('Último ano').closest('[data-tour="patient-period-controls"]');
+    const evolutionBlock = screen.getByText('Adesão aos check-ins').closest('[data-tour="patient-evolution"]');
+    expect(controls).toBeTruthy();
+    expect(evolutionBlock).toBeTruthy();
+    expect(controls?.nextElementSibling).toBe(evolutionBlock);
   });
 });

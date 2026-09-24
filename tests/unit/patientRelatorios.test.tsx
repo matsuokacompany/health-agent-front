@@ -64,12 +64,11 @@ describe('página de relatórios do paciente', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
-  it('mostra as métricas de adesão do período selecionado abaixo dos filtros', async () => {
+  it('não mostra mais o grid de métricas de adesão na página de relatórios', async () => {
     render(<PatientRelatorios />);
 
-    expect(await screen.findByText('Adesão aos check-ins')).toBeTruthy();
-    expect(screen.getByText('93.3%')).toBeTruthy();
-    expect(screen.getByText('28 de 30 check-ins')).toBeTruthy();
+    await waitFor(() => expect(selfMonitoring.getEvolutionReport).toHaveBeenCalled());
+    expect(screen.queryByText('Adesão aos check-ins')).toBeNull();
   });
 
   it('período personalizado exige as duas datas antes de recarregar o relatório de evolução', async () => {
