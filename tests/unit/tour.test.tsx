@@ -20,6 +20,10 @@ function Harness() {
     <div data-tour="patient-period-controls">controls</div>
     <div data-tour="patient-monitoring-status">status</div>
     <div data-tour="patient-evolution">evolution</div>
+    <div data-tour="professional-dashboard-patients">active patients</div>
+    <div data-tour="professional-dashboard-adherence">adherence</div>
+    <div data-tour="professional-dashboard-top-symptoms">top symptoms</div>
+    <div data-tour="professional-dashboard-monthly">monthly</div>
   </TourProvider>;
 }
 
@@ -102,6 +106,16 @@ describe('tour guiado', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
     expect(screen.getByText('Status de monitoramento')).toBeTruthy();
+  });
+
+  it('tem tour na dashboard de profissionais', () => {
+    pathname = '/professional/dashboard';
+    render(<Harness />);
+    openTour();
+    expect(screen.getByText('Bem-vindo à Julha')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo' }));
+    expect(screen.getByText('Pacientes ativos e sinais de risco')).toBeTruthy();
   });
 
   it('posiciona o tooltip ao lado (não em cima) de um alvo alto e estreito como a sidebar', async () => {

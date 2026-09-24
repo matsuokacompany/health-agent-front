@@ -171,10 +171,8 @@ export function RiskFactorsCard({ riskFactors }: { riskFactors: string[] }) {
 /** The at-a-glance evolution overview for a selected period -- metrics grid,
  * red flags, risk factors and most-frequent symptoms, all as reported by the
  * patient's own check-ins with their dates, so a professional reviewing this
- * can see not just a conclusion but the records and dates behind it.
- * `hideSymptoms` skips the most-frequent-symptoms card -- the dashboard
- * shows that one separately, next to the monitoring-status card. */
-export function EvolutionCard({ report, hideSymptoms = false }: { report: EvolutionReport; hideSymptoms?: boolean }) {
+ * can see not just a conclusion but the records and dates behind it. */
+export function EvolutionCard({ report }: { report: EvolutionReport }) {
   if (!report.sufficient_data) {
     return <Card>
       <span className="eyebrow">Evolução</span>
@@ -190,7 +188,7 @@ export function EvolutionCard({ report, hideSymptoms = false }: { report: Evolut
     <EvolutionMetricsGrid report={report} />
     <RedFlagEventsCard events={report.red_flag_events} />
     <RiskFactorsCard riskFactors={report.risk_factors} />
-    {!hideSymptoms ? <SymptomsCard symptoms={report.symptoms} /> : null}
+    <SymptomsCard symptoms={report.symptoms} />
   </>;
 }
 

@@ -28,7 +28,7 @@ const RED_FLAG_LOOKBACK_DAYS = 14;
  * alone. */
 function ActivePatientsCard({ activePatients, redFlags }: { activePatients: number; redFlags: ProfessionalDashboardRedFlag[] }) {
   return (
-    <article className="card">
+    <article className="card" data-tour="professional-dashboard-patients">
       <div className="professional-section-heading">
         <div>
           <span className="eyebrow">Últimos {RED_FLAG_LOOKBACK_DAYS} dias</span>
@@ -102,7 +102,7 @@ function SymptomsByMonthChart({ data }: { data: ProfessionalDashboardMonthlySymp
   const points = months.map((month, index) => ({ month, index, count: counts.get(month) ?? 0 }));
 
   return (
-    <article className="card professional-trend-chart">
+    <article className="card professional-trend-chart" data-tour="professional-dashboard-monthly">
       <span className="eyebrow">Últimos {SYMPTOMS_MONTHS_WINDOW} meses</span>
       <h2>Sintomas por mês</h2>
       <p className="muted compact">{total} {total === 1 ? 'registro' : 'registros'} de sintomas no período, somando todos os pacientes.</p>
@@ -197,7 +197,7 @@ function weekLabel(value: string) {
 function PatientAdherenceChart({ data }: { data: ProfessionalDashboardAdherenceEntry[] }) {
   if (!data.length) {
     return (
-      <article className="card">
+      <article className="card" data-tour="professional-dashboard-adherence">
         <span className="eyebrow">Últimos {ADHERENCE_WINDOW_DAYS} dias</span>
         <h2>Adesão dos pacientes</h2>
         <EmptyState description="Nenhum check-in registrado pelos seus pacientes no período." />
@@ -239,7 +239,7 @@ function PatientAdherenceChart({ data }: { data: ProfessionalDashboardAdherenceE
   }
 
   return (
-    <article className="card">
+    <article className="card" data-tour="professional-dashboard-adherence">
       <span className="eyebrow">Últimos {ADHERENCE_WINDOW_DAYS} dias</span>
       <h2>Adesão dos pacientes</h2>
       <p className="muted compact">Percentual de check-ins concluídos por semana, por paciente.</p>
@@ -311,7 +311,7 @@ export default function ProfessionalDashboard() {
       <ActivePatientsCard activePatients={data?.active_patients ?? 0} redFlags={redFlags} />
       <section className="split professional-detail-section">
         <PatientAdherenceChart data={adherence} />
-        <article className="card">
+        <article className="card" data-tour="professional-dashboard-top-symptoms">
           <span className="eyebrow">Todos os pacientes</span>
           <h2>Sintomas mais relatados</h2>
           {topSymptoms.length ? (

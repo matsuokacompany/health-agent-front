@@ -9,7 +9,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { formatRelative } from '@/components/layout/switchers/NotificationBell';
 import { ApiError } from '@/infrastructure/http/ApiClient';
 import { PatientHandoffButton } from '@/components/patient/PatientHandoffButton';
-import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, formatReportDate, PeriodSelector, SymptomsCard, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
+import { DEFAULT_PERIOD_DAYS, EvolutionCard, EvolutionPaywall, formatReportDate, PeriodSelector, validateCustomPeriod, type CustomRange, type PeriodSelection } from '@/components/patient/EvolutionReportSection';
 import type { AppNotification, DailyReport, EvolutionReport, MonitoringPlan } from '@/lib/types';
 import type { PatientDashboardAggregate } from '@/services/patientDashboard';
 import { notificationsApi } from '@/services/notifications';
@@ -139,10 +139,10 @@ function LoadingDashboard() {
       <div className="ai-shortcuts">{Array.from({ length: 5 }, (_, index) => <SkeletonBlock className="sk-action" key={index} />)}</div>
       <SkeletonBlock className="sk-action" />
     </div>
-    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
     <section className="patient-dashboard-summary-grid">
-      {Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}
+      {Array.from({ length: 7 }, (_, index) => <MetricCardSkeleton key={index} />)}
     </section>
+    <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock /><SkeletonBlock /></Card>
     <Card><SkeletonBlock className="sk-eyebrow" /><SkeletonBlock className="sk-title" /><SkeletonBlock className="sk-chart" /></Card>
   </section>;
 }
@@ -274,7 +274,6 @@ export default function PatientDashboard() {
   }
 
   const upcomingFirstCheckin = dashboard.responses.expected === 0 ? firstCheckinDate(dashboard.startDate) : null;
-  const symptoms = evolutionReport?.sufficient_data ? evolutionReport.symptoms : [];
 
   return <section className="patient-dashboard-v2" aria-label="Dashboard do paciente">
       <NoticesCard />
@@ -299,11 +298,10 @@ export default function PatientDashboard() {
           />
         ) : null}
       </div>
-      {symptoms.length ? <SymptomsCard symptoms={symptoms} /> : null}
       <div className="stack" data-tour="patient-evolution">
         {evolutionBlocked ? <EvolutionPaywall /> : loadingEvolution ? (
-          <section className="patient-dashboard-summary-grid">{Array.from({ length: 8 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
-        ) : evolutionReport ? <EvolutionCard report={evolutionReport} hideSymptoms /> : null}
+          <section className="patient-dashboard-summary-grid">{Array.from({ length: 7 }, (_, index) => <MetricCardSkeleton key={index} />)}</section>
+        ) : evolutionReport ? <EvolutionCard report={evolutionReport} /> : null}
       </div>
       {evolutionReport ? <SymptomRateTrendChart report={evolutionReport} /> : null}
     </section>;
