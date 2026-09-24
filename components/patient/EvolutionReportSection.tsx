@@ -186,9 +186,11 @@ export function EvolutionCard({ report }: { report: EvolutionReport }) {
 
   return <>
     <EvolutionMetricsGrid report={report} />
-    <RedFlagEventsCard events={report.red_flag_events} />
-    <RiskFactorsCard riskFactors={report.risk_factors} />
-    <SymptomsCard symptoms={report.symptoms} />
+    <div className="patient-evolution-cards-row">
+      <RedFlagEventsCard events={report.red_flag_events} />
+      <RiskFactorsCard riskFactors={report.risk_factors} />
+      <SymptomsCard symptoms={report.symptoms} />
+    </div>
   </>;
 }
 
